@@ -83,7 +83,7 @@ zstyle ':prezto:module:editor' key-bindings 'emacs'
 
 # Override the text shown while completion is running.
 # Overriding to use a character from PragmataPro. ~macserv
-zstyle ':prezto:module:editor:info:completing' format '⌚️'
+zstyle ':prezto:module:editor:info:completing' format '\uF469️'
 
 #
 # Git
