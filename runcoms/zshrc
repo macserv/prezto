@@ -8,11 +8,7 @@
 ####################################################################################
 #  POWERLEVEL9K
 
-# See also https://github.com/Falkor/dotfiles/blob/master/oh-my-zsh/
-# Font taken from https://github.com/stefano-meschiari/dotemacs/blob/master/SourceCodePro%2BPowerline%2BAwesome%2BRegular.ttf
-#
-
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(newline os_icon status dir vcs)
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(os_icon status dir vcs)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(background_jobs time)
 
 POWERLEVEL9K_MODE='awesome-fontconfig'
