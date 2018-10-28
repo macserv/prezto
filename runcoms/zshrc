@@ -5,9 +5,107 @@
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
 #
 
+####################################################################################
+#  POWERLEVEL9K
+
+# See also https://github.com/Falkor/dotfiles/blob/master/oh-my-zsh/
+# Font taken from https://github.com/stefano-meschiari/dotemacs/blob/master/SourceCodePro%2BPowerline%2BAwesome%2BRegular.ttf
+#
+POWERLEVEL9K_MODE='awesome-fontconfig'
+
+POWERLEVEL9K_HOME_ICON=''
+POWERLEVEL9K_HOME_SUB_ICON=''
+POWERLEVEL9K_FOLDER_ICON=''
+
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(status os_icon dir vcs)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(background_jobs time)
+
+POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
+POWERLEVEL9K_SHORTEN_DIR_LENGTH=3
+POWERLEVEL9K_SHORTEN_DELIMITER="’"
+
+POWERLEVEL9K_TIME_FORMAT="%D{\uF073  %d.%m.%y \uE0B3 %H:%M}"
+
+POWERLEVEL9K_STATUS_VERBOSE=false
+
+
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize to your needs...
+####################################################################################
+#  ALIASES
+
+##
+#  Process List
+#
+alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
+#
+
+##
+#  Application-Specific
+#
+#  Wow, remember NightHawk?  Never forget.
+#alias rmnhdb='cd ~/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
+#
+
+##
+#  ffmpeg Suite
+#
+#  Hide banners
+#
+alias ffmpeg='ffmpeg -hide_banner'
+alias ffprobe='ffprobe -hide_banner'
+#
+#  Download HLS (m3u8) MP4 Stream to File
+#
+#
+
+
+####################################################################################
+#  FUNCTIONS
+
+##
+#  ffmpeg Suite
+#
+#  Download m3u8 stream.  Parameter is stream URL.
+#
+function ff-m3u8-to-mp4
+{
+    if [[ $# < 1 ]] then;
+        echo "[ERROR] No stream URL was provided."
+        return 1
+    fi
+
+    local stream_url="$1"
+    local output_file="${stream_url:h:t}-${stream_url:t:s/m3u8/mp4/}"
+
+    ffmpeg -i "${stream_url}" "${output_file}"
+}
+
+##
+#  Homebrew
+#
+#  Get options for installed package
+#  Parameter is package name.
+#
+function brew-installed-options
+{
+    if [[ $# < 1 ]] then;
+        echo "[ERROR] No package name was provided."
+        return 1
+    fi
+
+    local installation_info=$(brew info --json=v1 $1)
+
+    echo ${installation_info} | jq --raw-output ".[].installed[0].used_options | @sh"
+}
+#
+#  [WIP] Reinstall package with additional option(s)
+#
+#  alias brew-reinstall-and-add-option 'brew reinstall \!:1 `brew-installed-options \!:1` \!:2*'
+#  set current_options = "`brew-installed-options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
+#
+
+
