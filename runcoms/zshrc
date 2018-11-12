@@ -6,14 +6,14 @@
 #
 
 ####################################################################################
-#  POWERLEVEL9K
+#  POWERLEVEL9K SETUP
 
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(os_icon dir vcs)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time swift_version)
 
 POWERLEVEL9K_MODE='awesome-fontconfig'
 
-POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0C6'
+POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0C6 '
 POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\uE0C7'
 POWERLEVEL9K_SWIFT_ICON='\uE755 '
 POWERLEVEL9K_APPLE_ICON='\uF179 '
@@ -33,17 +33,31 @@ POWERLEVEL9K_BATTERY_VERBOSE=false
 POWERLEVEL9K_STATUS_OK=false
 
 
-# Source Prezto.
+
+####################################################################################
+#  PREZTO LOAD
+
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
+
+
 
 ####################################################################################
 #  ALIASES
 
 ##
-#  Process List
+#  Quick Access to Fixed Paths
+alias cdios='cd ~/Projects/Development/Digital/Applications/iOS/'
 #
+
+##
+# Simpler default view for `top`
+alias top='top -stats "pid,command,cpu,mem,user"'
+#
+
+##
+#  Process List, Sorted by Time Started
 alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
 #
 
@@ -51,6 +65,7 @@ alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
 #  Application-Specific
 #
 #  Wow, remember NightHawk?  Never forget.
+#
 #alias rmnhdb='cd ~/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
 #
 
@@ -63,6 +78,12 @@ alias ffmpeg='ffmpeg -hide_banner'
 alias ffprobe='ffprobe -hide_banner'
 #
 
+##
+#  Spotlight Search This Directory Recursively
+#
+alias mdhere='mdfind -onlyin $(pwd)'
+#
+
 
 ####################################################################################
 #  FUNCTIONS
@@ -70,7 +91,9 @@ alias ffprobe='ffprobe -hide_banner'
 ##
 #  General Helpers
 #
-#
+#  unique-path <path>
+#  Checks to see if path exists, and attempts to make it unique by appending a dash
+#  and integer to the filename, prior to the extension.
 #
 function unique-path
 {
@@ -92,12 +115,26 @@ function unique-path
 
     echo "${unique_path}"
 }
+#
+#  mygroups
+#  List my groups in a sorted, more readable way
+#
+function mygroups
+{
+    local strip_uid_regex='s/^.+groups=//'
+    local one_per_line_regex='s/(\d+)\((.+?)\),?/$2 ($1)\n/g'
+    local regex="${strip_uid_regex};${one_per_line_regex}"
+
+    id | perl -pe ${regex} | sort
+}
+#
+
 
 ##
 #  ffmpeg Suite
 #
-#
-#
+#  ff-codec <path>
+#  Return the codec used to encode the file specified by <path>
 #
 function ff-codec
 {
@@ -132,8 +169,10 @@ function ff-m3u8-to-mp4
     return $?
 }
 #
-#
-#
+#  ff-mp4ify <input_path>
+#  Attempt to convert input file to mp4, if file is not already h264-encoded.
+#  Parameter 1: Input file path
+#  Parameter 2-n: Additional parameters will be used as encoder options.
 #
 function ff-mp4ify
 {
@@ -149,6 +188,8 @@ function ff-mp4ify
     if [[ $(ff-codec "${input_file}") == "h264" ]] then;
         ffmpeg_options=(-c:v copy)
     fi
+
+    ffmpeg_options = (${ffmpeg_options} ${@:2})
 
     ffmpeg -i "${input_file}" $ffmpeg_options "${output_file}"
 
@@ -179,6 +220,39 @@ function brew-installed-options
 #
 #  alias brew-reinstall-and-add-option 'brew reinstall \!:1 `brew-installed-options \!:1` \!:2*'
 #  set current_options = "`brew-installed-options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
+#
+
+
+##
+#  Proxies
+#
+function proxies-on
+{
+    export HTTP_PROXY="${http_proxy_value}"
+    export HTTPS_PROXY="${https_proxy_value}"
+    export ALL_PROXY="${all_proxy_value}"
+    export NO_PROXY="${no_proxy_value}"
+
+    export http_proxy="${HTTP_PROXY}"
+    export https_proxy="${HTTPS_PROXY}"
+    export all_proxy="${ALL_PROXY}"
+    export no_proxy="${NO_PROXY}"
+}
+#
+#
+#
+function proxies-off
+{
+    unset HTTP_PROXY
+    unset HTTPS_PROXY
+    unset ALL_PROXY
+    unset NO_PROXY
+
+    unset http_proxy
+    unset https_proxy
+    unset all_proxy
+    unset no_proxy
+}
 #
 
 
