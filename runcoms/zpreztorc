@@ -44,7 +44,6 @@ local zprezto_modules=(
     git
     python
     syntax-highlighting
-    contrib-prompt
     prompt
 )
 zstyle ':prezto:load' pmodule $zprezto_modules
