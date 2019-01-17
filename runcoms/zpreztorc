@@ -44,7 +44,6 @@ local zprezto_modules=(
     git
     python
     syntax-highlighting
-    contrib-prompt
     prompt
 )
 zstyle ':prezto:load' pmodule $zprezto_modules
@@ -176,7 +175,7 @@ zstyle ':prezto:module:prompt' theme 'powerlevel9k'
 #
 
 # Set the SSH identities to load into the agent.
-# zstyle ':prezto:module:ssh:load' identities 'id_rsa' 'id_rsa2' 'id_github'
+zstyle ':prezto:module:ssh:load' identities 'id_rsa'
 
 #
 # Syntax Highlighting

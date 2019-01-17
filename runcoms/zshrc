@@ -1,257 +1,38 @@
 #
-# Executes commands at the start of an interactive session.
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
+# This file is sourced by interactive shells. It should define aliases,
+# functions, shell options, and key bindings.
 #
 
-####################################################################################
-#  POWERLEVEL9K SETUP
 
-P9K_LEFT_PROMPT_ELEMENTS=(os_icon dir vcs)
-P9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time swift_version)
+################################################################################
+#  POWERLEVEL9K (P9K) CONFIGURATION
 
-P9K_MODE='awesome-fontconfig'
-
-P9K_LEFT_SEGMENT_SEPARATOR_ICON='\uE0C6 '
-P9K_RIGHT_SEGMENT_SEPARATOR_ICON='\uE0C7'
-P9K_SWIFT_VERSION_ICON='\uE755 '
-P9K_OS_ICON_ICON='\uF179 '
-
-P9K_DIR_HOME_ICON=''
-P9K_DIR_HOME_SUBFOLDER_ICON=''
-P9K_DIR_DEFAULT_ICON=''
-P9K_DIR_HOME_FOLDER_ABBREVIATION='\uF015 '
-P9K_DIR_SHORTEN_STRATEGY="truncate_middle"
-P9K_DIR_SHORTEN_LENGTH=3
-P9K_DIR_SHORTEN_DELIMITER="\u2425" # "\u2425" (Delete form), "\u2423" (boxy underbar)
-
-P9K_TIME_FORMAT="%D{%d.%m.%y \uF073  \uE0B3 %H:%M}"
-P9K_BATTERY_STAGES=($'\uF244 ' $'\uF243 ' $'\uF242 ' $'\uF241 ' $'\uF240 ')
-P9K_BATTERY_VERBOSE=false
-P9K_STATUS_OK=false
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p9k.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p9k.zsh"
+fi
 
 
-
-####################################################################################
-#  PREZTO LOAD
+################################################################################
+#  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
 
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
 
-
-####################################################################################
+################################################################################
 #  ALIASES
 
-##
-#  Quick Access to Fixed Paths
-alias cdios='cd ~/Projects/Development/Digital/Applications/iOS/'
-#
-
-##
-# Simpler default view for `top`
-alias top='top -stats "pid,command,cpu,mem,user"'
-#
-
-##
-#  Process List, Sorted by Time Started
-alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
-#
-
-##
-#  Application-Specific
-#
-#  Wow, remember NightHawk?  Never forget.
-#
-#alias rmnhdb='cd ~/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
-#
-
-##
-#  ffmpeg Suite
-#
-#  Hide banners
-#
-alias ffmpeg='ffmpeg -hide_banner'
-alias ffprobe='ffprobe -hide_banner'
-#
-
-##
-#  Spotlight Search This Directory Recursively
-#
-alias mdhere='mdfind -onlyin $(pwd)'
-#
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-aliases.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-aliases.zsh"
+fi
 
 
-####################################################################################
+################################################################################
 #  FUNCTIONS
 
-##
-#  General Helpers
-#
-#  unique-path <path>
-#  Checks to see if path exists, and attempts to make it unique by appending a dash
-#  and integer to the filename, prior to the extension.
-#
-function unique-path
-{
-    if [[ $# < 1 ]] then;
-        echo "[ERROR] No file path was provided."
-        return 1
-    fi
-
-    local original_path="$1"
-    local unique_path="${original_path}"
-    local index=0
-
-    while [[ -e $unique_path ]] ; do
-
-        let index++
-        unique_path="${original_path:r}-$index.${original_path:e}"
-
-    done
-
-    echo "${unique_path}"
-}
-#
-#  mygroups
-#  List my groups in a sorted, more readable way
-#
-function mygroups
-{
-    local strip_uid_regex='s/^.+groups=//'
-    local one_per_line_regex='s/(\d+)\((.+?)\),?/$2 ($1)\n/g'
-    local regex="${strip_uid_regex};${one_per_line_regex}"
-
-    id | perl -pe ${regex} | sort
-}
-#
-
-
-##
-#  ffmpeg Suite
-#
-#  ff-codec <path>
-#  Return the codec used to encode the file specified by <path>
-#
-function ff-codec
-{
-    if [[ $# < 1 ]] then;
-        echo "[ERROR] No input file was provided."
-        return 1
-    fi
-
-    local input_file="$1"
-
-    ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 "${input_file}"
-
-    return $?
-}
-#
-#  ff-m3u8-to-mp4 <stream_url>
-#  Download HLS (m3u8) MP4 Stream to File
-#  Parameter: Stream URL.
-#
-function ff-m3u8-to-mp4
-{
-    if [[ $# < 1 ]] then;
-        echo "[ERROR] No stream URL was provided."
-        return 1
-    fi
-
-    local stream_url="$1"
-    local output_file="${stream_url:h:t}-${stream_url:t:s/m3u8/mp4/}"
-
-    ffmpeg -i "${stream_url}" -preset slower "${output_file}"
-
-    return $?
-}
-#
-#  ff-mp4ify <input_path>
-#  Attempt to convert input file to mp4, if file is not already h264-encoded.
-#  Parameter 1: Input file path
-#  Parameter 2-n: Additional parameters will be used as encoder options.
-#
-function ff-mp4ify
-{
-    if [[ $# < 1 ]] then;
-        echo "[ERROR] No input file was provided."
-        return 1
-    fi
-
-    local input_file="$1"
-    local output_file=$(unique-path "${input_file:r}.mp4")
-    local ffmpeg_options=(-preset slower)
-
-    if [[ $(ff-codec "${input_file}") == "h264" ]] then;
-        ffmpeg_options=(-c:v copy)
-    fi
-
-    ffmpeg_options = (${ffmpeg_options} ${@:2})
-
-    ffmpeg -i "${input_file}" $ffmpeg_options "${output_file}"
-
-    return $?
-}
-#
-
-
-##
-#  Homebrew
-#
-#  Get options for installed package
-#  Parameter is package name.
-#
-function brew-installed-options
-{
-    if [[ $# < 1 ]] then;
-        echo "[ERROR] No package name was provided."
-        return 1
-    fi
-
-    local installation_info=$(brew info --json=v1 $1)
-
-    echo ${installation_info} | jq --raw-output ".[].installed[0].used_options | @sh"
-}
-#
-#  [WIP] Reinstall package with additional option(s)
-#
-#  alias brew-reinstall-and-add-option 'brew reinstall \!:1 `brew-installed-options \!:1` \!:2*'
-#  set current_options = "`brew-installed-options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
-#
-
-
-##
-#  Proxies
-#
-function proxies-on
-{
-    export HTTP_PROXY="${http_proxy_value}"
-    export HTTPS_PROXY="${https_proxy_value}"
-    export ALL_PROXY="${all_proxy_value}"
-    export NO_PROXY="${no_proxy_value}"
-
-    export http_proxy="${HTTP_PROXY}"
-    export https_proxy="${HTTPS_PROXY}"
-    export all_proxy="${ALL_PROXY}"
-    export no_proxy="${NO_PROXY}"
-}
-#
-#
-#
-function proxies-off
-{
-    unset HTTP_PROXY
-    unset HTTPS_PROXY
-    unset ALL_PROXY
-    unset NO_PROXY
-
-    unset http_proxy
-    unset https_proxy
-    unset all_proxy
-    unset no_proxy
-}
-#
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh"
+fi
 
 
