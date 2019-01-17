@@ -72,16 +72,23 @@ fi
 # Java
 #
 
-# Dynamically set JAVA_HOME to the currently selected JVM
-export JAVA_HOME="$(/usr/libexec/java_home)"
-
+# Dynamically set JAVA_HOME to the currently selected JVM.
+# Fail silently if it's not present.
+export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 
 
 #
 # Python
 #
 
-export PYTHONSTARTUP="~/.pythonrc"
+export PYTHONSTARTUP="/Users/v076726/.pythonrc"
+
+
+#
+# Homebrew
+#
+
+export HOMEBREW_CASK_OPTS="--appdir=~/Applications"
 
 
 #
