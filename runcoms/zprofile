@@ -33,30 +33,34 @@ fi
 # Paths
 #
 
-# Set the list of directories that cd searches.
+# Set the list of directories that zsh searches for executables, and ensure that
+# all elements are unique.
+path=(
+    ~/Local/{bin,sbin}
+    /usr/local/{bin,sbin}           # Homebrew
+    /usr/local/Homebrew/{bin,sbin}  # Homebrew (in a non-standard location at work, yay.)
+    $path
+)
+typeset -gU path
+
+# Set the list of directories that `cd <path>` searches (in addition to $PWD)
+# and ensure that all elements are unique.
 cdpath=(
     ~
     ~/Projects/Development
     $cdpath
 )
+typeset -gU cdpath
 
-# Set the list of directories that Zsh searches for programs.
-path=(
-    ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}
-    /usr/local/Homebrew/{bin,sbin}  # because Homebrew is in a non-standard location at work, yay.
-    $path
-)
-
-# Add paths to directories containing completion data
+# Add paths to directories containing completion data, and ensure that all
+# elements are unique.
 fpath=(
-    /usr/local/share/zsh/site-functions  # Homebrew
+    /usr/local/share/zsh/site-functions           # Homebrew
+    /usr/local/Homebrew/share/zsh/site-functions  # Homebrew (Work-installed location)
     $fpath
 )
+typeset -gU fpath
 
-# Ensure path arrays do not contain duplicates.
-typeset -gU cdpath fpath mailpath path
-    
     
 #
 # Less
