@@ -102,25 +102,15 @@ export PYTHONSTARTUP="${HOME}/.pythonrc"
 export HOMEBREW_CASK_OPTS="--appdir=~/Applications"
 
 
+
+
+################################################################################
+# Load External Profile Extension Files
+# THIS SECTION SHOULD BE LAST IN THIS FILE.
 #
-# HTTP Proxies
-# Define proxy values as variables, so that they can be used both here,
-# and in "aliases.mine" by the `setproxy` alias.
-#
 
-export http_proxy_value='http://proxy.jpmchase.net:8443'
-export https_proxy_value='http://proxy.jpmchase.net:8443'
-export all_proxy_value='http://proxy.jpmchase.net:8443'
-export no_proxy_value='frs-art.jpmchase.net,frs-art.dr7glb.jpmchase.net,bitbucketdc-digital-ssh.jpmchase.net,.jpmchase.net,localhost'
-
-export HTTP_PROXY="${http_proxy_value}"
-export HTTPS_PROXY="${https_proxy_value}"
-export ALL_PROXY="${all_proxy_value}"
-export NO_PROXY="${no_proxy_value}"
-
-export http_proxy="${HTTP_PROXY}"
-export https_proxy="${HTTPS_PROXY}"
-export all_proxy="${ALL_PROXY}"
-export no_proxy="${NO_PROXY}"
+for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
+    source $zprofile_file
+done
 
 
