@@ -37,8 +37,7 @@ fi
 # all elements are unique.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}           # Homebrew
-    /usr/local/Homebrew/{bin,sbin}  # Homebrew (in a non-standard location at work, yay.)
+    /usr/local/{bin,sbin}  # Homebrew
     $path
 )
 typeset -gU path
@@ -55,8 +54,7 @@ typeset -gU cdpath
 # Add paths to directories containing completion data, and ensure that all
 # elements are unique.
 fpath=(
-    /usr/local/share/zsh/site-functions           # Homebrew
-    /usr/local/Homebrew/share/zsh/site-functions  # Homebrew (Work-installed location)
+    /usr/local/share/zsh/site-functions  # Homebrew
     $fpath
 )
 typeset -gU fpath
@@ -93,14 +91,6 @@ export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 #
 
 export PYTHONSTARTUP="${HOME}/.pythonrc"
-
-
-#
-# Homebrew
-#
-
-export HOMEBREW_CASK_OPTS="--appdir=~/Applications"
-
 
 
 
