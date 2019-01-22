@@ -130,14 +130,14 @@ function ff-rotate # <video_file> <angle>
     [[ $# -ge 2 ]]  || bail 'Missing rotation argument.'   15
     [[ -v TMPDIR ]] || bail 'The $TMPDIR variable is not set.  This should have been done by macOS when your shell started.' 20
 
-    local input_file="$(realpath "$1")" || bail 'The input file does not appear to be valid.' $?
+    local input_file="$1"
     
     [[ -e $input_file ]] || bail 'The input file specified does not exist.' 30
                                                     # /path/to/foo.mp4 ($input_file)
     local      input_basename="${input_file:t}"     # foo.mp4
     local          input_name="${input_basename:r}" # foo
     local     input_extension="${input_basename:e}" # mp4
-    local     output_tmp_file="$(realpath "${TMPDIR}/${input_name}.$(uuidgen).${input_extension}")"
+    local     output_tmp_file="${TMPDIR}/${input_name}.$(uuidgen).${input_extension}"
     local input_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${input_file}")"
 
     ffmpeg -loglevel panic -i "${input_file}" -metadata:s:v rotate="$2" -codec copy "${output_tmp_file}" || bail 'FFmpeg could not apply the rotation metadata.' $?
