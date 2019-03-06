@@ -34,7 +34,6 @@ local zprezto_modules=(
     history-substring-search
     directory
     spectrum
-    gnu-utility
     utility
     completion
     autosuggestions
