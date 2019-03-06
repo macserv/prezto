@@ -9,7 +9,7 @@
 #
 function ff-codec # <path>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
+    [[ $# -ge 1 ]]  || fail 'Missing input file argument.' 10
 
     local input_file="$1"
 
@@ -26,7 +26,7 @@ function ff-codec # <path>
 #
 function ff-m3u8-to-mp4 # <stream_url>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing stream URL argument.' 10
+    [[ $# -ge 1 ]]  || fail 'Missing stream URL argument.' 10
 
     local stream_url="$1"
     local output_file="${stream_url:h:t}-${stream_url:t:s/m3u8/mp4/}"
@@ -48,7 +48,7 @@ function ff-m3u8-to-mp4 # <stream_url>
 #
 function ff-mp4ify # <stream_url>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
+    [[ $# -ge 1 ]]  || fail 'Missing input file argument.' 10
 
     local input_file="$1"
     local output_file=$(unique-path "${input_file:r}.mp4")
@@ -80,10 +80,10 @@ function ff-mp4ify # <stream_url>
 #
 function ff-rotate # <video_file> <angle>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
-    [[ $# -ge 2 ]]  || bail 'Missing rotation argument.'   15
-    [[ -e ${1} ]]   || bail 'The input file specified does not exist.' 20
-    [[ -v TMPDIR ]] || bail 'The $TMPDIR variable is not set.  This should have been done by macOS when your shell started.' 30
+    [[ $# -ge 1 ]]  || fail 'Missing input file argument.' 10
+    [[ $# -ge 2 ]]  || fail 'Missing rotation argument.'   15
+    [[ -e ${1} ]]   || fail 'The input file specified does not exist.' 20
+    [[ -v TMPDIR ]] || fail 'The $TMPDIR variable is not set.  This should have been done by macOS when your shell started.' 30
 
     local          input_file="$1"                  # /path/to/foo.mp4
     local      input_basename="${input_file:t}"     # foo.mp4
@@ -92,10 +92,10 @@ function ff-rotate # <video_file> <angle>
     local     output_tmp_file="${TMPDIR}/${input_name}.$(uuidgen).${input_extension}"
     local input_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${input_file}")"
 
-    ffmpeg -loglevel panic -i "${input_file}" -metadata:s:v rotate="$2" -codec copy "${output_tmp_file}" || bail 'FFmpeg could not apply the rotation metadata.' $?
+    ffmpeg -loglevel panic -i "${input_file}" -metadata:s:v rotate="$2" -codec copy "${output_tmp_file}" || fail 'FFmpeg could not apply the rotation metadata.' $?
     
     # N.B.: You can use the `mv` command to replace a file's contents, but preserve its metadata (label, permissions, creation date).
-    mv -f "${output_tmp_file}" "${input_file}" || bail 'The original file contents could not be replaced with the rotated video data.' $?
+    mv -f "${output_tmp_file}" "${input_file}" || fail 'The original file contents could not be replaced with the rotated video data.' $?
 
     # The last bit of metadata to restore is the original modification date, which was stored above.
     touch -m -t ${input_date_modified} "${input_file}" || echo '[WARNING] Could not restore original modification date of the input file.'
@@ -122,10 +122,10 @@ function ff-rotate # <video_file> <angle>
 #
 function ff-trim # <video_file> <clip_start_time> <clip_end_time>
 {
-    [[ $# -ge 1 ]] || bail 'Missing input file argument.' 10
-    [[ $# -ge 2 ]] || bail 'Missing clip start time.'   11
-    [[ $# -ge 3 ]] || bail 'Missing clip end time.'   12
-    [[ -e ${1} ]]  || bail 'The input file specified does not exist.' 20
+    [[ $# -ge 1 ]] || fail 'Missing input file argument.' 10
+    [[ $# -ge 2 ]] || fail 'Missing clip start time.'   11
+    [[ $# -ge 3 ]] || fail 'Missing clip end time.'   12
+    [[ -e ${1} ]]  || fail 'The input file specified does not exist.' 20
 
     local      input_file="${1}"
     local  input_basename="${input_file:t}"   
@@ -133,7 +133,7 @@ function ff-trim # <video_file> <clip_start_time> <clip_end_time>
     local      input_name="${input_basename:r}"
     local input_extension="${input_basename:e}"
     
-    ffmpeg -loglevel panic -ss ${2} -to ${3} -noaccurate_seek -i "${1}" -avoid_negative_ts make_zero -c:v copy -c:a copy || bail 'FFmpeg failed to trim the video.' $?
+    ffmpeg -loglevel panic -ss ${2} -to ${3} -noaccurate_seek -i "${1}" -avoid_negative_ts make_zero -c:v copy -c:a copy || fail 'FFmpeg failed to trim the video.' $?
     
     return 0
 }
