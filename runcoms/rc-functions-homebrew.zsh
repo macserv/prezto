@@ -24,7 +24,7 @@ function brew-dependency-graph #
 #
 function brew-installed-options # <package>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing package name argument.' 10
+    [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
     local installation_info=$(brew info --json=v1 $1)
 
