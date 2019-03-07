@@ -33,28 +33,32 @@ fi
 # Paths
 #
 
-# Set the list of directories that cd searches.
-cdpath=(
-    ~
-    $cdpath
-)
-
-# Set the list of directories that Zsh searches for programs.
+# Set the list of directories that zsh searches for executables, and ensure that
+# all elements are unique.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}
+    /usr/local/{bin,sbin}  # Homebrew
     $path
 )
+typeset -gU path
 
-# Add paths to directories containing completion data
+# Set the list of directories that `cd <path>` searches (in addition to $PWD)
+# and ensure that all elements are unique.
+cdpath=(
+    ~
+    ~/Projects/Development
+    $cdpath
+)
+typeset -gU cdpath
+
+# Add paths to directories containing completion data, and ensure that all
+# elements are unique.
 fpath=(
     /usr/local/share/zsh/site-functions  # Homebrew
     $fpath
 )
+typeset -gU fpath
 
-# Ensure path arrays do not contain duplicates.
-typeset -gU cdpath fpath mailpath path
-    
     
 #
 # Less
@@ -64,7 +68,7 @@ typeset -gU cdpath fpath mailpath path
 # Mouse-wheel scrolling has been disabled by -X (disable screen clearing).
 # Remove -X and -F (exit if the content fits on one screen) to enable it.
 #export LESS='-F -g -i -M -R -S -w -X -z-4' # Original configuration
-export  LESS='-g -i -M -R -S -w -z-4'        # Scrolling enabled
+export  LESS='-g -i -M -R -S -w -z-4'       # Scrolling enabled
 
 # Set the Less input preprocessor.
 # Try both `lesspipe` and `lesspipe.sh` as either might exist on a system.
@@ -77,12 +81,26 @@ fi
 # Java
 #
 
-# Dynamically set JAVA_HOME to the currently selected JVM
-export JAVA_HOME="$(/usr/libexec/java_home)"
+# Dynamically set JAVA_HOME to the currently selected JVM.
+# Fail silently if it's not present.
+export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 
 
 #
 # Python
 #
 
-export PYTHONSTARTUP="/Users/macserv/.pythonrc"
+export PYTHONSTARTUP="${HOME}/.pythonrc"
+
+
+
+################################################################################
+# Load External Profile Extension Files
+# THIS SECTION SHOULD BE LAST IN THIS FILE.
+#
+
+for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
+    source $zprofile_file
+done
+
+
