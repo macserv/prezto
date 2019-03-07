@@ -17,10 +17,9 @@ alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
 
 
 ##
-#  ffmpeg Suite
+#  Default Command Option Modifiers
 #
-#  Hide banners
-#
+#  ffmpeg: Hide banners
 alias ffmpeg='ffmpeg -hide_banner'
 alias ffprobe='ffprobe -hide_banner'
-
+#
