@@ -10,7 +10,7 @@
 #  Echo a log message with consistent formatting, including tracing info and
 #  a message prefix based on the severity of the message.
 #  
-#  $1: The message to be logged.
+#  $1: The message to be logged.  To read this from stdin, use '--'.
 #  $2: The log type.  This is optional, and can be any of the following.
 #      The message prefix is demonstrated to the right of the log type name.
 #
@@ -50,10 +50,14 @@
 #      [logtest.sh:23(test_logs)] [WARNING] Not great...
 #      [logtest.sh:4((anon))] [INFO] Creepy!
 #      % echo_log "One more." MANUAL
-#      [zsh:2] [MANUAL] One more.
+#      [-zsh:2] [MANUAL] One more.
 #
-function echo_log # <message> <log_type>
+function echo_log() # <message> <log_type>
 {
+    local message="${1}"
+    
+    [[ ${message} == '--' ]] && read -r message
+    
     case $2 in
         ERROR)   local prefix="[ERROR]"      ;;
         WARNING) local prefix="[WARNING]"    ;;
@@ -62,19 +66,25 @@ function echo_log # <message> <log_type>
         *)       local prefix="${2:+[${2}]}" ;;
     esac
 
-    local file=${funcfiletrace[1]##*/}
-    local func=${funcstack[2]}
+    local   file=${funcfiletrace[1]##*/}
+    local   func=${funcstack[2]}
+    local output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
     
-    echo "[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${1:+ ${1}}"
+    if [[ "${2}" != "ERROR" ]] ; then
+        echo "${output}"
+    else
+        >&2 echo "${output}"
+    fi
 }
 
+
+
 #
-#  Causes a `return` from the current function and echoes a consistently-
-#  formatted log message which includes tracing info and an "[ERROR]" prefix.
-#
-#  $1: The message to be displayed.
-#  $2: The status code to be `return`ed from the function.
-#
+#  Prints a consistently-formatted message designed for logging, which
+#  includes tracing info and an "[ERROR]" prefix, and then issues an
+#  additional `return` command (with the code of your choice) in the
+#  environment where `fail` was called.
+#  
 #  A single line...
 #
 #      eject_warp_core || fail "Ejector systems off-line ($?)!" $?
@@ -88,14 +98,29 @@ function echo_log # <message> <log_type>
 #          return $eject_status
 #      fi
 #
-function fail # <message> <status>
+#  As a result of the extra `return` command, if `fail` is called within
+#  a function, execution of that function will end, and control will
+#  return to the parent environment.  Similarly, if `fail` is used in
+#  a "one-liner" list of commands, any subsequent commands will not be
+#  executed.  A subshell can be used to allow a one-liner to continue.
+#
+#    % fail 'Bar' || echo 'Baz'
+#    [-zsh:1] [ERROR] Bar
+#    % ( fail 'Bar' ) || echo 'Baz'
+#    [-zsh:9] [ERROR] Bar
+#    Baz#
+#  
+#  $1: The message to be displayed.
+#  $2: The status code to be `return`ed from the function.
+#
+function fail() # <message> <status>
 {
     local fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     local fail_status=${2:-1}
     
-    trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}" EXIT
+    trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
 
-    return ${fail_status}
+    return
 }
 
 
@@ -110,15 +135,13 @@ function fail # <message> <status>
 #
 function unique-path # <path>
 {
-    [[ $# -ge 1 ]]  || fail 'Missing input path argument.' 10
-
-    local original_path="$()$1"
-    local unique_path="${original_path}"
-    local index=0
+    local original_path="${1}" ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
+    local   unique_path="${original_path}"
+    local         index=0
 
     while [[ -e $unique_path ]] ; do
 
-        let index++
+        (( index++ ))
         unique_path="${original_path:r}-$index.${original_path:e}"
 
     done
