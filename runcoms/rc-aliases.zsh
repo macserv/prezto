@@ -31,3 +31,10 @@ alias pylint='pylint --disable=bad-whitespace,trailing-whitespace,line-too-long,
 #  jq: Indent 4 spaces by default
 alias jq='jq --indent 4'
 
+
+##
+#  Git convenience additions
+#
+#  Open difftool with directory diff
+alias gD='git difftool --dir-diff'
+
