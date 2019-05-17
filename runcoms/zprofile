@@ -1,4 +1,4 @@
-#
+################################################################################
 # Executes commands at login pre-zshrc.
 #
 # Authors:
@@ -41,6 +41,15 @@ path=(
     $path
 )
 typeset -gU path
+
+# Set the list of directories that `cd <path>` searches (in addition to $PWD)
+# and ensure that all elements are unique.
+cdpath=(
+    ~
+    ~/Projects/Development
+    $cdpath
+)
+typeset -gU cdpath
 
 # Set the list of directories that `cd <path>` searches (in addition to $PWD)
 # and ensure that all elements are unique.

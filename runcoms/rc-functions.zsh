@@ -6,6 +6,126 @@
 ################################################################################
 #  SHARED / HELPERS
 
+#
+#  Echo a log message with consistent formatting, including tracing info and
+#  a message prefix based on the severity of the message.
+#  
+#  $1: The message to be logged.  To read this from stdin, use '--'.
+#  $2: The log type.  This is optional, and can be any of the following.
+#      The message prefix is demonstrated to the right of the log type name.
+#
+#      ERROR    | "[ERROR] <message>"
+#      WARNING  | "[WARNING] <message>"
+#      INFO     | "[INFO] <message>"
+#      DEBUG    | "[DEBUG] <message>"
+#      <custom> | "[<custom>] <message>"
+#      (none)   | "<message>"
+#
+#  The tracing info contains the following three pieces of information:
+#
+#      * The base name of the script being executed.
+#            * If `echo_log` is invoked on the command line, this will be the
+#              name of the shell (e.g. 'zsh').
+#            * If `echo_log` is invoked from within a function created on the
+#              command line, this will be empty.
+#      * The line number of the `echo_log` statement within the script.
+#            * If `echo_log` is invoked on the command line, this represents
+#              the history event of the command.
+#      * The function within which `echo_log` was called.  If function calls
+#        are nested, this is the function nearest the top of the stack.
+#            * If `echo_log` is invoked within an anonymous function, this will
+#              report as '(anon)`.
+#
+#  Example:
+#      function test_logs { echo_log
+#                           echo_log '' ERROR
+#                           echo_log 'Mark!'
+#                           echo_log 'Not great...' WARNING
+#                           function { echo_log 'Creepy!' INFO } }
+#  Output:
+#      % test_logs
+#      [logtest.sh:20(test_logs)]
+#      [logtest.sh:21(test_logs)] [ERROR]
+#      [logtest.sh:22(test_logs)] Mark!
+#      [logtest.sh:23(test_logs)] [WARNING] Not great...
+#      [logtest.sh:4((anon))] [INFO] Creepy!
+#      % echo_log "One more." MANUAL
+#      [-zsh:2] [MANUAL] One more.
+#
+function echo_log() # <message> <log_type>
+{
+    local message="${1}"
+    
+    [[ ${message} == '--' ]] && read -r message
+    
+    case $2 in
+        ERROR)   local prefix="[ERROR]"      ;;
+        WARNING) local prefix="[WARNING]"    ;;
+        INFO)    local prefix="[INFO]"       ;;
+        DEBUG)   local prefix="[DEBUG]"      ;;
+        *)       local prefix="${2:+[${2}]}" ;;
+    esac
+
+    local   file=${funcfiletrace[1]##*/}
+    local   func=${funcstack[2]}
+    local output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
+    
+    if [[ "${2}" != "ERROR" ]] ; then
+        echo "${output}"
+    else
+        >&2 echo "${output}"
+    fi
+}
+
+
+
+#
+#  Prints a consistently-formatted message designed for logging, which
+#  includes tracing info and an "[ERROR]" prefix, and then issues an
+#  additional `return` command (with the code of your choice) in the
+#  environment where `fail` was called.
+#  
+#  A single line...
+#
+#      eject_warp_core || fail "Ejector systems off-line ($?)!" $?
+#
+#  ... replaces this...
+#
+#      eject_warp_core
+#      eject_status=$?
+#      if [ eject_status -neq 0 ] ; then
+#          echo_log "Ejector systems off-line (${eject_status})!" ERROR
+#          return $eject_status
+#      fi
+#
+#  As a result of the extra `return` command, if `fail` is called within
+#  a function, execution of that function will end, and control will
+#  return to the parent environment.  Similarly, if `fail` is used in
+#  a "one-liner" list of commands, any subsequent commands will not be
+#  executed.  A subshell can be used to allow a one-liner to continue.
+#
+#    % fail 'Bar' || echo 'Baz'
+#    [-zsh:1] [ERROR] Bar
+#    % ( fail 'Bar' ) || echo 'Baz'
+#    [-zsh:9] [ERROR] Bar
+#    Baz#
+#  
+#  $1: The message to be displayed.
+#  $2: The status code to be `return`ed from the function.
+#
+function fail() # <message> <status>
+{
+    local fail_message="${1:-An error ${2:+(${2}) }occurred.}"
+    local fail_status=${2:-1}
+    local input_file="$(realpath "$1")" || bail 'The input file does not appear to be valid.' $?
+    local     output_tmp_file="$(realpath "${TMPDIR}/${input_name}.$(uuidgen).${input_extension}")"
+    
+    trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
+
+    return
+}
+
+
 # 
 #  Determines whether or not a file or directory exists at the given path.
 #
@@ -17,15 +137,13 @@
 #
 function unique-path # <path>
 {
-    [[ $# -ge 1 ]]  || bail 'Missing input path argument.' 10
-
-    local original_path="$()$1"
-    local unique_path="${original_path}"
-    local index=0
+    local original_path="${1}" ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
+    local   unique_path="${original_path}"
+    local         index=0
 
     while [[ -e $unique_path ]] ; do
 
-        let index++
+        (( index++ ))
         unique_path="${original_path:r}-$index.${original_path:e}"
 
     done
@@ -34,169 +152,3 @@ function unique-path # <path>
 }
 
 
-function bail # <message> <status>
-{
-    TRAPEXIT() { return $? }
-
-    echo "[ERROR] ${1:-An error occurred.}"
-    
-    return ${2:-1}
-}
-
-
-################################################################################
-#  FFMPEG
-
-#
-#  Checks the codec used to encode a video file, and returns just the encoder
-#  name, with no other information.
-#  
-#  $1: Path to video file.
-#
-function ff-codec # <path>
-{
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
-
-    local input_file="$1"
-
-    ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 "${input_file}"
-
-    return $?
-}
-
-
-#
-#  Download HLS (m3u8) MP4 Stream to File
-#  
-#  $1: URL to m3u8 file containing HLS stream configuration data.
-#
-function ff-m3u8-to-mp4 # <stream_url>
-{
-    [[ $# -ge 1 ]]  || bail 'Missing stream URL argument.' 10
-
-    local stream_url="$1"
-    local output_file="${stream_url:h:t}-${stream_url:t:s/m3u8/mp4/}"
-
-    ffmpeg -i "${stream_url}" -preset slower "${output_file}"
-
-    return $?
-}
-
-
-#
-#  Convert file to mp4 (h264).
-#
-#  If video stream is already encoded using 'h264', it will be copied into the
-#  new wrapper.  Otherwise, it will be converted, using the '-preset slower'
-#  option, for better quality.
-#
-#  $1: File to convert to mp4.
-#
-function ff-mp4ify # <stream_url>
-{
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
-
-    local input_file="$1"
-    local output_file=$(unique-path "${input_file:r}.mp4")
-    local ffmpeg_options=(-preset slower)
-
-    if [[ $(ff-codec "${input_file}") == "h264" ]] then;
-        ffmpeg_options=(-c:v copy)
-    fi
-
-    ffmpeg -i "${input_file}" $ffmpeg_options "${output_file}"
-
-    return $?
-}
-
-
-#
-#  "Rotate" video file.
-#
-#  This only adds metadata to the video; it does not re-encode the
-#  video in a rotated orientation.  This does not re-encode the video,
-#  which has two benefits: it's fast, and does not impact the video
-#  quality.
-#  
-#  It does require the player to interpret the metadata, so if your
-#  player is crap, the video may not be presented with rotation.
-#
-#  $1: The path to the file to be rotated.
-#  $2: The rotation which should be applied when played.
-#
-function ff-rotate # <video_file> <angle>
-{
-    [[ $# -ge 1 ]]  || bail 'Missing input file argument.' 10
-    [[ $# -ge 2 ]]  || bail 'Missing rotation argument.'   15
-    [[ -v TMPDIR ]] || bail 'The $TMPDIR variable is not set.  This should have been done by macOS when your shell started.' 20
-
-    local input_file="$1"
-    
-    [[ -e $input_file ]] || bail 'The input file specified does not exist.' 30
-                                                    # /path/to/foo.mp4 ($input_file)
-    local      input_basename="${input_file:t}"     # foo.mp4
-    local          input_name="${input_basename:r}" # foo
-    local     input_extension="${input_basename:e}" # mp4
-    local     output_tmp_file="${TMPDIR}/${input_name}.$(uuidgen).${input_extension}"
-    local input_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${input_file}")"
-
-    ffmpeg -loglevel panic -i "${input_file}" -metadata:s:v rotate="$2" -codec copy "${output_tmp_file}" || bail 'FFmpeg could not apply the rotation metadata.' $?
-    
-    # This is how you replace a file's contents, but preserve its metadata (label, permissions, creation date).
-    mv -f "${output_tmp_file}" "${input_file}" || bail 'The original file contents could not be replaced with the rotated video data.' $?
-
-    # The last bit of metadata to restore is the original modification date, which was stored above.
-    touch -m -t ${input_date_modified} "${input_file}" || echo '[WARNING] Could not restore original modification date of the input file.'
-
-    return 0
-}
-
-
-
-################################################################################
-#  HOMEBREW
-
-#
-#  Generate .png of dependency tree for installed packages
-#
-#  Required Packages:
-#      brew install martido/brew-graph/brew-graph
-#      brew install graphviz
-#
-function brew-dependency-graph
-{
-    brew-graph --installed --highlight-leaves | dot -Tpng -oBrewDependencies.png
-}
-
-
-#
-#  Get options for installed package
-#
-#  Required Packages:
-#      brew install jq
-#
-#  $1: Installed package name.
-#
-function brew-installed-options # <package>
-{
-    [[ $# -ge 1 ]]  || bail 'Missing package name argument.' 10
-
-    local installation_info=$(brew info --json=v1 $1)
-
-    echo ${installation_info} | jq --raw-output ".[].installed[0].used_options | @sh"
-}
-
-
-#
-#  brew-reinstall-and-add-option <package> <options>
-#  [WIP] Reinstall package with additional option(s)
-#  - Parameters
-#      - package: Installed package name
-#      - options: The options to add when re-installing.
-#  - Example
-#      % brew-reinstall-and-add-option ffmpeg --with-libbluray --with-srt
-#
-#  # TODO: We're in zsh now... do this as a function.
-#  alias brew-reinstall-and-add-option 'brew reinstall \!:1 `brew-installed-options \!:1` \!:2*'
-#  set current_options = "`brew-installed-options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
-#
