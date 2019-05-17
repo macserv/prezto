@@ -8,8 +8,6 @@
 # ZLE_RPROMPT_INDENT=0   # Removes space after RPROMPT.  Causes cursor positioning issues.
 # ZLE_RPROMPT_INDENT=-1  # Avoids cursor issue, but causes issues with Terminal.app line clearing.
 
-P9K_RIGHT_PROMPT_LAST_SEGMENT_END_SYMBOL='^'
-
 P9K_LEFT_PROMPT_ELEMENTS=(os_icon dir vcs root_indicator)
 P9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time swift_version)
 
