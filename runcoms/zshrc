@@ -12,7 +12,6 @@
 #zmodload zsh/zprof
 
 
-
 ################################################################################
 #  POWERLEVEL9K (P9K) CONFIGURATION
 
@@ -23,7 +22,6 @@ fi
 for rc_p9k_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p9k-*.zsh(.N); do
     source $rc_p9k_file
 done
-
 
 
 ################################################################################
@@ -56,10 +54,6 @@ done
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh" ]]; then
     source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh"
 fi
-
-for rc_functions_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions-*.zsh(.N); do
-    source $rc_functions_file
-done
 
 for rc_functions_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions-*.zsh(.N); do
     source $rc_functions_file

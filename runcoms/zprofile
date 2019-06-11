@@ -37,19 +37,11 @@ fi
 # all elements are unique.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}  # Homebrew
+    /usr/local/{bin,sbin}   # Homebrew
+    ~/.composer/vendor/bin  # Composer (PHP)
     $path
 )
 typeset -gU path
-
-# Set the list of directories that `cd <path>` searches (in addition to $PWD)
-# and ensure that all elements are unique.
-cdpath=(
-    ~
-    ~/Projects/Development
-    $cdpath
-)
-typeset -gU cdpath
 
 # Set the list of directories that `cd <path>` searches (in addition to $PWD)
 # and ensure that all elements are unique.

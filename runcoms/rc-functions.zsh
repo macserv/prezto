@@ -117,8 +117,6 @@ function fail() # <message> <status>
 {
     local fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     local fail_status=${2:-1}
-    local input_file="$(realpath "$1")" || bail 'The input file does not appear to be valid.' $?
-    local     output_tmp_file="$(realpath "${TMPDIR}/${input_name}.$(uuidgen).${input_extension}")"
     
     trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
 
