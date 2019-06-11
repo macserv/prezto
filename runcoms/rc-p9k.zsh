@@ -4,6 +4,10 @@
 #
 #
 
+
+# ZLE_RPROMPT_INDENT=0   # Removes space after RPROMPT.  Causes cursor positioning issues.
+# ZLE_RPROMPT_INDENT=-1  # Avoids cursor issue, but causes issues with Terminal.app line clearing.
+
 P9K_LEFT_PROMPT_ELEMENTS=(os_icon dir vcs root_indicator)
 P9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time swift_version)
 
@@ -27,5 +31,5 @@ P9K_BATTERY_STAGES=($'\uF244 ' $'\uF243 ' $'\uF242 ' $'\uF241 ' $'\uF240 ')
 P9K_BATTERY_VERBOSE=false
 P9K_STATUS_OK=false
 
-P9K_ROOT_INDICATOR_ICON='\u26A1'
+P9K_ROOT_INDICATOR_ICON='\uF0E7'
 P9K_ROOT_INDICATOR_BACKGROUND='darkred'

@@ -34,7 +34,6 @@ local zprezto_modules=(
     history-substring-search
     directory
     spectrum
-#   gnu-utility
     utility
     completion
     autosuggestions
@@ -82,7 +81,7 @@ zstyle ':prezto:module:editor' key-bindings 'emacs'
 
 # Override the text shown while completion is running.
 # Overriding to use a character from PragmataPro. ~macserv
-zstyle ':prezto:module:editor:info:completing' format '\uF110 '
+zstyle ':prezto:module:editor:info:completing' format '\u231B'
 
 #
 # Git

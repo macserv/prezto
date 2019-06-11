@@ -3,6 +3,14 @@
 # functions, shell options, and key bindings.
 #
 
+################################################################################
+#  PROFILING
+#
+#  Enable the command below this comment and the command at the end of .zshrc
+#  in the "PROFILING (continued)" section to generate timing output from
+#  zsh's built-in order-blind profiler.
+#zmodload zsh/zprof
+
 
 ################################################################################
 #  POWERLEVEL9K (P9K) CONFIGURATION
@@ -51,4 +59,13 @@ for rc_functions_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions-*.zsh(.
     source $rc_functions_file
 done
 
+
+################################################################################
+#  PROFILING (continued)
+#  THIS SECTION SHOULD BE LAST IN zshrc.
+#  
+#  Enable the command below this comment and the command at the beginning of
+#  .zshrc in the "PROFILING" section to generate timing output from zsh's
+#  built-in order-blind profiler.
+#zprof
 
