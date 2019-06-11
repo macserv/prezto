@@ -37,7 +37,8 @@ fi
 # all elements are unique.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}  # Homebrew
+    /usr/local/{bin,sbin}   # Homebrew
+    ~/.composer/vendor/bin  # Composer (PHP)
     $path
 )
 typeset -gU path
