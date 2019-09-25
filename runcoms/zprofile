@@ -37,8 +37,10 @@ fi
 # all elements are unique.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}   # Homebrew
-    ~/.composer/vendor/bin  # Composer (PHP)
+    /usr/local/{bin,sbin}    # Homebrew
+    /usr/local/opt/ruby/bin  # Homebrew Ruby
+    ~/.composer/vendor/bin   # Composer (PHP)
+    ~/.mozbuild/git-cinnabar # mozilla
     $path
 )
 typeset -gU path
