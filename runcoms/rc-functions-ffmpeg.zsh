@@ -53,7 +53,7 @@ function ff-m3u8-to-mp4() # <stream_url>
 {
     local stream_url output_file
 
-     stream_url="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for stream URL is missing or empty.' 10
+     stream_url="${1}" ; [[ -n "${stream_url}" ]] || fail 'Argument for stream URL is missing or empty.' 10
     output_file=$(unique-path "${stream_url:h:t}-${stream_url:t:r}.mp4")
 
     ffmpeg -i "${stream_url}" ${FFMPEG_H264_OPTIONS[*]} "${output_file}"
