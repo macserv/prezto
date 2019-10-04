@@ -8,9 +8,9 @@
 #      brew install martido/brew-graph/brew-graph
 #      brew install graphviz
 #
-function brew-dependency-graph #
+function brew-dependency-graph() #
 {
-    brew-graph --installed --highlight-leaves | dot -Tpng -oBrewDependencies.png
+    brew-graph --installed --highlight-leaves --highlight-outdated | dot -Tpdf -oBrewDependencies.pdf
 }
 
 
@@ -22,13 +22,13 @@ function brew-dependency-graph #
 #
 #  $1: Installed package name.
 #
-function brew-installed-options # <package>
+function brew-installed-options() # <package>
 {
     [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
     local installation_info=$(brew info --json=v1 $1)
 
-    echo ${installation_info} | jq --raw-output ".[].installed[0].used_options | @sh"
+    jq --raw-output ".[].installed[0].used_options | @sh" <<< "${installation_info}"
 }
 
 
