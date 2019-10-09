@@ -73,21 +73,19 @@ function ff-m3u8-to-mp4() # <stream_url>
 #
 function ff-mp4ify() # <stream_url>
 {
-    local input_file output_file ffmpeg_options input_date_modified duration out_time
+    local input_file output_file ffmpeg_options duration out_time
 
              input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
             output_file=$(unique-path "${input_file:r}.mp4")
          ffmpeg_options=( ${FFMPEG_H264_OPTIONS[*]} )
-    input_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${input_file}")"
                duration=$(ff-duration "${input_file}") || unset duration
 
-    # Strip conversion options if file is already h264-encoded.
+    # Bypass h264-related ffmpeg options if file is already h264-encoded.
     [[ $(ff-codec "${input_file}") == "h264" ]] && ffmpeg_options=(-c:v copy)
 
-    # Run ffmpeg and watch output for frame updates, logging progress on single line per file.
-    
     echo -n "Writing '${output_file}'..." 
     
+    # Convert and use progress updates to log timestamp to single line per file.
     ffmpeg -loglevel fatal -progress /dev/stdout -i "${input_file}" ${ffmpeg_options[*]} "${output_file}" | while read -r line
     do
         [[ "${line}" =~ "out_time=" ]] && 
@@ -102,18 +100,16 @@ function ff-mp4ify() # <stream_url>
     
     [[ ${pipestatus[1]} -eq 0 ]] ||
     { 
-        echo
         [[ -f ${output_file} ]] && rm -f "${output_file}"
-        fail "Failed to convert '${input_file}'." 30
+        echo ; fail "Failed to convert '${input_file}'." 30
     }
 
     echo -ne "\r\033[2K" # (CR and clear line)
     echo "Writing '${output_file}' - done!" 
 
     # Force-move file to original file's path, replacing its contents.
-    mv -f      "${output_file}"        "${input_file}"  || fail 'The original file contents could not be replaced with the converted video data.' $?
-    mv         "${input_file}"         "${output_file}" || fail 'The converted video file could not be renamed after replacing the original file.' $?
-    touch -m -t ${input_date_modified} "${output_file}" || echo_log "Could not set modification date of ${output_file} to match ${input_file}" WARNING
+    mv_replace "${output_file}" "${input_file}"  || fail 'The original file contents could not be replaced with the converted video data.' $?
+    mv         "${input_file}"  "${output_file}" || fail 'The converted video file could not be renamed after replacing the original file.' $?
 
     return $?
 }
@@ -148,11 +144,7 @@ function ff-rotate() # <video_file> <angle>
 
     ffmpeg -loglevel fatal -i "${input_file}" -metadata:s:v rotate="${rotation}" -codec copy "${output_tmp_file}" || fail 'FFmpeg could not apply the rotation metadata.' $?
     
-    # TIL: You can use the `mv` command to replace a file's contents, but preserve its metadata (label, permissions, creation date).
-    mv -f "${output_tmp_file}" "${input_file}" || fail 'The original file contents could not be replaced with the rotated video data.' $?
-
-    # The last bit of metadata to restore is the original modification date, which was stored above.
-    touch -m -t ${input_date_modified} "${input_file}" || echo_log 'Could not restore original modification date of the input file.' WARNING
+    mv_replace "${output_tmp_file}" "${input_file}" || fail 'The original file contents could not be replaced with the rotated video data.' $?
 
     return 0
 }
@@ -174,18 +166,15 @@ function ff-rotate() # <video_file> <angle>
 #
 function ff-trim() # <video_file> <clip_start_time> <clip_end_time>
 {
-    [[ $# -ge 1 ]] || fail 'Missing input file argument.' 10
-    [[ $# -ge 2 ]] || fail 'Missing clip start time.'   11
-    [[ $# -ge 3 ]] || fail 'Missing clip end time.'   12
-    [[ -e ${1} ]]  || fail 'The input file specified does not exist.' 20
-
-    local      input_file="${1}"
-    local  input_basename="${input_file:t}"   
-    local      input_name="${input_basename:r}"
-    local input_extension="${input_basename:e}"
+    local input_file start_time end_time output_file
+    
+     input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
+     start_time="${2}" ; [[ -n "${start_time}" ]]                       || fail 'Argument for clip start time is missing or empty.' 11
+       end_time="${3}" ; [[ -n "${end_time}"   ]]                       || fail 'Argument for clip end time is missing or empty.' 12
+    output_file=$(unique-path "${input_file:r}-trim.${input_file:e}")
  
     # NOTE: The ordering of these arguments is very important in order to achieve the expected trimming behavior.
-    ffmpeg -loglevel panic -ss ${2} -to ${3} -noaccurate_seek -i "${1}" -avoid_negative_ts make_zero -c:v copy -c:a copy || fail 'FFmpeg failed to trim the video.' $?
+    ffmpeg -loglevel panic -ss ${start_time} -to ${end_time} -noaccurate_seek -i "${input_file}" -avoid_negative_ts make_zero -c:v copy -c:a copy "${output_file}" || fail 'FFmpeg failed to trim the video.' $?
     
     return 0
 }

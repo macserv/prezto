@@ -133,7 +133,7 @@ function fail() # <message> <status>
 #
 #  $1: Path to test for uniqueness
 #
-function unique-path # <path>
+function unique-path() # <path>
 {
     local original_path="${1}" ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
     local   unique_path="${original_path}"
@@ -149,4 +149,21 @@ function unique-path # <path>
     echo "${unique_path}"
 }
 
+
+#
+#  Replace the contents of target_file with those of source_file, preserving
+#  the metadata and modification date of the target_file.
+#
+function mv_replace() # <source_file> <target_file>
+{
+    local source_file target_file target_date_modified
+    
+    source_file="${1}" ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
+    target_file="${2}" ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
+    
+    target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")"
+    
+    mv    -f       "${source_file}"          "${target_file}" || fail     'Could not replace target file contents with source.' $?
+    touch -c -m -t "${target_date_modified}" "${target_file}" || echo_log 'Could not reset target file modification date to pre-operation date.' WARNING
+}
 

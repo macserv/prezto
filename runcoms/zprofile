@@ -107,3 +107,5 @@ for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
 done
 
 
+
+export PATH="$HOME/.cargo/bin:$PATH"
