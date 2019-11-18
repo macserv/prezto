@@ -61,6 +61,8 @@ function git-repo-url-components() # <repo_url>
 }
 
 
+
+
 #
 #
 #
@@ -114,7 +116,7 @@ function git-clone-fork-with-parent-owner() # <fork_repo_url> <blessed_repo_owne
     [[ -n "${2}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 20
     
     echo
-    { git-clone-cd "${1}" && git-add-blessed-remote-with-owner "${2}" } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
+    { git-clone-cd "${1}" && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
 }
 
 
@@ -149,3 +151,46 @@ function github-clone() # <repo_url>
 
     fi
 }
+
+
+#
+# Pull all changes from upstream ("blessed") remote to the repo
+# origin.
+#
+function git-fork-sync() # <upstream_remote> <origin_remote> 
+{
+    local default_origin  ;  default_origin="origin"
+    local upstream_remote ; upstream_remote="${1}" ; [[ -n "${upstream_remote}" ]] || fail 'Argument for upstream remote name is missing or empty.' 20
+    local origin_remote   ;   origin_remote="${2}" ; [[ -n "${origin_remote}"   ]] || { origin_remote="${default_origin}" ; echo_log "Using default ('${origin_remote}') as name for origin remote." INFO ; }
+    
+    echo
+
+
+    for branch in $(git ls-remote --heads "${upstream_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') ; do
+
+        echo -n "Checking out '${branch}'... trying local... "
+
+        git checkout "${branch}" &> /dev/null ||
+        {
+            echo -n "trying '${origin_remote}'... "
+            { git fetch ${origin_remote} ${branch} &> /dev/null && git checkout -b "${branch}" --track "${origin_remote}/${branch}" &> /dev/null } ||
+            {
+                echo -n "using '${upstream_remote}'... "
+                git fetch ${upstream_remote} ${branch} &> /dev/null && git checkout -b "${branch}" --track "${upstream_remote}/${branch}" &> /dev/null || { echo ; fail "Unable to checkout '${branch}'." 30 ; }
+            }
+        }
+        
+        echo -n "complete.  Syncing '${branch}'... "
+        
+        [[ -z "$(git --no-pager log "^${origin_remote}/${branch}" "${branch}")" ]] || { echo ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
+        
+        git pull "${upstream_remote}" "${branch}" &> /dev/null || { echo ; fail "Unable to pull changes from '${upstream_remote}' into '${branch}'." 50 ; }
+        git push "${origin_remote}"   "${branch}" &> /dev/null || { echo ; fail "Unable to push changes to '${origin_remote}' for '${branch}'." 60 ; }
+        
+        echo "done."
+        echo
+
+    done
+}
+
+

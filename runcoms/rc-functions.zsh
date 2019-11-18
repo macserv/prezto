@@ -133,7 +133,7 @@ function fail() # <message> <status>
 #
 #  $1: Path to test for uniqueness
 #
-function unique-path # <path>
+function unique-path() # <path>
 {
     local original_path="${1}" ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
     local   unique_path="${original_path}"
@@ -149,4 +149,109 @@ function unique-path # <path>
     echo "${unique_path}"
 }
 
+
+#
+#  Replace the contents of target_file with those of source_file, preserving
+#  the metadata and modification date of the target_file.
+#
+function mv_replace() # <source_file> <target_file>
+{
+    local source_file target_file target_date_modified
+    
+    source_file="${1}" ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
+    target_file="${2}" ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
+    
+    target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")"
+    
+    mv    -f       "${source_file}"          "${target_file}" || fail     'Could not replace target file contents with source.' $?
+    touch -c -m -t "${target_date_modified}" "${target_file}" || echo_log 'Could not reset target file modification date to pre-operation date.' WARNING
+}
+
+
+#
+#   Options:
+#       --validate-only : Dry run.  Print matching files without modification.
+#
+#   Arguments:
+#       <description pattern> : Each file specified by <input files> will be
+#           scanned by the 'file --brief' command.  If its description matches
+#           this pattern, its extension will be checked against the provided
+#           list of <"valid extensions">.
+#
+#       <"valid extensions"> : Space-separated list of valid extensions for
+#           files matching the <description pattern>.
+#
+#       <replacement extension> : The extension which should be appended to
+#           files which, according to the above criteria, do not have a valid
+#           extension.
+#  
+#       <input files> : The file, files, or glob to be processed.
+#
+#   Example:  Add the extension 'jpg' to files (only) WHICH have no extension,
+#       AND are identified by the 'file' command as a JPEG file,
+#       AND do not have one of the following extensions:
+#       'jpg', 'JPG', 'jpeg', or 'JPEG'.
+#
+#       add_missing_extension_for_file_description \
+#           'JPEG*' 'jpg JPG jpeg JPEG' 'jpg' ^*.*(.)
+#
+function add_missing_extension_for_file_description() # [--validate-only] <description pattern> <"valid extensions"> <replacement extension> <input files>
+{
+    local validate_only file_command_pattern replacement_extension 
+    local -a valid_extensions input_files
+    
+    [[ "${1}" = '--validate-only' ]] &&
+    { 
+        echo "Validating only... no modifications will be made."
+        validate_only="YES"
+        shift
+    }
+    
+    [[ -n "${1}" ]] || fail "Argument for 'file --brief' match pattern is missing or empty" 10
+    file_command_pattern="${1}"
+    
+    shift ; [[ -n "${1}" ]] || fail 'Argument for valid extensions is missing, empty, or not an array' 20
+    valid_extensions=( ${(ps: :)1} )
+    
+    shift ; [[ -n "${1}" ]] || fail "Argument for replacement extension is missing or empty" 30
+    replacement_extension="${1}"
+    
+    shift ; (( ${#@} )) || fail "Input file(s) missing or empty" 40
+    input_files=( ${@} )
+    
+    for input_file ( ${input_files} )
+    {
+        [[ "$(file --brief "$input_file")" = ${~file_command_pattern} ]] || continue
+      
+        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(Ie)${input_file:e}] )) } ||                                  
+        {
+            echo "WRONG EXTENSION: ${input_file}"
+            [[ "${validate_only}" = "YES" ]] || mv "${input_file}" "${input_file}.${replacement_extension}"
+        }
+    }
+}
+
+
+
+#
+#  Ask xcode-select to download and install the command-line tools for Xcode
+#
+function install_command_line_tools()
+{
+    local package_name swu_status trigger_file_path
+    
+    trigger_file_path="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+
+    
+    # The presence of this file causes `softwareupdate` to include Command Line Tool packages.
+    touch "${trigger_file_path}" || return 1
+    
+    echo_debug "Installing / Updating Command-Line Tools..."
+    package_name="$( softwareupdate --verbose --list | grep "\*.*Command Line" | tail -n 1 | sed -e 's/^ *\* *//' | tr -d '\n' )" || return 1
+    
+    softwareupdate --verbose --install "${package_name}" ; swu_status=$?
+    
+    rm -f "${trigger_file_path}"
+    return $swu_status
+}
 
