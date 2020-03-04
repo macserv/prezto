@@ -24,7 +24,7 @@ alias ffmpeg='ffmpeg -hide_banner'
 alias ffprobe='ffprobe -hide_banner'
 #
 #  flake8: Default ignore options
-alias flake8='flake8 --ignore=E501,E203,W293,E303,W391,E221'
+alias flake8='flake8 --show-source --ignore=W,E501,E203,W293,E303,E221'
 #  pylint: Default ignore options
 alias pylint='pylint --disable=bad-whitespace,trailing-whitespace,line-too-long,trailing-newlines'
 #

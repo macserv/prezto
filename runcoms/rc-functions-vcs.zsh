@@ -98,38 +98,39 @@ function git-add-blessed-remote-with-owner() # <blessed_owner> <blessed_url>
 #
 #
 #
-function git-clone-cd() # <repo_url>
+function git-clone-cd() # <repo_url> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
 
-    git clone "${1}" || fail "Unable to clone repository at ${1}" 20
-    cd "${1:t:r}"    || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
+    git clone "${1}" "${2}" || fail "Unable to clone repository at ${1}" $?
+    cd "${1:t:r}"           || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
 }
 
 
 #
 #
 #
-function git-clone-fork-with-parent-owner() # <fork_repo_url> <blessed_repo_owner>
+function git-clone-fork-with-parent-owner() # <fork_repo_url> <blessed_repo_owner> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
     [[ -n "${2}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 20
     
     echo
-    { git-clone-cd "${1}" && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
+    { git-clone-cd "${1}" "${2}" && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
 }
 
 
 #
 #
 #
-function github-clone() # <repo_url>
+function github-clone() # <repo_url> [<repo_dir>]
 {
     [[ -n "${GITHUB_ACCESS_TOKEN}" ]] || fail "Unable to continue: Shell parameter 'GITHUB_ACCESS_TOKEN' is unset or empty."  5
 
-    local repo_url components repo_owner repo_name github_api query_json api_response parent_owner
+    local repo_url repo_dir components repo_owner repo_name github_api query_json api_response parent_owner
     
     repo_url="${1}" ; [[ -n "${repo_url}" ]]                || fail 'Argument for repository URL is missing or empty.' 10
+    repo_dir="${2}"
     components=( $(git-repo-url-components "${repo_url}") ) || fail "Could not parse owner for '${repo_url}'."         20
     repo_owner=${components[4]}
     repo_name=${components[6]}
@@ -144,10 +145,10 @@ function github-clone() # <repo_url>
     parent_owner=$( jq --raw-output '.data.repository.parent.owner.login' <<< "${api_response}" )
     
     if [[ ${parent_owner} != 'null' ]] ; then
-        git-clone-fork-with-parent-owner "${repo_url}" "${parent_owner}"
+        git-clone-fork-with-parent-owner "${repo_url}" "${parent_owner}" "${repo_dir}"
 
     else
-        git-clone-cd "${repo_url}"
+        git-clone-cd "${repo_url}" "${repo_dir}"
 
     fi
 }
