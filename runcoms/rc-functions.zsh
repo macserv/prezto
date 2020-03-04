@@ -135,7 +135,7 @@ function fail() # <message> <status>
 #
 function unique-path() # <path>
 {
-    local original_path="${1}" ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
+    local original_path=${~"${1}"} ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
     local   unique_path="${original_path}"
     local         index=0
 
@@ -158,8 +158,8 @@ function mv_replace() # <source_file> <target_file>
 {
     local source_file target_file target_date_modified
     
-    source_file="${1}" ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
-    target_file="${2}" ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
+    source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
+    target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
     
     target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")"
     
@@ -221,12 +221,14 @@ function add_missing_extension_for_file_description() # [--validate-only] <descr
     
     for input_file ( ${input_files} )
     {
-        [[ "$(file --brief "$input_file")" = ${~file_command_pattern} ]] || continue
+        input_file=${~"${input_file}"}
+        
+        [[ "$(file --brief ${input_file})" = ${~file_command_pattern} ]] || continue
       
         { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(Ie)${input_file:e}] )) } ||                                  
         {
             echo "WRONG EXTENSION: ${input_file}"
-            [[ "${validate_only}" = "YES" ]] || mv "${input_file}" "${input_file}.${replacement_extension}"
+            [[ "${validate_only}" = "YES" ]] || mv ${input_file} "${input_file}.${replacement_extension}"
         }
     }
 }
