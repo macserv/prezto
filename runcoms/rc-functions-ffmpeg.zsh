@@ -19,7 +19,7 @@ function ff-codec() # <path>
 {
     local input_file
     
-    input_file="${1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
+    input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
 
     ffprobe -loglevel fatal -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 "${input_file}"
 
@@ -36,7 +36,7 @@ function ff-duration() # <path>
 { 
     local input_file ffmpeg_output time_info
     
-       input_file="${1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty.' 10
+       input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty.' 10
     ffmpeg_output=$(ffmpeg -i "${input_file}" -map 0:v:0 -c copy -f null /dev/null 2>&1) || fail "Failed to use ffmpeg to get information about input file: '${input_file}'." $?
         time_info=$(echo "${ffmpeg_output}" | grep "time=") || fail "Information for '${input_file}' did not contain a time value." 20
     
@@ -134,8 +134,8 @@ function ff-rotate() # <video_file> <angle>
     
     [[ -v TMPDIR ]] || fail "The '\$TMPDIR' variable is not set.  This should have been done by macOS when your shell started." 10
 
-             input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 20
-               rotation="${2}" ; [[ -n "${rotation}" ]]                         || fail 'Argument for rotation is missing or empty' 30
+             input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 20
+               rotation="${2}"  ; [[ -n "${rotation}" ]]                         || fail 'Argument for rotation is missing or empty' 30
          input_basename="${input_file:t}"     # foo.mp4
              input_name="${input_basename:r}" # foo
         input_extension="${input_basename:e}" # mp4
@@ -168,9 +168,9 @@ function ff-trim() # <video_file> <clip_start_time> <clip_end_time>
 {
     local input_file start_time end_time output_file
     
-     input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
-     start_time="${2}" ; [[ -n "${start_time}" ]]                       || fail 'Argument for clip start time is missing or empty.' 11
-       end_time="${3}" ; [[ -n "${end_time}"   ]]                       || fail 'Argument for clip end time is missing or empty.' 12
+     input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
+     start_time="${2}"  ; [[ -n "${start_time}" ]]                       || fail 'Argument for clip start time is missing or empty.' 11
+       end_time="${3}"  ; [[ -n "${end_time}"   ]]                       || fail 'Argument for clip end time is missing or empty.' 12
     output_file=$(unique-path "${input_file:r}-trim.${input_file:e}")
  
     # NOTE: The ordering of these arguments is very important in order to achieve the expected trimming behavior.
