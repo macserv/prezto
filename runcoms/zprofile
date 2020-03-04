@@ -71,7 +71,7 @@ typeset -gU fpath
 # Mouse-wheel scrolling has been disabled by -X (disable screen clearing).
 # Remove -X and -F (exit if the content fits on one screen) to enable it.
 #export LESS='-F -g -i -M -R -S -w -X -z-4' # Original configuration
-export  LESS='-g -i -M -R -S -w -z-4'       # Scrolling enabled
+export  LESS='   -g -i -M -R -S -w    -z-4' # Scrolling enabled
 
 # Set the Less input preprocessor.
 # Try both `lesspipe` and `lesspipe.sh` as either might exist on a system.
@@ -107,3 +107,5 @@ for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
 done
 
 
+
+export PATH="$HOME/.cargo/bin:$PATH"
