@@ -239,14 +239,15 @@ function add_missing_extension_for_file_description() # [--validate-only] <descr
 #
 function install_command_line_tools()
 {
-    local package_name swu_status trigger_file_path
-    
-    trigger_file_path="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+    local trigger_file_path package_name swu_status
     
     # The presence of this file causes `softwareupdate` to include Command Line Tool packages.
+    trigger_file_path="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+    
     touch "${trigger_file_path}" || return 1
     
     echo_log "Installing / Updating Command-Line Tools..." INFO
+    
     package_name="$( softwareupdate --verbose --list | grep "\*.*Command Line" | sort | tail -n 1 | sed -E 's/^ *\*( Label:)? *//' | tr -d '\n' )" || return 1
     
     softwareupdate --verbose --install "${package_name}" ; swu_status=$?
