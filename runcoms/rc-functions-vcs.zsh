@@ -102,8 +102,8 @@ function git-clone-cd() # <repo_url> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
 
-    git clone "${1}" "${2}" || fail "Unable to clone repository at ${1}" $?
-    cd "${1:t:r}"           || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
+    git clone "${1}" ${~"${2}"} || fail "Unable to clone repository at ${1}" $?
+    cd ${${2}:-${1:t:r}}    || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
 }
 
 
@@ -116,7 +116,7 @@ function git-clone-fork-with-parent-owner() # <fork_repo_url> <blessed_repo_owne
     [[ -n "${2}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 20
     
     echo
-    { git-clone-cd "${1}" "${2}" && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
+    { git-clone-cd "${1}" ${~"${3}"} && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
 }
 
 
@@ -130,7 +130,7 @@ function github-clone() # <repo_url> [<repo_dir>]
     local repo_url repo_dir components repo_owner repo_name github_api query_json api_response parent_owner
     
     repo_url="${1}" ; [[ -n "${repo_url}" ]]                || fail 'Argument for repository URL is missing or empty.' 10
-    repo_dir="${2}"
+    repo_dir=${~"${2}"}
     components=( $(git-repo-url-components "${repo_url}") ) || fail "Could not parse owner for '${repo_url}'."         20
     repo_owner=${components[4]}
     repo_name=${components[6]}
