@@ -37,4 +37,3 @@ alias jq='jq --indent 4'
 #
 #  Open difftool with directory diff
 alias gD='git difftool --dir-diff'
-alias git-current-branch='git rev-parse --abbrev-ref HEAD'

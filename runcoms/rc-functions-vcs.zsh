@@ -195,3 +195,11 @@ function git-fork-sync() # <upstream_remote> <origin_remote>
 }
 
 
+#
+# Print only the name of the current branch, with no additional
+# information or decoration.
+#
+function git-current-branch()
+{
+    git rev-parse --abbrev-ref 'HEAD'
+}
