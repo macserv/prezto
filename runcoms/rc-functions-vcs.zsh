@@ -102,7 +102,12 @@ function git-clone-cd() # <repo_url> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
 
-    git clone "${1}" ${~"${2}"} || fail "Unable to clone repository at ${1}" $?
+    if [[ -n "${2}" ]] ; then
+        git clone "${1}" ${~"${2}"} || fail "Unable to clone repository at ${1}" $?
+    else
+        git clone "${1}" || fail "Unable to clone repository at ${1}" $?
+    fi
+
     cd ${${2}:-${1:t:r}}    || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
 }
 
