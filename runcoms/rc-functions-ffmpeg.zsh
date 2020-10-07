@@ -1,8 +1,8 @@
 ################################################################################
 #  CONFIGURATION: GLOBAL PARAMETERS
 
-declare -a FFMPEG_H264_OPTIONS
-export     FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -max_muxing_queue_size 9999)
+declare -a Z_RC_FFMPEG_H264_OPTIONS
+export     Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -max_muxing_queue_size 9999)
 
 
 
@@ -56,7 +56,7 @@ function ff-m3u8-to-mp4() # <stream_url>
      stream_url="${1}" ; [[ -n "${stream_url}" ]] || fail 'Argument for stream URL is missing or empty.' 10
     output_file=$(unique-path "${stream_url:h:t}-${stream_url:t:r}.mp4")
 
-    ffmpeg -i "${stream_url}" ${FFMPEG_H264_OPTIONS[*]} "${output_file}"
+    ffmpeg -i "${stream_url}" ${Z_RC_FFMPEG_H264_OPTIONS[*]} "${output_file}"
 
     return $?
 }
@@ -77,7 +77,7 @@ function ff-mp4ify() # <stream_url>
 
              input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
             output_file=$(unique-path "${input_file:r}.mp4")
-         ffmpeg_options=( ${FFMPEG_H264_OPTIONS[*]} )
+         ffmpeg_options=( ${Z_RC_FFMPEG_H264_OPTIONS[*]} )
                duration=$(ff-duration "${input_file}") || unset duration
 
     # Bypass h264-related ffmpeg options if file is already h264-encoded.
