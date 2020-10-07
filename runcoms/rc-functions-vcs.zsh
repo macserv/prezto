@@ -5,7 +5,7 @@
 #
 #
 #
-function mkswiftgitignore() #
+function create_swift_gitignore() #
 {
     curl -SLw "\n" "https://www.gitignore.io/api/swift,linux,xcode,macos,swiftpm,swiftpackagemanager" > .gitignore
 }
@@ -32,7 +32,7 @@ function mkswiftgitignore() #
 #       6 https://www.domain.net:8443/ https gituser Project.git Project
 #       Repository name is: Project
 #
-function git-repo-url-components() # <repo_url>
+function git_repo_url_components() # <repo_url>
 {
     [[ -n "${1}" ]] || fail 'Argument for git repository URL is missing or empty.' 10
 
@@ -66,7 +66,7 @@ function git-repo-url-components() # <repo_url>
 #
 #
 #
-function git-add-blessed-remote-with-owner() # <blessed_owner> <blessed_url>
+function git_add_blessed_remote_with_owner() # <blessed_owner> <blessed_url>
 {
     git remote get-url blessed > /dev/null 2>&1 && fail "Unable to add 'blessed' remote: a remote already exists with that name." $?
     
@@ -80,7 +80,7 @@ function git-add-blessed-remote-with-owner() # <blessed_owner> <blessed_url>
         local origin_url components prefix repo_and_ext
         
         origin_url=$(git remote get-url origin) && [[ -n "${origin_url}" ]] || fail "Unable to get url for 'origin' remote." 20
-        components=( $(git-repo-url-components "${origin_url}") )           || fail "Could not parse components for '${origin_url}'." 23
+        components=( $(git_repo_url_components "${origin_url}") )           || fail "Could not parse components for '${origin_url}'." 23
         prefix=${components[2]}
         repo_and_ext=${components[5]}
         
@@ -98,7 +98,7 @@ function git-add-blessed-remote-with-owner() # <blessed_owner> <blessed_url>
 #
 #
 #
-function git-clone-cd() # <repo_url> [<repo_dir>]
+function git_clone_cd() # <repo_url> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
 
@@ -115,20 +115,20 @@ function git-clone-cd() # <repo_url> [<repo_dir>]
 #
 #
 #
-function git-clone-fork-with-parent-owner() # <fork_repo_url> <blessed_repo_owner> [<repo_dir>]
+function git_clone_fork_with_parent_owner() # <fork_repo_url> <blessed_repo_owner> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
     [[ -n "${2}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 20
     
     echo
-    { git-clone-cd "${1}" ${~"${3}"} && git-add-blessed-remote-with-owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
+    { git_clone_cd "${1}" ${~"${3}"} && git_add_blessed_remote_with_owner "${2}" ; } || fail "The repository was cloned, but the 'blessed' remote could not be added." 40
 }
 
 
 #
 #
 #
-function github-clone() # <repo_url> [<repo_dir>]
+function github_clone() # <repo_url> [<repo_dir>]
 {
     [[ -n "${GITHUB_ACCESS_TOKEN}" ]] || fail "Unable to continue: Shell parameter 'GITHUB_ACCESS_TOKEN' is unset or empty."  5
 
@@ -136,7 +136,7 @@ function github-clone() # <repo_url> [<repo_dir>]
     
     repo_url="${1}" ; [[ -n "${repo_url}" ]]                || fail 'Argument for repository URL is missing or empty.' 10
     repo_dir=${~"${2}"}
-    components=( $(git-repo-url-components "${repo_url}") ) || fail "Could not parse owner for '${repo_url}'."         20
+    components=( $(git_repo_url_components "${repo_url}") ) || fail "Could not parse owner for '${repo_url}'."         20
     repo_owner=${components[4]}
     repo_name=${components[6]}
     github_api='https://api.github.com/graphql'
@@ -150,10 +150,10 @@ function github-clone() # <repo_url> [<repo_dir>]
     parent_owner=$( jq --raw-output '.data.repository.parent.owner.login' <<< "${api_response}" )
     
     if [[ ${parent_owner} != 'null' ]] ; then
-        git-clone-fork-with-parent-owner "${repo_url}" "${parent_owner}" "${repo_dir}"
+        git_clone_fork_with_parent_owner "${repo_url}" "${parent_owner}" "${repo_dir}"
 
     else
-        git-clone-cd "${repo_url}" "${repo_dir}"
+        git_clone_cd "${repo_url}" "${repo_dir}"
 
     fi
 }
@@ -163,7 +163,7 @@ function github-clone() # <repo_url> [<repo_dir>]
 # Pull all changes from upstream ("blessed") remote to the repo
 # origin.
 #
-function git-fork-sync() # <upstream_remote> <origin_remote> 
+function git_fork_sync() # <upstream_remote> <origin_remote> 
 {
     local default_origin  ;  default_origin="origin"
     local upstream_remote ; upstream_remote="${1}" ; [[ -n "${upstream_remote}" ]] || fail 'Argument for upstream remote name is missing or empty.' 20
@@ -204,7 +204,7 @@ function git-fork-sync() # <upstream_remote> <origin_remote>
 # Print only the name of the current branch, with no additional
 # information or decoration.
 #
-function git-current-branch()
+function git_current_branch()
 {
     git rev-parse --abbrev-ref 'HEAD'
 }
