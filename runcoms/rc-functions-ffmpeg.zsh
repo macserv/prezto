@@ -15,7 +15,7 @@ export     Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ce
 #  
 #  $1: Path to video file.
 #
-function ff-codec() # <path>
+function ff_codec() # <path>
 {
     local input_file
     
@@ -32,7 +32,7 @@ function ff-codec() # <path>
 #
 #  $1: Path to video file to analyze for duration.
 #
-function ff-duration() # <path>
+function ff_duration() # <path>
 { 
     local input_file ffmpeg_output time_info
     
@@ -49,7 +49,7 @@ function ff-duration() # <path>
 #  
 #  $1: URL to m3u8 file containing HLS stream configuration data.
 #
-function ff-m3u8-to-mp4() # <stream_url>
+function ff_m3u8_to_mp4() # <stream_url>
 {
     local stream_url output_file
 
@@ -71,7 +71,7 @@ function ff-m3u8-to-mp4() # <stream_url>
 #
 #  $1: File to convert to mp4.
 #
-function ff-mp4ify() # <stream_url>
+function ff_mp4ify() # <stream_url>
 {
     local input_file output_file ffmpeg_options duration out_time
 
@@ -128,7 +128,7 @@ function ff-mp4ify() # <stream_url>
 #  $1: The path to the file to be rotated.
 #  $2: The rotation which should be applied when played.
 #
-function ff-rotate() # <video_file> <angle>
+function ff_rotate() # <video_file> <angle>
 {
     local input_file rotation input_basename input_name input_extension output_tmp_file input_date_modified
     
@@ -164,7 +164,7 @@ function ff-rotate() # <video_file> <angle>
 #  $2: The starting mark, before which any video content should be deleted.
 #  $3: The ending mark, after which any video content should be deleted.
 #
-function ff-trim() # <video_file> <clip_start_time> <clip_end_time>
+function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
 {
     local input_file start_time end_time output_file
     

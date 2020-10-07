@@ -8,7 +8,7 @@
 #      brew install martido/brew-graph/brew-graph
 #      brew install graphviz
 #
-function brew-dependency-graph() #
+function brew_dependency_graph() #
 {
     brew-graph --installed --highlight-leaves --highlight-outdated | dot -Tpdf -oBrewDependencies.pdf
 }
@@ -22,7 +22,7 @@ function brew-dependency-graph() #
 #
 #  $1: Installed package name.
 #
-function brew-installed-options() # <package>
+function brew_installed_options() # <package>
 {
     [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
@@ -33,15 +33,15 @@ function brew-installed-options() # <package>
 
 
 #
-#  brew-reinstall-and-add-option <package> <options>
+#  brew_reinstall_and_add_option <package> <options>
 #  [WIP] Reinstall package with additional option(s)
 #  - Parameters
 #      - package: Installed package name
 #      - options: The options to add when re-installing.
 #  - Example
-#      % brew-reinstall-and-add-option ffmpeg --with-libbluray --with-srt
+#      % brew_reinstall_and_add_option ffmpeg --with-libbluray --with-srt
 #
 #  # TODO: We're in zsh now... do this as a function.
-#  alias brew-reinstall-and-add-option 'brew reinstall \!:1 `brew-installed-options \!:1` \!:2*'
-#  set current_options = "`brew-installed-options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
+#  alias brew_reinstall_and_add_option 'brew reinstall \!:1 `brew_installed_options \!:1` \!:2*'
+#  set current_options = "`brew_installed_options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
 #
