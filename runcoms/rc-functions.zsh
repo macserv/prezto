@@ -7,6 +7,41 @@
 #  SHARED / HELPERS
 
 #
+#  "Comment" a line of text in a way that is visible in a list of commands.
+#  This function does nothing, and does not make use of the arguments passed to
+#  it.  The arguments are ignored, and can be used to make a general comment.
+#
+#  This differs from '#' in that comments following '//' will appear in the
+#  listing of a function's script as reported by commands like 'which'.
+#
+#  Example 1:
+#      % function comment_hash() { # comment, yo! }
+#      function>
+#      # The octalthorpe character prevented the closing brace from being
+#      # interpreted, and the line editor is waiting for more lines.
+#
+#  Example 2:
+#      % function comment_hash() {
+#      function>     # comment, yo!
+#      function> }
+#      % which comment_hash
+#      comment_hash () {
+#
+#      }
+#
+#  Example 3:
+#      % function comment_slash() { // comment, yo! }
+#      % which comment_slash
+#      comment_slash () {
+#          // comment, yo!
+#      }
+#
+function //() # [comment_word] ...
+{
+}
+
+
+#
 #  Echo a log message with consistent formatting, including tracing info and
 #  a message prefix based on the severity of the message.
 #  
@@ -37,11 +72,11 @@
 #              report as '(anon)`.
 #
 #  Example:
-#      function test_logs { echo_log
-#                           echo_log '' ERROR
-#                           echo_log 'Mark!'
-#                           echo_log 'Not great...' WARNING
-#                           function { echo_log 'Creepy!' INFO } }
+#      function test_logs() { echo_log
+#                             echo_log '' ERROR
+#                             echo_log 'Mark!'
+#                             echo_log 'Not great...' WARNING
+#                             function { echo_log 'Creepy!' INFO } }
 #  Output:
 #      % test_logs
 #      [logtest.sh:20(test_logs)]
