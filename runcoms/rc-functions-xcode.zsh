@@ -36,9 +36,10 @@ function install_command_line_tools()
 
 
 #
-#  List process within the Xcode bundle (i.e., processes with 'Xcode' in their
-#  path or process name), and processes within the CoreSimulator framework
-#  bundle (i.e., processes with 'CoreSimulator' in their path or process name)
+#  Use 'pgrep' to list process within the Xcode bundle (i.e., processes with
+#  'Xcode' in their path or process name), and processes within the
+#  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
+#  their path or process name)
 #
 function xcgrep()
 {
@@ -53,9 +54,10 @@ function xcgrep()
 
 
 #
-#  Kill process within the Xcode bundle (i.e., processes with 'Xcode' in their
-#  path or process name), and processes within the CoreSimulator framework
-#  bundle (i.e., processes with 'CoreSimulator' in their path or process name)
+#  Use 'pgrep' to kill process within the Xcode bundle (i.e., processes with
+#  'Xcode' in their path or process name), and processes within the
+#  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
+#  their path or process name).
 #
 function xckill() # [-signal]
 {
