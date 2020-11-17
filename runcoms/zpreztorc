@@ -93,7 +93,7 @@ zstyle ':prezto:module:editor:info:completing' format '\u231B'
 #
 
 # Ignore submodules when they are 'dirty', 'untracked', 'all', or 'none'.
-zstyle ':prezto:module:git:status:ignore' submodules 'all'
+# zstyle ':prezto:module:git:status:ignore' submodules 'all'
 
 # Skip adding the prolific suite of aliases for Git.
 zstyle ':prezto:module:git:alias' skip 'yes'
