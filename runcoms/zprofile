@@ -41,6 +41,7 @@ path=(
     /usr/local/opt/ruby/bin  # Homebrew Ruby
     ~/.composer/vendor/bin   # Composer (PHP)
     ~/.mozbuild/git-cinnabar # mozilla
+    ~/.cargo/bin             # Rust
     $path
 )
 typeset -gU path
@@ -61,7 +62,6 @@ fpath=(
 )
 typeset -gU fpath
 
-    
 #
 # Less
 #
@@ -78,7 +78,6 @@ if (( $#commands[(i)lesspipe(|.sh)] )); then
     export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
 
-
 #
 # Java
 #
@@ -86,7 +85,6 @@ fi
 # Dynamically set JAVA_HOME to the currently selected JVM.
 # Fail silently if it's not present.
 export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
-
 
 #
 # Python
@@ -96,7 +94,8 @@ export PYTHONSTARTUP="${HOME}/.pythonrc"
 
 
 
-################################################################################
+
+#
 # Load External Profile Extension Files
 # THIS SECTION SHOULD BE LAST IN THIS FILE.
 #
@@ -105,6 +104,3 @@ for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
     source $zprofile_file
 done
 
-
-
-export PATH="$HOME/.cargo/bin:$PATH"
