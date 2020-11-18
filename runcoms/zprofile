@@ -33,9 +33,12 @@ fi
 # Paths
 #
 
+# Ensure path arrays do not contain duplicates.
+typeset -gU cdpath fpath mailpath path
+
 # Set the list of directories that zsh searches for executables, and ensure that
 # all elements are unique.
-typeset -gU path=(
+path=(
     ~/Local/{bin,sbin}
     /usr/local/{bin,sbin}    # Homebrew
     /usr/local/opt/ruby/bin  # Homebrew Ruby
@@ -47,16 +50,10 @@ typeset -gU path=(
 
 # Set the list of directories that `cd <path>` searches (in addition to $PWD)
 # and ensure that all elements are unique.
-typeset -gU cdpath=(
+cdpath=(
     ~
     ~/Projects/Development
     $cdpath
-)
-
-# Add paths to directories containing completion data, and ensure that all
-# elements are unique.
-typeset -gU fpath=(
-    $fpath
 )
 
 #
