@@ -35,7 +35,7 @@ fi
 
 # Set the list of directories that zsh searches for executables, and ensure that
 # all elements are unique.
-path=(
+typeset -gU path=(
     ~/Local/{bin,sbin}
     /usr/local/{bin,sbin}    # Homebrew
     /usr/local/opt/ruby/bin  # Homebrew Ruby
@@ -44,23 +44,20 @@ path=(
     ~/.cargo/bin             # Rust
     $path
 )
-typeset -gU path
 
 # Set the list of directories that `cd <path>` searches (in addition to $PWD)
 # and ensure that all elements are unique.
-cdpath=(
+typeset -gU cdpath=(
     ~
     ~/Projects/Development
     $cdpath
 )
-typeset -gU cdpath
 
 # Add paths to directories containing completion data, and ensure that all
 # elements are unique.
-fpath=(
+typeset -gU fpath=(
     $fpath
 )
-typeset -gU fpath
 
 #
 # Less
