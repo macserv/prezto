@@ -73,10 +73,10 @@ function //() # [comment_word] ...
 #
 #  Example:
 #      function test_logs() { echo_log
-#                             echo_log '' ERROR
-#                             echo_log 'Mark!'
-#                             echo_log 'Not great...' WARNING
-#                             function { echo_log 'Creepy!' INFO } }
+#                           echo_log '' ERROR
+#                           echo_log 'Mark!'
+#                           echo_log 'Not great...' WARNING
+#                           function { echo_log 'Creepy!' INFO } }
 #  Output:
 #      % test_logs
 #      [logtest.sh:20(test_logs)]
@@ -267,4 +267,33 @@ function add_missing_extension_for_file_description() # [--validate-only] <descr
         }
     }
 }
+
+
+#
+#  Recursively remove macOS-specific Finder metadata files, stored as files prefixed with '._'
+#
+function remove_finder_metadata_files() # [--recursive] [--dryrun]
+{
+    local working_path remove_cmd file_brief_cmd file_brief_description
+    
+    working_path='.'
+    remove_cmd=(rm -v -f)
+    file_brief_cmd=(file --brief)
+    file_brief_description="AppleDouble encoded Macintosh file"
+    
+    [[ "${1}" = '--recursive' ]] && { working_path='**' ; shift ; }
+    [[ "${1}" = '--dryrun'    ]] && { remove_cmd='echo' ; }
+    
+    for macos_file ( ${~"${working_path}"}/._*(.N) )
+    { 
+        [[ "$( "${file_brief_cmd[@]}" "${macos_file}" )" == "${file_brief_description}" ]] ||
+        { 
+            echo "Not removing '${macos_file}' because '${file_brief_cmd}' does not describe it as '${file_brief_description}'."
+            continue
+        }
+        
+        "${remove_cmd[@]}" "${macos_file}"
+    }
+}
+
 
