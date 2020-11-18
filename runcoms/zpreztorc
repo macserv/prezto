@@ -183,9 +183,9 @@ zstyle ':prezto:module:ssh:load' identities 'id_rsa'
 #
 # Syntax Highlighting
 #
+
 # Set syntax highlighters (needs the zprezto syntax-highlighting module enabled to work)
 # By default, only the main highlighter is enabled.
-#
 local syntax_highlighting_modules=(
     'main'
     'brackets'
@@ -195,7 +195,7 @@ local syntax_highlighting_modules=(
     'root'
 )
 zstyle ':prezto:module:syntax-highlighting' highlighters $syntax_highlighting_modules
-#
+
 # Set syntax highlighting styles.
 # local syntax_highlighting_styles=(
 #   'builtin'  'bg=blue'
@@ -203,7 +203,7 @@ zstyle ':prezto:module:syntax-highlighting' highlighters $syntax_highlighting_mo
 #   'function' 'bg=blue'
 # )
 # zstyle ':prezto:module:syntax-highlighting' styles $syntax_highlighting_styles
-#
+
 # Set syntax pattern styles.
 local syntax_highlighting_patterns=(
     'rm*-rf*' 'fg=white,bold,bg=red'
