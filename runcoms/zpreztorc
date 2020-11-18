@@ -51,10 +51,6 @@ local zprezto_modules=(
     'prompt'
 )
 zstyle ':prezto:load' pmodule $zprezto_modules
-#
-#
-#
-#
 
 #
 # Autosuggestions
