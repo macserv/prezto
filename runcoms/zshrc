@@ -3,6 +3,7 @@
 # functions, shell options, and key bindings.
 #
 
+local runcoms_dir="${ZDOTDIR:-$HOME}/.zprezto/runcoms"
 
 ################################################################################
 #  POWERLEVEL10K (P10K) CONFIGURATION

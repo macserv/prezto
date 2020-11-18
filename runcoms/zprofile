@@ -88,16 +88,3 @@ export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 #
 
 export PYTHONSTARTUP="${HOME}/.pythonrc"
-
-
-
-
-#
-# Load External Profile Extension Files
-# THIS SECTION SHOULD BE LAST IN THIS FILE.
-#
-
-for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
-    source $zprofile_file
-done
-
