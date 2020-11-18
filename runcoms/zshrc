@@ -3,52 +3,20 @@
 # functions, shell options, and key bindings.
 #
 
-local runcoms_dir="${ZDOTDIR:-$HOME}/.zprezto/runcoms"
 
-################################################################################
-#  POWERLEVEL10K (P10K) CONFIGURATION
-
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p10k.zsh" ]]; then
-    source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p10k.zsh"
-fi
-
-for rc_p10k_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-p10k-*.zsh(.N); do
-    source $rc_p10k_file
-done
+local zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
 
 
 ################################################################################
 #  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
 
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
-    source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
-fi
-
-for rc_prezto_init_file in ${ZDOTDIR:-$HOME}/.zprezto/init-*.zsh(.N); do
-    source $rc_prezto_init_file
-done
+[[ -s "${zprezto_dir}/init.zsh" ]] && { source "${zprezto_dir}/init.zsh" }
 
 
 ################################################################################
-#  ALIASES
+#  EXTRA INITIALIZATION FILES (e.g. custom aliases and functions)
 
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-aliases.zsh" ]]; then
-    source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-aliases.zsh"
-fi
-
-for rc_alias_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-aliases-*.zsh(.N); do
-    source $rc_alias_file
-done
-
-
-################################################################################
-#  FUNCTIONS
-
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh" ]]; then
-    source "${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions.zsh"
-fi
-
-for rc_functions_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/rc-functions-*.zsh(.N); do
-    source $rc_functions_file
-done
-
+for rc_file ( ${zprezto_dir}/runcoms/zshrc.d/*.zsh(Nn) )
+{
+    [[ -s "${rc_file}" ]] && { source "${rc_file}" }
+}
