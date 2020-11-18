@@ -30,25 +30,25 @@ zstyle ':prezto:*:*' color 'yes'
 # Set the Prezto modules to load (browse modules).
 # The order matters.
 local zprezto_modules=(
-    environment
-    terminal
-    editor
-    history
-    history-substring-search
-    directory
-    spectrum
-    utility
-    completion
-    autosuggestions
-    archive
-    homebrew
-    osx
-    git
-    ruby
-    python
-    perl
-    syntax-highlighting
-    prompt
+    'environment'
+    'terminal'
+    'editor'
+    'history'
+    'history-substring-search'
+    'directory'
+    'spectrum'
+    'utility'
+    'completion'
+    'autosuggestions'
+    'archive'
+    'homebrew'
+    'osx'
+    'git'
+    'ruby'
+    'python'
+    'perl'
+    'syntax-highlighting'
+    'prompt'
 )
 zstyle ':prezto:load' pmodule $zprezto_modules
 #
@@ -192,26 +192,26 @@ zstyle ':prezto:module:ssh:load' identities 'id_rsa'
 # By default, only the main highlighter is enabled.
 #
 local syntax_highlighting_modules=(
-    main
-    brackets
-    pattern
-#   line
-#   cursor
-    root
+    'main'
+    'brackets'
+    'pattern'
+#   'line'
+#   'cursor'
+    'root'
 )
 zstyle ':prezto:module:syntax-highlighting' highlighters $syntax_highlighting_modules
 #
 # Set syntax highlighting styles.
 # local syntax_highlighting_styles=(
-#    builtin  bg=blue
-#   command  bg=blue
-#   function bg=blue
+#   'builtin'  'bg=blue'
+#   'command'  'bg=blue'
+#   'function' 'bg=blue'
 # )
 # zstyle ':prezto:module:syntax-highlighting' styles $syntax_highlighting_styles
 #
 # Set syntax pattern styles.
 local syntax_highlighting_patterns=(
-    'rm*-rf*' fg=white,bold,bg=red
+    'rm*-rf*' 'fg=white,bold,bg=red'
 )
 zstyle ':prezto:module:syntax-highlighting' pattern $syntax_highlighting_patterns
 
