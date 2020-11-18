@@ -33,11 +33,17 @@ fi
 # Paths
 #
 
-# Ensure path arrays do not contain duplicates.
+# Ensure path arrays are global, and will ignore addition of duplicate entries.
 typeset -gU cdpath fpath mailpath path
 
-# Set the list of directories that zsh searches for executables, and ensure that
-# all elements are unique.
+# Set the list of directories that `cd` searches (in addition to $PWD).
+cdpath=(
+    ~
+    ~/Projects/Development
+    $cdpath
+)
+
+# Set the list of directories that zsh searches for executables.
 path=(
     ~/Local/{bin,sbin}
     /usr/local/{bin,sbin}    # Homebrew
@@ -46,14 +52,6 @@ path=(
     ~/.mozbuild/git-cinnabar # mozilla
     ~/.cargo/bin             # Rust
     $path
-)
-
-# Set the list of directories that `cd <path>` searches (in addition to $PWD)
-# and ensure that all elements are unique.
-cdpath=(
-    ~
-    ~/Projects/Development
-    $cdpath
 )
 
 #
