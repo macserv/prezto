@@ -34,14 +34,7 @@ fi
 #
 
 # Ensure path arrays are global, and will ignore addition of duplicate entries.
-typeset -gU cdpath fpath mailpath path
-
-# Set the list of directories that `cd` searches (in addition to $PWD).
-cdpath=(
-    ~
-    ~/Projects/Development
-    $cdpath
-)
+typeset -gU path cdpath fpath mailpath
 
 # Set the list of directories that zsh searches for executables.
 path=(
@@ -53,6 +46,18 @@ path=(
     ~/.cargo/bin             # Rust
     $path
 )
+    
+# Set the list of directories that `cd` searches (in addition to $PWD).
+cdpath=(
+    ~
+    ~/Projects/Development
+    $cdpath
+)
+
+# Add paths to directories containing completion data.
+# typeset -gU fpath=(
+#     $fpath
+# )
 
 #
 # Less
