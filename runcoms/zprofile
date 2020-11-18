@@ -1,4 +1,4 @@
-################################################################################
+#
 # Executes commands at login pre-zshrc.
 #
 # Authors:
@@ -57,7 +57,6 @@ typeset -gU cdpath
 # Add paths to directories containing completion data, and ensure that all
 # elements are unique.
 fpath=(
-    /usr/local/share/zsh/site-functions  # Homebrew
     $fpath
 )
 typeset -gU fpath
