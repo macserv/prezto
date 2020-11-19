@@ -1,4 +1,4 @@
-################################################################################
+#
 # Executes commands at login pre-zshrc.
 #
 # Authors:
@@ -33,36 +33,32 @@ fi
 # Paths
 #
 
-# Set the list of directories that zsh searches for executables, and ensure that
-# all elements are unique.
+# Ensure path arrays are global, and will ignore addition of duplicate entries.
+typeset -gU path cdpath fpath mailpath
+
+# Set the list of directories that zsh searches for executables.
 path=(
     ~/Local/{bin,sbin}
     /usr/local/{bin,sbin}    # Homebrew
     /usr/local/opt/ruby/bin  # Homebrew Ruby
     ~/.composer/vendor/bin   # Composer (PHP)
     ~/.mozbuild/git-cinnabar # mozilla
+    ~/.cargo/bin             # Rust
     $path
 )
-typeset -gU path
-
-# Set the list of directories that `cd <path>` searches (in addition to $PWD)
-# and ensure that all elements are unique.
+    
+# Set the list of directories that `cd` searches (in addition to $PWD).
 cdpath=(
     ~
     ~/Projects/Development
     $cdpath
 )
-typeset -gU cdpath
 
-# Add paths to directories containing completion data, and ensure that all
-# elements are unique.
-fpath=(
-    /usr/local/share/zsh/site-functions  # Homebrew
-    $fpath
-)
-typeset -gU fpath
+# Add paths to directories containing completion data.
+# typeset -gU fpath=(
+#     $fpath
+# )
 
-    
 #
 # Less
 #
@@ -70,7 +66,7 @@ typeset -gU fpath
 # Set the default Less options.
 # Mouse-wheel scrolling has been disabled by -X (disable screen clearing).
 # Remove -X and -F (exit if the content fits on one screen) to enable it.
-#export LESS='-F -g -i -M -R -S -w -X -z-4' # Original configuration
+#export LESS='-F -g -i -M -R -S -w -X -z-4'
 export  LESS='   -g -i -M -R -S -w    -z-4' # Scrolling enabled
 
 # Set the Less input preprocessor.
@@ -78,7 +74,6 @@ export  LESS='   -g -i -M -R -S -w    -z-4' # Scrolling enabled
 if (( $#commands[(i)lesspipe(|.sh)] )); then
     export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
-
 
 #
 # Java
@@ -88,24 +83,16 @@ fi
 # Fail silently if it's not present.
 export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 
-
 #
 # Python
 #
 
 export PYTHONSTARTUP="${HOME}/.pythonrc"
 
-
-
-################################################################################
-# Load External Profile Extension Files
-# THIS SECTION SHOULD BE LAST IN THIS FILE.
 #
-
-for zprofile_file in ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile-*(.N); do
-    source $zprofile_file
-done
-
-
-
-export PATH="$HOME/.cargo/bin:$PATH"
+# Additional Profile Files
+#
+for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
+{
+    [[ -s "${profile_file}" ]] && { source "${profile_file}" }
+}
