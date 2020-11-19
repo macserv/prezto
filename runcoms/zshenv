@@ -6,12 +6,7 @@
 #
 
 # Ensure that a non-login, non-interactive shell has a defined environment.
-[[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) ]] &&
+[[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR:-$HOME}/.zprofile" ]] &&
 {
-    [[ -s "${ZDOTDIR:-$HOME}/.zprofile" ]] && { source "${ZDOTDIR:-$HOME}/.zprofile" }
-    
-    for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
-    {
-        [[ -s "${profile_file}" ]] && { source "${profile_file}" }
-    }
+    source "${ZDOTDIR:-$HOME}/.zprofile"
 }

@@ -88,3 +88,11 @@ export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
 #
 
 export PYTHONSTARTUP="${HOME}/.pythonrc"
+
+#
+# Additional Profile Files
+#
+for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
+{
+    [[ -s "${profile_file}" ]] && { source "${profile_file}" }
+}
