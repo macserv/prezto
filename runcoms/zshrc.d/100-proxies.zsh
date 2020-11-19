@@ -1,7 +1,7 @@
 #
 #  Enable network proxies.
 #
-function proxies-on()
+function proxies_on()
 {
     export HTTP_PROXY="${http_proxy_value}"
     export HTTPS_PROXY="${https_proxy_value}"
@@ -17,7 +17,7 @@ function proxies-on()
 #
 #  Disable network proxies.
 #
-function proxies-off()
+function proxies_off()
 {
     unset HTTP_PROXY
     unset HTTPS_PROXY
