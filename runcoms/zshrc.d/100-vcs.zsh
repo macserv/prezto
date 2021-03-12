@@ -223,6 +223,8 @@ function git_sync_to_subbranches_and_push # <remote>
     local remote parent_branch
     local -a all_refs local_refs remote_refs
 
+    git fetch --all || return $?
+    
     parent_branch="$(git_current_branch)"
     all_refs=( $(git for-each-ref --format '%(refname)') )
     local_refs=( ${(M)all_refs:#refs/heads/${parent_branch}*} )
