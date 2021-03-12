@@ -267,9 +267,12 @@ function git_sync_to_subbranches_and_push # <remote>
     # We're done if the given remote name doesn't match any remote refs
     (( $#remote_refs )) || return
 
+    echo $remote_refs
+
     for remote_ref ( $remote_refs[@] )
     {
         branch=${remote_ref#refs/remotes/${remote}}
+        echo $branch
 
         # Run the inverse check from above... remote branch not found locally.
         local_ref="refs/heads/${branch}"
