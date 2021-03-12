@@ -6,6 +6,10 @@
 ZLE_RPROMPT_INDENT=0
 
 
+###############################################################################
+# P10K General Configuration
+#
+
 # P10K Mode
 POWERLEVEL9K_MODE='awesome-fontconfig'
 
@@ -18,9 +22,13 @@ POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0C6'  # ''
 POWERLEVEL9K_LEFT_SEGMENT_END_SEPARATOR='  '
 POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\uE0C7' # ''
 
+
+###############################################################################
+# P10K Segment-Specific Configuration
+#
+
 # P10K Segment Config: 'os_icon'
 POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION="$(echo '\uF472') "  # "Database-ish" cylinder icon for NibFile Server
-
 
 # P10K Segment Config: 'dir'
 POWERLEVEL9K_HOME_ICON=''
