@@ -244,7 +244,7 @@ function git_sync_to_subbranches_and_push # <remote>
         [[ "${branch}" != "${parent_branch}" ]] &&
         {
             echo_log "... Merging '${parent_branch}' into '${branch}'..." INFO
-            # git merge --quiet -m "Merging '${parent_branch}' into '${branch}" "${parent_branch}" || return $?
+            # git merge --quiet --no-edit "${parent_branch}" || return $?
         }
 
         # We're done if the given remote name doesn't match any remote refs
@@ -256,7 +256,7 @@ function git_sync_to_subbranches_and_push # <remote>
 
         # Pull and push changes for remote.
         echo_log "... Pushing '${branch}' to '${remote}'..." INFO
-        git pull --quiet "${remote}" "${branch}" || return $?
+        git pull --quiet --no-edit "${remote}" "${branch}" || return $?
         # git push --quiet "${remote}" "${branch}" || return $?
     }
 
