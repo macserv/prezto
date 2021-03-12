@@ -229,6 +229,9 @@ function git_sync_to_subbranches_and_push # <remote>
     all_refs=( $(git for-each-ref --format '%(refname)') )
     local_refs=( ${(M)all_refs:#refs/heads/${parent_branch}*} )
 
+    echo $local_refs
+    return
+
     (( $#local_refs )) ||
     {
         fail "No sub-branches of '${parent_branch}' could be identified."
