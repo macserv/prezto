@@ -272,10 +272,10 @@ function git_sync_to_subbranches_and_push # <remote>
     for remote_ref ( $remote_refs[@] )
     {
         branch=${remote_ref#refs/remotes/${remote}}
-        echo $branch
 
         # Run the inverse check from above... remote branch not found locally.
         local_ref="refs/heads/${branch}"
+        echo $local_ref
         [[ ${local_refs[(ie)$local_ref]} -le ${#local_refs} ]] ||
         {
             echo_log "Changes will not be synced to remote branch '${branch}', because it has not been checked out locally." WARNING
