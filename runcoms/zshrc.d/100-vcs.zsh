@@ -244,7 +244,7 @@ function git_sync_to_subbranches_and_push # <remote>
         [[ "${branch}" != "${parent_branch}" ]] &&
         {
             echo_log "... Merging '${parent_branch}' into '${branch}'..." INFO
-            git merge "${parent_branch}" || return $?
+            # git merge "${parent_branch}" || return $?
         }
 
         # We're done if the given remote name doesn't match any remote refs
@@ -257,7 +257,7 @@ function git_sync_to_subbranches_and_push # <remote>
         # Pull and push changes for remote.
         echo_log "... Pushing '${branch}' to '${remote}'..." INFO
         git pull "${remote}" "${branch}" || return $?
-        git push "${remote}" "${branch}" || return $?
+        # git push "${remote}" "${branch}" || return $?
     }
 
     # Check for remote refs that aren't local (so didn't get synced)
