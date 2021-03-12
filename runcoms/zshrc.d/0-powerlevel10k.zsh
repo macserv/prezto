@@ -38,7 +38,7 @@ POWERLEVEL9K_ROOT_INDICATOR_BACKGROUND='darkred'
 POWERLEVEL9K_LOCK_ICON='\uF8EE ' # ''
 
 # P10K Segment Config: 'status'
-POWERLEVEL9K_STATUS_OK=false
+POWERLEVEL9K_STATUS_OK='false'
 
 # P10K Segment Config: 'time'
 POWERLEVEL9K_TIME_FORMAT="%D{%d.%m.%y \uF073  \uE0B3 %H:%M}" # '' ''
