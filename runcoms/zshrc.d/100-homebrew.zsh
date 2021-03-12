@@ -10,7 +10,7 @@
 #
 function brew_dependency_graph() #
 {
-    brew-graph --installed --highlight-leaves --highlight-outdated | dot -Tpdf -oBrewDependencies.pdf
+    brew graph --installed --highlight-leaves --highlight-outdated | dot -Tpdf -oBrewDependencies.pdf
 }
 
 
