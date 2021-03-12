@@ -168,7 +168,7 @@ function fail() # <message> <status>
 #
 #  $1: Path to test for uniqueness
 #
-function unique-path() # <path>
+function unique_path() # <path>
 {
     local original_path=${~"${1}"} ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
     local   unique_path="${original_path}"
