@@ -46,6 +46,7 @@ local zprezto_modules=(
     'git'
     'ruby'
     'python'
+    'node'
     'perl'
     'syntax-highlighting'
     'prompt'
