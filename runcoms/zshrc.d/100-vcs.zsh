@@ -237,10 +237,13 @@ function git_sync_to_subbranches_and_push # <remote>
     {
         branch=${local_ref#refs/heads/}
 
+        echo_log "Starting sync for '${branch}'..." INFO
+        git checkout "${branch}" || return $?
+
         # Skip merging the parent into itself.
         [[ "${branch}" != "${parent_branch}" ]] &&
         {
-            git checkout -b "${branch}"   || return $?
+            echo_log "... Merging '${parent_branch}' into '${branch}'..." INFO
             git merge "${parent_branch}" || return $?
         }
 
@@ -252,6 +255,7 @@ function git_sync_to_subbranches_and_push # <remote>
         [[ ${remote_refs[(ie)$remote_ref]} -le ${#remote_refs} ]] || continue
 
         # Pull and push changes for remote.
+        echo_log "... Pushing '${branch}' to '${remote}'..." INFO
         git pull "${remote}" "${branch}" || return $?
         git push "${remote}" "${branch}" || return $?
     }
