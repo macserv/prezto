@@ -54,7 +54,7 @@ function ff_m3u8_to_mp4() # <stream_url>
     local stream_url output_file
 
      stream_url="${1}" ; [[ -n "${stream_url}" ]] || fail 'Argument for stream URL is missing or empty.' 10
-    output_file=$(unique-path "${stream_url:h:t}-${stream_url:t:r}.mp4")
+    output_file=$(unique_path "${stream_url:h:t}-${stream_url:t:r}.mp4")
 
     ffmpeg -i "${stream_url}" ${Z_RC_FFMPEG_H264_OPTIONS[*]} "${output_file}"
 
@@ -76,12 +76,12 @@ function ff_mp4ify() # <stream_url>
     local input_file output_file ffmpeg_options duration out_time
 
              input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
-            output_file=$(unique-path "${input_file:r}.mp4")
+            output_file=$(unique_path "${input_file:r}.mp4")
          ffmpeg_options=( ${Z_RC_FFMPEG_H264_OPTIONS[*]} )
-               duration=$(ff-duration "${input_file}") || unset duration
+               duration=$(ff_duration "${input_file}") || unset duration
 
     # Bypass h264-related ffmpeg options if file is already h264-encoded.
-    [[ $(ff-codec "${input_file}") == "h264" ]] && ffmpeg_options=(-c:v copy)
+    [[ $(ff_codec "${input_file}") == "h264" ]] && ffmpeg_options=(-c:v copy)
 
     echo -n "Writing '${output_file}'..." 
     
@@ -171,7 +171,7 @@ function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
      input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
      start_time="${2}"  ; [[ -n "${start_time}" ]]                       || fail 'Argument for clip start time is missing or empty.' 11
        end_time="${3}"  ; [[ -n "${end_time}"   ]]                       || fail 'Argument for clip end time is missing or empty.' 12
-    output_file=$(unique-path "${input_file:r}-trim.${input_file:e}")
+    output_file=$(unique_path "${input_file:r}-trim.${input_file:e}")
  
     # NOTE: The ordering of these arguments is very important in order to achieve the expected trimming behavior.
     ffmpeg -loglevel panic -ss ${start_time} -to ${end_time} -noaccurate_seek -i "${input_file}" -avoid_negative_ts make_zero -c:v copy -c:a copy "${output_file}" || fail 'FFmpeg failed to trim the video.' $?
