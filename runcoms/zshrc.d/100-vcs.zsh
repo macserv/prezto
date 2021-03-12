@@ -235,15 +235,15 @@ function git_sync_to_subbranches_and_push # <remote>
 
     for local_ref ( $local_refs[@] )
     {
-        branch=${local_ref#refs/heads/}
+        local_branch=${local_ref#refs/heads/}
 
-        echo_log "Starting sync for '${branch}'..." INFO
-        git checkout --quiet "${branch}" || return $?
+        echo_log "Starting sync for '${local_branch}'..." INFO
+        git checkout --quiet "${local_branch}" || return $?
 
         # Skip merging the parent into itself.
-        [[ "${branch}" != "${parent_branch}" ]] &&
+        [[ "${local_branch}" != "${parent_branch}" ]] &&
         {
-            echo_log "... Merging '${parent_branch}' into '${branch}'..." INFO
+            echo_log "... Merging '${parent_branch}' into '${local_branch}'..." INFO
             # git merge --quiet --no-edit "${parent_branch}" || return $?
         }
 
@@ -251,13 +251,13 @@ function git_sync_to_subbranches_and_push # <remote>
         (( $#remote_refs )) || continue
 
         # Check for a matching remote branch; if none, we're done.
-        remote_ref="refs/remotes/${remote}/${branch}"
+        remote_ref="refs/remotes/${remote}/${local_branch}"
         [[ ${remote_refs[(ie)$remote_ref]} -le ${#remote_refs} ]] || continue
 
         # Pull and push changes for remote.
-        echo_log "... Pushing '${branch}' to '${remote}'..." INFO
-        git pull --quiet --no-edit "${remote}" "${branch}" || return $?
-        # git push --quiet "${remote}" "${branch}" || return $?
+        echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO
+        git pull --quiet --no-edit "${remote}" "${local_branch}" || return $?
+        # git push --quiet "${remote}" "${local_branch}" || return $?
     }
 
     # Checkout the branch where we started
@@ -271,14 +271,14 @@ function git_sync_to_subbranches_and_push # <remote>
 
     for remote_ref ( $remote_refs[@] )
     {
-        branch=${remote_ref#refs/remotes/${remote}}
+        remote_branch=${remote_ref#refs/remotes/${remote}/}
 
         # Run the inverse check from above... remote branch not found locally.
-        local_ref="refs/heads/${branch}"
+        local_ref="refs/heads/${remote_branch}"
         echo $local_ref
         [[ ${local_refs[(ie)$local_ref]} -le ${#local_refs} ]] ||
         {
-            echo_log "Changes will not be synced to remote branch '${branch}', because it has not been checked out locally." WARNING
+            echo_log "Changes will not be synced to remote branch '${remote_branch}', because it has not been checked out locally." WARNING
         }
     }
 }
