@@ -223,7 +223,7 @@ function git_sync_to_subbranches_and_push # <remote>
     local remote parent_branch
     local -a all_refs local_refs remote_refs
 
-    git fetch --all || return $?
+    git fetch --all --quiet || return $?
     
     parent_branch="$(git_current_branch)"
     all_refs=( $(git for-each-ref --format '%(refname)') )
@@ -238,13 +238,13 @@ function git_sync_to_subbranches_and_push # <remote>
         branch=${local_ref#refs/heads/}
 
         echo_log "Starting sync for '${branch}'..." INFO
-        git checkout "${branch}" || return $?
+        git checkout --quiet "${branch}" || return $?
 
         # Skip merging the parent into itself.
         [[ "${branch}" != "${parent_branch}" ]] &&
         {
             echo_log "... Merging '${parent_branch}' into '${branch}'..." INFO
-            # git merge "${parent_branch}" || return $?
+            # git merge --quiet -m "Merging '${parent_branch}' into '${branch}" "${parent_branch}" || return $?
         }
 
         # We're done if the given remote name doesn't match any remote refs
@@ -256,9 +256,12 @@ function git_sync_to_subbranches_and_push # <remote>
 
         # Pull and push changes for remote.
         echo_log "... Pushing '${branch}' to '${remote}'..." INFO
-        git pull "${remote}" "${branch}" || return $?
-        # git push "${remote}" "${branch}" || return $?
+        git pull --quiet "${remote}" "${branch}" || return $?
+        # git push --quiet "${remote}" "${branch}" || return $?
     }
+
+    # Checkout the branch where we started
+    git checkout --quiet "${parent_branch}" || return $?
 
     # Check for remote refs that aren't local (so didn't get synced)
     # We're done if the given remote name doesn't match any remote refs
