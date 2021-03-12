@@ -244,7 +244,7 @@ function git_sync_to_subbranches_and_push # <remote>
         [[ "${local_branch}" != "${parent_branch}" ]] &&
         {
             echo_log "... Merging '${parent_branch}' into '${local_branch}'..." INFO
-            # git merge --quiet --no-edit "${parent_branch}" || return $?
+            git merge --quiet --no-edit "${parent_branch}" || return $?
         }
 
         # We're done if the given remote name doesn't match any remote refs
@@ -257,7 +257,7 @@ function git_sync_to_subbranches_and_push # <remote>
         # Pull and push changes for remote.
         echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO
         git pull --quiet --no-edit "${remote}" "${local_branch}" || return $?
-        # git push --quiet "${remote}" "${local_branch}" || return $?
+        git push --quiet "${remote}" "${local_branch}" || return $?
     }
 
     # Checkout the branch where we started
@@ -272,7 +272,7 @@ function git_sync_to_subbranches_and_push # <remote>
         # Run the inverse check from above... remote branch not found locally.
         remote_branch=${remote_ref#refs/remotes/${remote}/}
         local_ref="refs/heads/${remote_branch}"
-        
+
         [[ ${local_refs[(ie)$local_ref]} -le ${#local_refs} ]] ||
         {
             echo_log "Changes will not be synced to remote branch '${remote_branch}', because it has not been checked out locally." WARNING
