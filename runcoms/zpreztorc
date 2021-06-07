@@ -34,7 +34,6 @@ local zprezto_modules=(
     'terminal'
     'editor'
     'history'
-    'history-substring-search'
     'directory'
     'spectrum'
     'utility'
@@ -49,6 +48,7 @@ local zprezto_modules=(
     'node'
     'perl'
     'syntax-highlighting'
+    'history-substring-search'
     'prompt'
 )
 zstyle ':prezto:load' pmodule $zprezto_modules
@@ -64,7 +64,7 @@ zstyle ':prezto:load' pmodule $zprezto_modules
 # Completions
 #
 
-# Set the entries to ignore in static */etc/hosts* for host completion.
+# Set the entries to ignore in static '/etc/hosts' for host completion.
 # zstyle ':prezto:module:completion:*:hosts' etc-host-ignores \
 #   '0.0.0.0' '127.0.0.1'
 
