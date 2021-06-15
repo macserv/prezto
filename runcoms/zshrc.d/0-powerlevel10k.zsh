@@ -5,6 +5,9 @@
 # ZSH Right Prompt Indentation
 ZLE_RPROMPT_INDENT=0
 
+# History Fuzzy Search (any non-empty value enables)
+HISTORY_SUBSTRING_SEARCH_FUZZY='true'
+
 
 ###############################################################################
 # P10K General Configuration
