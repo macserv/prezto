@@ -297,3 +297,13 @@ function remove_finder_metadata_files() # [--recursive] [--dryrun]
 }
 
 
+#
+#  Print a recursive tree of files and folders from the given path.
+#
+function file_tree() # <start_path>
+{
+    start_path=${~"${1}"} ; [[ -n "${start_path}" && -e "${start_path}" ]] || fail 'Argument for starting path is missing or empty, or nothing exists at the specified path.' 10
+
+    find "${start_path}" | sed -e 's/[^-][^\/]*\// |/g' -e 's/|\([^ ]\)/|-\1/'
+}
+
