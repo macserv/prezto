@@ -48,7 +48,7 @@ path=(
 # )
 
 # Add paths to directories containing completion data.
-# typeset -gU fpath=(
+# fpath=(
 #     $fpath
 # )
 
