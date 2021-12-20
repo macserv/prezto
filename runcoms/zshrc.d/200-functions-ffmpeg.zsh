@@ -7,8 +7,9 @@
 ################################################################################
 #  CONFIGURATION: GLOBAL PARAMETERS
 
-declare -a Z_RC_FFMPEG_H264_OPTIONS
-export     Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -max_muxing_queue_size 9999)
+typeset -agx Z_RC_FFMPEG_H264_OPTIONS
+
+Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -max_muxing_queue_size 9999)
 
 
 ################################################################################
