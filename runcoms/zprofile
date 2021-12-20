@@ -36,15 +36,10 @@ fi
 # Ensure path arrays are global, and will ignore addition of duplicate entries.
 typeset -gU path cdpath fpath mailpath
 
-# Set the list of directories that zsh searches for executables.
+# Set the list of directories that Zsh searches for executables.
 path=(
-    ~/Local/{bin,sbin}
-    /opt/homebrew/{bin,sbin}    # Homebrew
-    /opt/homebrew/opt/ruby/bin  # Homebrew Ruby
-    ~/.composer/vendor/bin   # Composer (PHP)
-    ~/.mozbuild/git-cinnabar # mozilla
-    ~/.cargo/bin             # Rust
-  $path
+    /usr/local/{bin,sbin}
+    $path
 )
 
 # Set the list of directories that `cd` searches (in addition to $PWD).
@@ -75,7 +70,7 @@ if (( $#commands[(i)lesspipe(|.sh)] )); then
 fi
 
 #
-# Additional Profile Files
+# Process `zprofile.d` Extension Files
 #
 for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
 {
