@@ -9,15 +9,18 @@
 #
 function proxies_on()
 {
-    export HTTP_PROXY="${http_proxy_value}"
-    export HTTPS_PROXY="${https_proxy_value}"
-    export ALL_PROXY="${all_proxy_value}"
-    export NO_PROXY="${no_proxy_value}"
-
-    export http_proxy="${HTTP_PROXY}"
-    export https_proxy="${HTTPS_PROXY}"
-    export all_proxy="${ALL_PROXY}"
-    export no_proxy="${NO_PROXY}"
+    typeset -gx HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY
+    typeset -gx http_proxy https_proxy all_proxy no_proxy
+    
+    HTTP_PROXY="${http_proxy_value}"
+    HTTPS_PROXY="${https_proxy_value}"
+    ALL_PROXY="${all_proxy_value}"
+    NO_PROXY="${no_proxy_value}"
+    
+    http_proxy="${HTTP_PROXY}"
+    https_proxy="${HTTPS_PROXY}"
+    all_proxy="${ALL_PROXY}"
+    no_proxy="${NO_PROXY}"
 }
 
 
