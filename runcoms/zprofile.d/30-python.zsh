@@ -4,4 +4,4 @@
 #
 
 
-export PYTHONSTARTUP="${HOME}/.pythonrc"
+typeset -gx PYTHONSTARTUP="${HOME}/.pythonrc"
