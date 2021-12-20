@@ -4,8 +4,17 @@
 #
 
 
+typeset -gx HOMEBREW_PREFIX
+
+HOMEBREW_PREFIX="/opt/homebrew"
+[[ "$(uname -m)" == 'x86_64' ]] && { HOMEBREW_PREFIX="/usr/local" }
+
 path=(
-#   /usr/local/{bin,sbin}     # For x86_64 Macs
-    /opt/homebrew/{bin,sbin}  # For arm64 Macs
+    ${HOMEBREW_PREFIX}/{bin,sbin}
     $path
+)
+
+fpath=(
+    ${HOMEBREW_PREFIX}/share/zsh/site-functions  # Homebrew (Chase installation location)
+    $fpath
 )
