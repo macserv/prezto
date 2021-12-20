@@ -1,5 +1,7 @@
-################################################################################
-#  FUNCTIONS: VCS (git, etc)
+#
+# ZSHRC EXTENSION:
+# Functions: VCS (git, etc)
+#
 
 
 #

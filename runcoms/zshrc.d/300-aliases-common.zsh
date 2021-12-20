@@ -1,5 +1,6 @@
 #
-# Defines all user-created aliases for shell commands
+# ZSHRC EXTENSION:
+# Aliases: Common
 #
 
 

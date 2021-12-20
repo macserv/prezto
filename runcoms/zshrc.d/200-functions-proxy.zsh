@@ -1,4 +1,10 @@
 #
+# ZSHRC EXTENSION:
+# Functions: Proxy Management
+#
+
+
+#
 #  Enable network proxies.
 #
 function proxies_on()
@@ -13,6 +19,7 @@ function proxies_on()
     export all_proxy="${ALL_PROXY}"
     export no_proxy="${NO_PROXY}"
 }
+
 
 #
 #  Disable network proxies.
