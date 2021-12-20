@@ -43,10 +43,9 @@ path=(
 )
 
 # Set the list of directories that `cd` searches (in addition to $PWD).
-cdpath=(
-    ~
-    $cdpath
-)
+# cdpath=(
+#     $cdpath
+# )
 
 # Add paths to directories containing completion data.
 # typeset -gU fpath=(
