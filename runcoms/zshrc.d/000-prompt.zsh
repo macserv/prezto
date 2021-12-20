@@ -1,5 +1,6 @@
 #
-# PowerLevel10K Prompt Configuration
+# ZSHRC EXTENSION:
+# Prompt (powerlevel10k)
 #
 
 # ZSH Right Prompt Indentation
