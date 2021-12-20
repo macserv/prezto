@@ -39,8 +39,8 @@ typeset -gU path cdpath fpath mailpath
 # Set the list of directories that zsh searches for executables.
 path=(
     ~/Local/{bin,sbin}
-    /usr/local/{bin,sbin}    # Homebrew
-    /usr/local/opt/ruby/bin  # Homebrew Ruby
+    /opt/homebrew/{bin,sbin}    # Homebrew
+    /opt/homebrew/opt/ruby/bin  # Homebrew Ruby
     ~/.composer/vendor/bin   # Composer (PHP)
     ~/.mozbuild/git-cinnabar # mozilla
     ~/.cargo/bin             # Rust
@@ -50,7 +50,6 @@ path=(
 # Set the list of directories that `cd` searches (in addition to $PWD).
 cdpath=(
     ~
-    ~/Projects/Development
     $cdpath
 )
 
@@ -74,20 +73,6 @@ export   LESS='-g -i -M -R -S -w    -z-4' # Scrolling enabled
 if (( $#commands[(i)lesspipe(|.sh)] )); then
   export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
-
-#
-# Java
-#
-
-# Dynamically set JAVA_HOME to the currently selected JVM.
-# Fail silently if it's not present.
-export JAVA_HOME="$(/usr/libexec/java_home > /dev/null 2>&1; trap)"
-
-#
-# Python
-#
-
-export PYTHONSTARTUP="${HOME}/.pythonrc"
 
 #
 # Additional Profile Files

@@ -1,8 +1,14 @@
+#
+# ZSHRC EXTENSION:
+# Functions: Xcode
+#
+
+
 ################################################################################
 #  CONFIGURATION: GLOBAL PARAMETERS
 
-declare -a Z_RC_XCODE_PROCESS_SEARCH_ITEMS
-export     Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
+typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS
+Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
 
 
@@ -15,7 +21,7 @@ export     Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 #
 function install_command_line_tools()
 {
-    local trigger_file_path package_name swu_status
+    typeset trigger_file_path package_name swu_status
     
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
