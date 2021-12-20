@@ -1,22 +1,30 @@
 #
-# This file is sourced by interactive shells. It should define aliases,
-# functions, shell options, and key bindings.
+# Executes commands at the start of an interactive session.
+#
+# Authors:
+#   Sorin Ionescu <sorin.ionescu@gmail.com>
+#   Matthew Judy <macserv>
 #
 
 
-local zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
+typeset zprezto_dir zprezto_init
 
 
 ################################################################################
 #  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
 
-[[ -s "${zprezto_dir}/init.zsh" ]] && { source "${zprezto_dir}/init.zsh" }
+zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
+zprezto_init="${zprezto_dir}/init.zsh"
+
+[[ -s "${zprezto_init}" ]] && { source "${zprezto_init}" }
 
 
 ################################################################################
 #  EXTRA INITIALIZATION FILES (e.g. custom aliases and functions)
 
-for rc_file ( ${zprezto_dir}/runcoms/zshrc.d/*.zsh(Nn) )
+zshrc_extension_dir="${zprezto_dir}/runcoms/zshrc.d"
+
+for zshrc_extension ( ${zshrc_extension_dir}/*.zsh(Nn) )
 {
-    [[ -s "${rc_file}" ]] && { source "${rc_file}" }
+    [[ -s "${zshrc_extension}" ]] && { source "${zshrc_extension}" }
 }
