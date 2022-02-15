@@ -1,5 +1,6 @@
 #
-# Defines all user-created functions for shell commands
+# ZSHRC EXTENSION:
+# Functions: Common
 #
 
 
@@ -38,6 +39,7 @@
 #
 function //() # [comment_word] ...
 {
+    # Function intentionally empty.
 }
 
 
@@ -89,21 +91,23 @@ function //() # [comment_word] ...
 #
 function echo_log() # <message> <log_type>
 {
-    local message="${1}"
+    typeset message prefix file func output
+    
+    message="${1}"
     
     [[ ${message} == '--' ]] && read -r message
     
     case $2 in
-        ERROR)   local prefix="[ERROR]"      ;;
-        WARNING) local prefix="[WARNING]"    ;;
-        INFO)    local prefix="[INFO]"       ;;
-        DEBUG)   local prefix="[DEBUG]"      ;;
-        *)       local prefix="${2:+[${2}]}" ;;
+        ERROR)   prefix="[ERROR]"      ;;
+        WARNING) prefix="[WARNING]"    ;;
+        INFO)    prefix="[INFO]"       ;;
+        DEBUG)   prefix="[DEBUG]"      ;;
+        *)       prefix="${2:+[${2}]}" ;;
     esac
 
-    local   file=${funcfiletrace[1]##*/}
-    local   func=${funcstack[2]}
-    local output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
+    file=${funcfiletrace[1]##*/}
+    func=${funcstack[2]}
+    output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
     
     if [[ "${2}" != "ERROR" ]] ; then
         echo "${output}"
@@ -150,8 +154,10 @@ function echo_log() # <message> <log_type>
 #
 function fail() # <message> <status>
 {
-    local fail_message="${1:-An error ${2:+(${2}) }occurred.}"
-    local fail_status=${2:-1}
+    typeset fail_message fail_status
+
+    fail_message="${1:-An error ${2:+(${2}) }occurred.}"
+    fail_status=${2:-1}
     
     trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
 
@@ -170,15 +176,16 @@ function fail() # <message> <status>
 #
 function unique_path() # <path>
 {
-    local original_path=${~"${1}"} ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
-    local   unique_path="${original_path}"
-    local         index=0
+    typeset original_path unique_path
+    typeset -i index
+
+    original_path=${~"${1}"} ; [[ -n "${original_path}" ]] || fail 'Missing input path argument.' 10
+    unique_path="${original_path}"
+    index=0
 
     while [[ -e $unique_path ]] ; do
-
         (( index++ ))
         unique_path="${original_path:r}-$index.${original_path:e}"
-
     done
 
     echo "${unique_path}"
@@ -191,7 +198,7 @@ function unique_path() # <path>
 #
 function mv_replace() # <source_file> <target_file>
 {
-    local source_file target_file target_date_modified
+    typeset source_file target_file target_date_modified
     
     source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
     target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
@@ -232,8 +239,8 @@ function mv_replace() # <source_file> <target_file>
 #
 function add_missing_extension_for_file_description() # [--validate-only] <description pattern> <"valid extensions"> <replacement extension> <input files>
 {
-    local validate_only file_command_pattern replacement_extension 
-    local -a valid_extensions input_files
+    typeset validate_only file_command_pattern replacement_extension 
+    typeset -a valid_extensions input_files
     
     [[ "${1}" = '--validate-only' ]] &&
     { 
@@ -274,7 +281,7 @@ function add_missing_extension_for_file_description() # [--validate-only] <descr
 #
 function remove_finder_metadata_files() # [--recursive] [--dryrun]
 {
-    local working_path remove_cmd file_brief_cmd file_brief_description
+    typeset working_path remove_cmd file_brief_cmd file_brief_description
     
     working_path='.'
     remove_cmd=(rm -v -f)
@@ -297,3 +304,36 @@ function remove_finder_metadata_files() # [--recursive] [--dryrun]
 }
 
 
+#
+#  Print a recursive tree of files and folders from the given path.
+#
+function file_tree() # <start_path>
+{
+    typeset start_path
+    start_path=${~"${1}"} ; [[ -n "${start_path}" && -e "${start_path}" ]] || fail 'Argument for starting path is missing or empty, or nothing exists at the specified path.' 10
+
+    find "${start_path}" | sed -e 's/[^-][^\/]*\// |/g' -e 's/|\([^ ]\)/|-\1/'
+}
+
+
+# #
+# #  Download a large file, broken into chunks of a specified size
+# #  (in megabytes, default is 20).
+# #
+# function download_chunked() # <remote_url> <output_file_path> <chunk_size=20>
+# {
+#     typeset dl_command remote_url output_file_path chunk_input
+#     typeset -i chunk_size
+
+#     dl_command="curl"
+
+#     remote_url="${1}" ; [[ -n "${remote_url}" ]] || fail 'Argument for remote URL is missing or empty.' 10
+#     output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
+#     # Check output path's last directory exists, or fail
+#     # Check output path's last directory is writable, or fail
+#     chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
+#     (( chunk_size = $chunk_input )) ; [[ "${chunk_size}" == <-> && -n "${chunk_size}" ]] || echo 'Using default chunk size of 20 MB.' INFO
+#     # Check that chunk size is a non-zero integer, or log that the default will be used
+     
+
+# }
