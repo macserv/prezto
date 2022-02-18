@@ -17,7 +17,8 @@ Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
 
 #
-#  Ask xcode-select to download and install the command-line tools for Xcode
+#  Trigger `softwareupdate` to download and install the Command-Line Tools for
+#  the currently installed versions of Xcode and macOS.
 #
 function install_command_line_tools()
 {
@@ -32,7 +33,12 @@ function install_command_line_tools()
     
     echo_log "Installing / Updating Command-Line Tools..." INFO
     
-    package_name="$( softwareupdate --verbose --list | grep "\*.*Command Line" | sort | tail -n 1 | sed -E 's/^ *\*( Label:)? *//' | tr -d '\n' )" || return 1
+    package_name="$( softwareupdate --verbose --list \
+        | grep "\*.*Command Line" \
+        | sort \
+        | tail -n 1 \
+        | sed -E 's/^ *\*( Label:)? *//' \
+        | tr -d '\n' )" || return 1
     
     softwareupdate --verbose --install "${package_name}" ; swu_status=$?
     
