@@ -1,5 +1,7 @@
-################################################################################
-#  FUNCTIONS: VCS (git, etc)
+#
+# ZSHRC EXTENSION:
+# Functions: VCS (git, etc)
+#
 
 
 #
@@ -208,3 +210,75 @@ function git_current_branch()
 {
     git rev-parse --abbrev-ref 'HEAD'
 }
+
+
+#
+# Sync current branch changes to any branch which is a "sub-branch" of the
+# current branch, i.e., its name starts with the name of the current branch,
+# followed by a period, and an additional identifying string.
+#
+# For any branch which has been pushed to an identically-named branch in the
+# specified remote, the changes will also be pushed to the remote.
+#
+function git_sync_to_subbranches_and_push # <remote>
+{
+    local remote parent_branch
+    local -a all_refs local_refs remote_refs
+
+    git fetch --all --quiet || return $?
+    
+    parent_branch="$(git_current_branch)"
+    all_refs=( $(git for-each-ref --format '%(refname)') )
+    local_refs=( ${(M)all_refs:#refs/heads/${parent_branch}*} )
+
+    remote="$1"
+    remote_refs=()
+    [[ -n "${remote}" ]] && remote_refs=( ${(M)all_refs:#refs/remotes/${remote}/${parent_branch}*} )
+
+    for local_ref ( $local_refs[@] )
+    {
+        local_branch=${local_ref#refs/heads/}
+
+        echo_log "Starting sync for '${local_branch}'..." INFO
+        git checkout --quiet "${local_branch}" || return $?
+
+        # Skip merging the parent into itself.
+        [[ "${local_branch}" != "${parent_branch}" ]] &&
+        {
+            echo_log "... Merging '${parent_branch}' into '${local_branch}'..." INFO
+            git merge --quiet --no-edit "${parent_branch}" || return $?
+        }
+
+        # We're done if the given remote name doesn't match any remote refs
+        (( $#remote_refs )) || continue
+
+        # Check for a matching remote branch; if none, we're done.
+        remote_ref="refs/remotes/${remote}/${local_branch}"
+        [[ ${remote_refs[(ie)$remote_ref]} -le ${#remote_refs} ]] || continue
+
+        # Pull and push changes for remote.
+        echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO
+        git pull --quiet --no-edit "${remote}" "${local_branch}" || return $?
+        git push --quiet "${remote}" "${local_branch}" || return $?
+    }
+
+    # Checkout the branch where we started
+    git checkout --quiet "${parent_branch}" || return $?
+
+    # Check for remote refs that aren't local (so didn't get synced)
+    # We're done if the given remote name doesn't match any remote refs
+    (( $#remote_refs )) || return
+
+    for remote_ref ( $remote_refs[@] )
+    {
+        # Run the inverse check from above... remote branch not found locally.
+        remote_branch=${remote_ref#refs/remotes/${remote}/}
+        local_ref="refs/heads/${remote_branch}"
+
+        [[ ${local_refs[(ie)$local_ref]} -le ${#local_refs} ]] ||
+        {
+            echo_log "Changes will not be synced to remote branch '${remote_branch}', because it has not been checked out locally." WARNING
+        }
+    }
+}
+

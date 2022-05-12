@@ -1,5 +1,8 @@
-################################################################################
-#  FUNCTIONS: HOMEBREW
+#
+# ZSHRC EXTENSION:
+# Functions: Homebrew
+#
+
 
 #
 #  Generate .png of dependency tree for installed packages
