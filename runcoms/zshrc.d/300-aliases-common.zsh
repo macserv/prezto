@@ -1,5 +1,6 @@
 #
-# Defines all user-created aliases for shell commands
+# ZSHRC EXTENSION:
+# Aliases: Common
 #
 
 
@@ -22,11 +23,6 @@ alias pst='ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n'
 #  ffmpeg: Hide banners
 alias ffmpeg='ffmpeg -hide_banner'
 alias ffprobe='ffprobe -hide_banner'
-#
-#  flake8: Default ignore options
-alias flake8='flake8 --show-source --ignore=W,E501,E203,W293,E303,E221'
-#  pylint: Default ignore options
-alias pylint='pylint --disable=bad-whitespace,trailing-whitespace,line-too-long,trailing-newlines'
 #
 #  jq: Indent 4 spaces by default
 alias jq='jq --indent 4'
