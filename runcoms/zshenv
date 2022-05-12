@@ -1,6 +1,8 @@
 #
 # Defines environment variables.
 #
+# ❰zshenv❱ ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ zlogin ➠ zlogout
+#
 # Authors:
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
 #

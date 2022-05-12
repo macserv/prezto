@@ -248,29 +248,29 @@ function add_missing_extension_for_file_description() # [--validate-only] <descr
         validate_only="YES"
         shift
     }
-    
+
     [[ -n "${1}" ]] || fail "Argument for 'file --brief' match pattern is missing or empty" 10
     file_command_pattern="${1}"
-    
+
     shift ; [[ -n "${1}" ]] || fail 'Argument for valid extensions is missing, empty, or not an array' 20
     valid_extensions=( ${(ps: :)1} )
-    
+
     shift ; [[ -n "${1}" ]] || fail "Argument for replacement extension is missing or empty" 30
     replacement_extension="${1}"
-    
+
     shift ; (( ${#@} )) || fail "Input file(s) missing or empty" 40
     input_files=( ${@} )
-    
+
     for input_file ( ${input_files} )
     {
         input_file=${~"${input_file}"}
-        
-        [[ "$(file --brief ${input_file})" = ${~file_command_pattern} ]] || continue
-      
+
+        [[ "$(file --brief -- ${input_file})" = ${~file_command_pattern} ]] || continue
+
         { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(Ie)${input_file:e}] )) } ||                                  
         {
             echo "WRONG EXTENSION: ${input_file}"
-            [[ "${validate_only}" = "YES" ]] || mv ${input_file} "${input_file}.${replacement_extension}"
+            [[ "${validate_only}" = "YES" ]] || mv -- ${input_file} "${input_file}.${replacement_extension}"
         }
     }
 }
