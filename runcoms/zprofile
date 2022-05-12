@@ -9,28 +9,35 @@
 # Browser
 #
 
-if [[ "$OSTYPE" == darwin* ]]; then
-  typeset -gx BROWSER='open'
+if [[ -z "$BROWSER" && "$OSTYPE" == darwin* ]]; then
+    typeset -gx BROWSER='open'
 fi
 
 #
 # Editors
 #
 
-typeset -gx EDITOR='nano'
-typeset -gx VISUAL='nano'
-typeset -gx PAGER='less'
+if [[ -z "$EDITOR" ]]; then
+    typeset -gx EDITOR='nano'
+fi
+if [[ -z "$VISUAL" ]]; then
+    typeset -gx VISUAL='nano'
+fi
+if [[ -z "$PAGER" ]]; then
+    typeset -gx PAGER='less'
+fi
 
 #
 # Language
 #
 
 if [[ -z "$LANG" ]]; then
-  typeset -gx LANG='en_US.UTF-8'
+    typeset -gx LANG='en_US.UTF-8'
 fi
 
 #
 # Paths
+# Note: see zprofile.d/90-home.zsh for more additions.
 #
 
 # Ensure path arrays are global, and will ignore addition of duplicate entries.
@@ -59,12 +66,14 @@ path=(
 # Set the default Less options.
 # Mouse-wheel scrolling has been disabled by -X (disable screen clearing).
 # Remove -X to enable it.
-# typeset -gx LESS='-g -i -M -R -S -w -X -z-4'
-typeset -gx   LESS='-g -i -M -R -S -w    -z-4' # Scrolling enabled
+if [[ -z "$LESS" ]]; then
+    # typeset -gx LESS='-g -i -M -R -S -w -X -z-4'
+    typeset -gx   LESS='-g -i -M -R -S -w    -z-4' # Scrolling enabled
+fi
 
 # Set the Less input preprocessor.
 # Try both `lesspipe` and `lesspipe.sh` as either might exist on a system.
-if (( $#commands[(i)lesspipe(|.sh)] )); then
+if [[ -z "$LESSOPEN" ]] && (( $#commands[(i)lesspipe(|.sh)] )); then
   typeset -gx LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
 
