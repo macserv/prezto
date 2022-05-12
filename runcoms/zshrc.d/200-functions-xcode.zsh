@@ -1,8 +1,14 @@
+#
+# ZSHRC EXTENSION:
+# Functions: Xcode
+#
+
+
 ################################################################################
 #  CONFIGURATION: GLOBAL PARAMETERS
 
-declare -a Z_RC_XCODE_PROCESS_SEARCH_ITEMS
-export     Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
+typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS
+Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
 
 
@@ -11,11 +17,12 @@ export     Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
 
 #
-#  Ask xcode-select to download and install the command-line tools for Xcode
+#  Trigger `softwareupdate` to download and install the Command-Line Tools for
+#  the currently installed versions of Xcode and macOS.
 #
 function install_command_line_tools()
 {
-    local trigger_file_path package_name swu_status
+    typeset trigger_file_path package_name swu_status
     
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
@@ -26,7 +33,12 @@ function install_command_line_tools()
     
     echo_log "Installing / Updating Command-Line Tools..." INFO
     
-    package_name="$( softwareupdate --verbose --list | grep "\*.*Command Line" | sort | tail -n 1 | sed -E 's/^ *\*( Label:)? *//' | tr -d '\n' )" || return 1
+    package_name="$( softwareupdate --verbose --list \
+        | grep "\*.*Command Line" \
+        | sort \
+        | tail -n 1 \
+        | sed -E 's/^ *\*( Label:)? *//' \
+        | tr -d '\n' )" || return 1
     
     softwareupdate --verbose --install "${package_name}" ; swu_status=$?
     
