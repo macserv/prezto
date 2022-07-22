@@ -316,6 +316,28 @@ function file_tree() # <start_path>
 }
 
 
+#
+#  Prompt the user for a password using a secure (non-echoed) input, and echo
+#  the entered text back to stdout.
+#
+#  This should be used in a context which will capture the output so that
+#  sensitive information is not displayed on screen.
+#
+#  Example: Adding a password item to the Keychain:
+#      % security add-internet-password -A -a 'username' \
+#        -s 'secure.website.domain.net' -r 'htps' \
+#        -w "$(ask_for_password)" 'login'
+#
+#  Example: Providing a password to the `curl` command:
+#      % curl --user v076726:$(ask_for_password) ...
+#
+function ask_for_password()
+{
+    typeset password_input
+    read -s 'password_input?Password:'
+    echo $password_input
+}
+
 # #
 # #  Download a large file, broken into chunks of a specified size
 # #  (in megabytes, default is 20).
