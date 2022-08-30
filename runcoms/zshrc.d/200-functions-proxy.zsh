@@ -11,9 +11,12 @@ function noproxy_from_system_bypass
 {
     typeset -a exception_list=(  $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
 
-    # Join the list elements, with commas, and filter out any value containing
-    # a slash because they're probably CIDR IP ranges, which only work with Go.
-    echo "${(@j',')exception_list:#*/*}"
+    # `zsh` Parameter Expansion 
+    # Start with the array, `exception_list`, and work outward...
+    # Operator  #\*.   : Strip the first instance of '.*' from all elements (no_proxy disallows this form of wildcarding).
+    # Operator  :#*/*  : Remove any element containing a slash (no_proxy doesn't support CIDR IP ranges).
+    # Flag      j','   : Join array elements into a single word using a comma.
+    echo ${(j',')${exception_list#\*.}:#*/*}
 }
 
 
