@@ -185,3 +185,25 @@ function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
     return 0
 }
 
+
+#
+#  Present a video player window whose input is the FaceTime HD Camera built
+#  into the current device.
+#
+#  The resolution will be 1920x1080, presented in a 1280x720 window.
+#  The displayed video will be flipped horizontally for self-adjustment.
+#
+#  Send break to exit from the command
+#
+function ff_mirror() # <video_file> <clip_start_time> <clip_end_time>
+{
+    ffplay -hide_banner -loglevel 'warning' \
+        -f 'avfoundation' -i 'FaceTime HD Camera' \
+        -video_size '1280x720' -x '1280' -y '720' \
+        -framerate '30' -pixel_format 'uyvy422' \
+        -vf 'hflip' 
+
+    # Handle exit status '123' when break is sent.
+    [[ $? == 123 ]] && return 0
+}
+
