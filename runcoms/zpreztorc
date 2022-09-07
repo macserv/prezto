@@ -47,6 +47,7 @@ local zprezto_modules=(
     'git'
     'ruby'
     'python'
+    'node'
     'perl'
     'syntax-highlighting'
     'history-substring-search'

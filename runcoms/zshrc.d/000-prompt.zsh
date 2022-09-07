@@ -19,7 +19,7 @@ POWERLEVEL9K_MODE='awesome-fontconfig'
 
 # P10K Prompt Segments
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=('os_icon' 'dir' 'vcs' 'root_indicator' 'dir_writable')
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=('status' 'background_jobs' 'time' 'swift_version')
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=('status' 'background_jobs' 'time' 'node_version' 'swift_version')
 
 # P10K Segment Separators
 POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0C6'  # ''
@@ -55,6 +55,10 @@ POWERLEVEL9K_STATUS_OK='false'
 
 # P10K Segment Config: 'time'
 POWERLEVEL9K_TIME_FORMAT="%D{%d.%m.%y \uF073  \uE0B3 %H:%M}" # '' ''
+
+# P10K Segment Config: 'node_version'
+# POWERLEVEL9K_NODE_VERSION_PROJECT_ONLY='true' # Only show segment when in project using Node
+POWERLEVEL9K_NODE_VERSION_FOREGROUND='silver' # Terminal color 15
 
 # P10K Segment Config: 'swift_version'
 POWERLEVEL9K_SWIFT_ICON='\uE755 ' # ''
