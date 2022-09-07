@@ -1,5 +1,7 @@
 #
-# Executes commands at login post-zshrc.
+# Executes commands at login.
+#
+# zshenv ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ ❰zlogin❱ ➠ zlogout
 #
 # Authors:
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
