@@ -29,7 +29,7 @@ function brew_installed_options() # <package>
 {
     [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
-    local installation_info=$(brew info --json=v1 $1)
+    typeset installation_info=$(brew info --json=v1 $1)
 
     jq --raw-output ".[].installed[0].used_options | @sh" <<< "${installation_info}"
 }
@@ -48,3 +48,16 @@ function brew_installed_options() # <package>
 #  alias brew_reinstall_and_add_option 'brew reinstall \!:1 `brew_installed_options \!:1` \!:2*'
 #  set current_options = "`brew_installed_options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
 #
+
+
+#
+#  List all brew leaves with their description appended.
+#
+function brew_leaves_with_info()
+{
+    for formula ( $(brew leaves) )
+    {
+        typeset description=$(brew info --json --formula "${formula}" | jq --raw-output '.[0].desc')
+        echo "${formula} : ${description}"
+    }
+}

@@ -70,7 +70,7 @@ path=(
 # Remove -X to enable it.
 if [[ -z "$LESS" ]]; then
     # typeset -gx LESS='-g -i -M -R -S -w -X -z-4'
-    typeset -gx   LESS='-g -i -M -R -S -w    -z-4' # Scrolling enabled
+    typeset -gx LESS='--hilite-search --ignore-case --LONG-PROMPT --RAW-CONTROL-CHARS --chop-long-lines --hilite-unread --quit-if-one-screen --tabs=4 --window=-16'
 fi
 
 # Set the Less input preprocessor.
