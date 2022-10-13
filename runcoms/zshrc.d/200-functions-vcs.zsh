@@ -178,41 +178,44 @@ function github_clone() # <repo_url> [<repo_dir>]
 #  Pull changes into all branches from the specified upstream remote, and push
 #  them to the specified origin remote.
 #
-function git_fork_sync() # <upstream_remote> <origin_remote>
+function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_name]
 {
-    typeset  default_origin="origin"
-    typeset upstream_remote="${1}" ; [[ -n "${upstream_remote}" ]] || fail 'Argument for upstream remote name is missing or empty.' 20
-    typeset   origin_remote="${2}" ; [[ -n "${origin_remote}"   ]] ||
+    typeset -i fetch_all_branches=0
+
+    [[ "${1}" = '--all' ]] && { validate_only=1 ; shift }
+
+    typeset -r default_pull_remote="origin"
+    typeset pull_remote="${1}" ; [[ -n "${pull_remote}" ]] ||
     {
-        origin_remote="${default_origin}"
-        echo_log "Using default ('${origin_remote}') as name for origin remote." INFO ;
+        pull_remote="${default_pull_remote}"
+        echo_log "Using default ('${pull_remote}') as name for pull remote." INFO ;
     }
+    typeset push_remote="${2}"
+    
+    typeset -a branch_names=( $(git branch --format '%(refname:short)') )
+    (( fetch_all_branches )) && branch_names=( $(git ls-remote --heads "${pull_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') )
 
-    echo
+    echo_log
 
-    for branch ( $(git ls-remote --heads "blessed" | awk -F 'refs\\/heads\\/' '{print $2}') )
+    for branch ( ${branch_names[@]} )
     {
-        echo_log "Checking out '${branch}'... trying local... \c" INFO
+        echo_log "Checking out local '${branch}'... \c" INFO
 
         git checkout "${branch}" &>/dev/null ||
         {
-            echo -n "trying '${origin_remote}'... "
-            { git fetch ${origin_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${origin_remote}/${branch}" &>/dev/null } ||
-            {
-                echo -n "using '${upstream_remote}'... "
-                git fetch ${upstream_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${upstream_remote}/${branch}" &>/dev/null || { echo ; fail "Unable to checkout '${branch}'." 30 ; }
-            }
+            echo -n "not found.  Fetching '${pull_remote}'... " 1>&2
+            { git fetch ${pull_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${pull_remote}/${branch}" &>/dev/null } || { echo 1>&2 ; fail "Unable to checkout '${branch}'." 30 ; }
         }
 
-        echo -n "complete.  Syncing '${branch}'... "
+        echo -n "complete.  Syncing '${branch}'... " 1>&2
 
-        [[ -z "$(git --no-pager log "^${origin_remote}/${branch}" "${branch}")" ]] || { echo ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
+        [[ -z "$(git --no-pager log "^${pull_remote}/${branch}" "${branch}")" ]] || { echo 1>&2 ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
 
-        git pull "${upstream_remote}" "${branch}" &>/dev/null || { echo ; fail "Unable to pull changes from '${upstream_remote}' into '${branch}'." 50 ; }
-        git push "${origin_remote}"   "${branch}" &>/dev/null || { echo ; fail "Unable to push changes to '${origin_remote}' for '${branch}'." 60 ; }
+        git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo 1>&2 ; fail "Unable to pull changes from '${pull_remote}' into local '${branch}'." 50 ; }
 
-        echo "done."
-        echo
+        [[ -n "${push_remote}" ]] && git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo 1>&2 ; fail "Unable to push changes to '${push_remote}' for '${branch}'." 60 ; }
+
+        echo "done.\n" 1>&2
     }
 }
 
