@@ -73,7 +73,7 @@ function git_repo_url_components() # [repo_url]
 #
 function git_add_blessed_remote_with_owner() # <blessed_owner> [blessed_url]
 {
-    git remote get-url 'blessed' > /dev/null 2>&1 && { fail "Unable to add 'blessed' remote: a remote already exists with that name." $? }
+    git remote get-url 'blessed' &>/dev/null && { fail "Unable to add 'blessed' remote: a remote already exists with that name." $? }
 
     typeset blessed_owner="${1}" ; [[ -n "${blessed_owner}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 10
     typeset blessed_url="${2}"
@@ -194,13 +194,13 @@ function git_fork_sync() # <upstream_remote> <origin_remote>
     {
         echo_log "Checking out '${branch}'... trying local... \c" INFO
 
-        git checkout "${branch}" &> /dev/null ||
+        git checkout "${branch}" &>/dev/null ||
         {
             echo -n "trying '${origin_remote}'... "
-            { git fetch ${origin_remote} ${branch} &> /dev/null && git checkout -b "${branch}" --track "${origin_remote}/${branch}" &> /dev/null } ||
+            { git fetch ${origin_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${origin_remote}/${branch}" &>/dev/null } ||
             {
                 echo -n "using '${upstream_remote}'... "
-                git fetch ${upstream_remote} ${branch} &> /dev/null && git checkout -b "${branch}" --track "${upstream_remote}/${branch}" &> /dev/null || { echo ; fail "Unable to checkout '${branch}'." 30 ; }
+                git fetch ${upstream_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${upstream_remote}/${branch}" &>/dev/null || { echo ; fail "Unable to checkout '${branch}'." 30 ; }
             }
         }
 
@@ -208,8 +208,8 @@ function git_fork_sync() # <upstream_remote> <origin_remote>
 
         [[ -z "$(git --no-pager log "^${origin_remote}/${branch}" "${branch}")" ]] || { echo ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
 
-        git pull "${upstream_remote}" "${branch}" &> /dev/null || { echo ; fail "Unable to pull changes from '${upstream_remote}' into '${branch}'." 50 ; }
-        git push "${origin_remote}"   "${branch}" &> /dev/null || { echo ; fail "Unable to push changes to '${origin_remote}' for '${branch}'." 60 ; }
+        git pull "${upstream_remote}" "${branch}" &>/dev/null || { echo ; fail "Unable to pull changes from '${upstream_remote}' into '${branch}'." 50 ; }
+        git push "${origin_remote}"   "${branch}" &>/dev/null || { echo ; fail "Unable to push changes to '${origin_remote}' for '${branch}'." 60 ; }
 
         echo "done."
         echo
