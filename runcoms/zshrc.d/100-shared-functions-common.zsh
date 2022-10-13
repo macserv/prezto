@@ -615,63 +615,64 @@ function mv_replace() # <source_file> <target_file>
 ##      --validate-only : Dry run.  Print matching files without modification.
 ##
 ##  Arguments:
-##      <description pattern> : Each file specified by <input files> will be
-##          scanned by the 'file --brief' command.  If its description matches
-##          this pattern, its extension will be checked against the provided
+##      <description_pattern> : Each file specified by <input_files> will be
+##          scanned by the 'file --brief' command.  If that command's output
+##          does not matches this pattern, the file will its extension will be checked against the provided
 ##          list of <"valid extensions">.
 ##
-##      <"valid extensions"> : Space-separated list of valid extensions for
-##          files matching the <description pattern>.
-##
-##      <replacement extension> : The extension which should be appended to
+##      <replacement_extension> : The extension which should be appended to
 ##          files which, according to the above criteria, do not have a valid
 ##          extension.
 ##
-##      <input files> : The file, files, or glob to be processed.
+##      <input_file ...> : The path to the file to be evaluated.  Multiple paths
+##          and glob patterns can be provided to evaluate multiple files.
 ##
-##  Example:  Add the extension 'jpg' to files (only) WHICH have no extension,
-##      AND are identified by the 'file' command as a JPEG file,
-##      AND do not have one of the following extensions:
-##      'jpg', 'JPG', 'jpeg', or 'JPEG'.
+##  Example Task:
+##      Add a 'jpg' extension to files (not directories) which:
+##          * are identified by the 'file' command as "JPEG" data, AND
+##          * do not already have one of the following extensions:
+##              * "jpeg", "jpg", "jpe", or "jfif" (case insensitive)
+##  Example Command for Above Task:
+##      fix_extension 'JPEG*' 'jpg' ^*.*(.)
 ##
-##      add_missing_extension_for_file_description \
-##          'JPEG*' 'jpg JPG jpeg JPEG' 'jpg' ^*.*(.)
-##
-function add_missing_extension_for_file_description() # [--validate-only] <description pattern> <"valid extensions"> <replacement extension> <input files>
+function fix_extension() # [--validate-only] <description_pattern> <replacement_extension> <input_file ...>
 {
-    typeset validate_only file_command_pattern replacement_extension
-    typeset -a valid_extensions input_files
+    typeset -i validate_only=0
 
     [[ "${1}" = '--validate-only' ]] &&
     {
-        echo "Validating only... no modifications will be made."
-        validate_only="YES"
+        echo_log "Validating only... no modifications will be made." INFO
+        validate_only=1
         shift
     }
 
     [[ -n "${1}" ]] || fail "Argument for 'file --brief' match pattern is missing or empty" 10
-    file_command_pattern="${1}"
-
-    shift ; [[ -n "${1}" ]] || fail 'Argument for valid extensions is missing, empty, or not an array' 20
-    valid_extensions=( ${(ps: :)1} )
+    typeset file_command_pattern="${1}"
 
     shift ; [[ -n "${1}" ]] || fail "Argument for replacement extension is missing or empty" 30
-    replacement_extension="${1}"
+    typeset replacement_extension="${1}"
 
     shift ; (( ${#@} )) || fail "Input file(s) missing or empty" 40
-    input_files=( ${@} )
+    typeset -a input_files=( ${@} )
 
     for input_file ( ${input_files} )
     {
         input_file=${~"${input_file}"}
 
-        [[ "$(file --brief -- ${input_file})" = ${~file_command_pattern} ]] || continue
+        # If the output of `file` doesn't match what we're looking for, skip to the next file.
+        [[ "$(file --brief -- ${input_file})" != ${~file_command_pattern} ]] && continue
 
-        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(Ie)${input_file:e}] )) } ||
-        {
-            echo "WRONG EXTENSION: ${input_file}"
-            [[ "${validate_only}" = "YES" ]] || mv -- ${input_file} "${input_file}.${replacement_extension}"
-        }
+        # Use the `file` command to determine the valid extensions for the file.
+        typeset -a valid_extensions=( ${(s:/:)$(file --brief --extension ${input_file})} )
+
+        # If the file's extension matches one of the specified extensions, skip to the next file.
+        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } && continue
+
+        echo_log "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'.\c" INFO
+        (( validate_only )) && { echo 1>&2 ; continue }
+
+        echo ".. changing extension to '${replacement_extension}'." 1>&2
+        mv -- ${input_file} "${input_file}.${replacement_extension}"
     }
 }
 
