@@ -191,7 +191,7 @@ function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_nam
         echo_log "Using default ('${pull_remote}') as name for pull remote." INFO ;
     }
     typeset push_remote="${2}"
-    
+    typeset starting_branch=$( git_current_branch )
     typeset -a branch_names=( $(git branch --format '%(refname:short)') )
     (( fetch_all_branches )) && branch_names=( $(git ls-remote --heads "${pull_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') )
 
@@ -216,6 +216,8 @@ function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_nam
         [[ -n "${push_remote}" ]] && { git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo 1>&2 ; fail "Unable to push changes to '${push_remote}' for '${branch}'." 60 ; } }
 
         echo "done.\n" 1>&2
+
+        git checkout ${starting_branch}
     }
 }
 
