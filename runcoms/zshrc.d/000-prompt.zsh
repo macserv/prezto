@@ -3,6 +3,27 @@
 # Prompt (powerlevel10k)
 #
 
+
+function prompt_my_cpu_temp
+{
+    typeset -i cpu_temp="$( sysctl 'machdep.xcpm.cpu_thermal_level' 2>& - | awk '{print $2}' )"
+
+    (( ! cpu_temp ))     && return
+    (( cpu_temp >= 89 )) && { p10k segment -s FIRE     -f maroon      -b grey30 -i $'\u1F525 ' ; return }
+    (( cpu_temp >= 78 )) && { p10k segment -s SCALDING -f orangered1  -b grey30 -i  $'\uF2C7 ' ; return }
+    (( cpu_temp >= 67 )) && { p10k segment -s HOT      -f orange3     -b grey30 -i  $'\uF2C8 ' ; return }
+    (( cpu_temp >= 56 )) && { p10k segment -s WARM     -f olive       -b grey30 -i  $'\uF2C9 ' ; return }
+    (( cpu_temp >= 45 )) && { p10k segment -s TEPID    -f green       -b grey30 -i  $'\uF2CA ' ; return }
+                              p10k segment -s COOL     -f dodgerblue1 -b grey30 -i  $'\uF2CB ' ; return
+}
+
+
+function prompt_my_caffeinate
+{
+    pgrep -f 'caffeinate -disu' && { p10k segment -f grey15 -b silver -i $'\uE005 ' ; return }
+}
+
+
 # ZSH Right Prompt Indentation
 ZLE_RPROMPT_INDENT=0
 
@@ -19,7 +40,7 @@ POWERLEVEL9K_MODE='awesome-fontconfig'
 
 # P10K Prompt Segments
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=('os_icon' 'dir' 'vcs' 'root_indicator' 'dir_writable')
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=('status' 'background_jobs' 'time' 'node_version' 'swift_version')
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=('status' 'background_jobs' 'my_caffeinate' 'time' 'my_cpu_temp' 'node_version' 'swift_version')
 
 # P10K Segment Separators
 POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\uE0C6'  # ''
