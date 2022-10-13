@@ -6,8 +6,9 @@
 
 function prompt_my_cpu_temp
 {
-    typeset -i cpu_temp="$( sysctl machdep.xcpm.cpu_thermal_level | awk '{print $2}' )"
+    typeset -i cpu_temp="$( sysctl 'machdep.xcpm.cpu_thermal_level' 2>& - | awk '{print $2}' )"
 
+    (( ! cpu_temp ))     && return
     (( cpu_temp >= 89 )) && { p10k segment -s FIRE     -f maroon      -b grey30 -i $'\u1F525 ' ; return }
     (( cpu_temp >= 78 )) && { p10k segment -s SCALDING -f orangered1  -b grey30 -i  $'\uF2C7 ' ; return }
     (( cpu_temp >= 67 )) && { p10k segment -s HOT      -f orange3     -b grey30 -i  $'\uF2C8 ' ; return }
