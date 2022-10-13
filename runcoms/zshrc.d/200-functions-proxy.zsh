@@ -9,9 +9,9 @@
 #
 function noproxy_from_system_bypass
 {
-    typeset -a exception_list=(  $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    typeset -a exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
 
-    # `zsh` Parameter Expansion 
+    # `zsh` Parameter Expansion
     # Start with the array, `exception_list`, and work outward...
     # Operator  #\*.   : Strip the first instance of '.*' from all elements (no_proxy disallows this form of wildcarding).
     # Operator  :#*/*  : Remove any element containing a slash (no_proxy doesn't support CIDR IP ranges).
@@ -27,12 +27,12 @@ function proxies_on()
 {
     typeset -gx HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY
     typeset -gx http_proxy https_proxy all_proxy no_proxy
-    
+
     HTTP_PROXY="${http_proxy_value}"
     HTTPS_PROXY="${https_proxy_value}"
     ALL_PROXY="${all_proxy_value}"
     NO_PROXY="$( noproxy_from_system_bypass )"
-    
+
     http_proxy="${HTTP_PROXY}"
     https_proxy="${HTTPS_PROXY}"
     all_proxy="${ALL_PROXY}"
