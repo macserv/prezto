@@ -21,8 +21,6 @@ typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework'
 #
 function install_command_line_tools()
 {
-    typeset package_name swu_status
-    
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
     # packages in its list of packages available for installation.
@@ -39,7 +37,9 @@ function install_command_line_tools()
         | sed -E 's/^ *\*( Label:)? *//' \
         | tr -d '\n' )" || return 1
     
-    softwareupdate --verbose --install "${package_name}" ; swu_status=$?
+    typeset swu_status
+    softwareupdate --verbose --install "${package_name}"
+    swu_status=$?
     
     rm -f "${trigger_file_path}"
     return $swu_status
