@@ -9,14 +9,11 @@
 #
 
 
-typeset zprezto_dir zprezto_init
-
-
 ################################################################################
 #  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
 
-zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
-zprezto_init="${zprezto_dir}/init.zsh"
+typeset zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
+typeset zprezto_init="${zprezto_dir}/init.zsh"
 
 [[ -s "${zprezto_init}" ]] && { source "${zprezto_init}" }
 
