@@ -203,19 +203,19 @@ function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_nam
 
         git checkout "${branch}" &>/dev/null ||
         {
-            echo -n "not found.  Fetching '${pull_remote}'... " 1>&2
-            { git fetch ${pull_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${pull_remote}/${branch}" &>/dev/null } || { echo 1>&2 ; fail "Unable to checkout '${branch}'." 30 ; }
+            echo_err -n "not found.  Fetching '${pull_remote}'... "
+            { git fetch ${pull_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${pull_remote}/${branch}" &>/dev/null } || { echo_err ; fail "Unable to checkout '${branch}'." 30 ; }
         }
 
-        echo -n "complete.  Pulling '${branch}'... " 1>&2
+        echo_err -n "complete.  Pulling '${branch}'... "
 
-        [[ -z "$(git --no-pager log "^${pull_remote}/${branch}" "${branch}")" ]] || { echo 1>&2 ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
+        [[ -z "$(git --no-pager log "^${pull_remote}/${branch}" "${branch}")" ]] || { echo_err ; fail "Local repository has unpushed commits for branch '${branch}'." 40 ; }
 
-        git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo 1>&2 ; fail "Unable to pull changes from '${pull_remote}' into local '${branch}'." 50 ; }
+        git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo_err ; fail "Unable to pull changes from '${pull_remote}' into local '${branch}'." 50 ; }
 
-        [[ -n "${push_remote}" ]] && { git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo 1>&2 ; fail "Unable to push changes to '${push_remote}' for '${branch}'." 60 ; } }
+        [[ -n "${push_remote}" ]] && { git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo_err ; fail "Unable to push changes to '${push_remote}' for '${branch}'." 60 ; } }
 
-        echo "done.\n" 1>&2
+        echo_err "done.\n"
 
         git checkout ${starting_branch}
     }
