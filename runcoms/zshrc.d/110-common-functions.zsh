@@ -47,6 +47,27 @@ function //() # [comment_word] ...
 
 
 ####
+##  Echo to StdErr instead of StdOut. 
+##
+function echo_err() # [-n] words ...
+{
+    typeset echo_cmd="echo"
+    [[ "{$1}" == "-n" ]] && { echo_cmd="${echo_cmd} -n" ; shift }
+    $echo_cmd $@ 1>&2
+}
+
+
+####
+##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
+##  greater than zero.
+##
+function echo_err_debug() # [-n] words ...
+{
+    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ }
+}
+
+
+####
 ##  Echo a log message with consistent formatting, including tracing info and
 ##  a message prefix based on the severity of the message.
 ##
@@ -125,14 +146,14 @@ function //() # [comment_word] ...
 ##      echo_log 'Error message!' ERROR
 ##      echo_log 'Debug message, unindented.' DEBUG
 ##      echo_log 'Debug message, indented once, supressing newline... \c' DEBUG 1
-##      echo     'until now!' 1>&2
+##      echo_err 'until now!'
 ##      echo_log 'Debug, indented 2 times, with dash fill and final space.' DEBUG 2 '-' ' '
 ##      echo_log 'Debug, indented 2 times, with space fill and final arrow.' DEBUG 2 ' ' '-> '
 ##      echo_log 'Debug, indented 3 times, with alternating dots and spaces.' DEBUG 3 '. '
 ##      echo_log 'Debug, indented 4 times, with dots in groups of three.' DEBUG 4 '... '
 ##      function { echo_log 'Anonymous invocation with custom 'HACK' log type.' HACK }
 ##      echo "Message from stdin with custom 'PASS' type." | echo_log -- PASS
-##      echo 1>&2
+##      echo_err
 ##  }
 ##
 ##  EXAMPLE OUTPUT (after copying the above function to the pasteboard)
@@ -209,7 +230,7 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
 
-    echo "${output}" 1>&2
+    echo_err "${output}"
 }
 
 
