@@ -9,7 +9,13 @@
 #
 function noproxy_from_system_bypass
 {
-    typeset -a exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    typeset -a exception_list=()
+
+    (( ${+commands[scutil]} )) && exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    # TODO: Support `gsettings` output, which looks like: ['localhost', '127.0.0.0/8', '::1', '*.local']
+
+    # If the exception list is empty, bail.
+    (( ${#exception_list} )) || return
 
     # `zsh` Parameter Expansion
     # Start with the array, `exception_list`, and work outward...
