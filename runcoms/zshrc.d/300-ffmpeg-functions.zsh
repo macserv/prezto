@@ -47,6 +47,21 @@ function ff_duration() # <path>
 
 
 #
+#  Return the rotation metadata of the specified video file.
+#
+#  $1: Path to video file to query for rotation metadata.
+#
+function ff_rotation
+{
+    typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
+
+    ffprobe -loglevel fatal -v 0 -select_streams v:0 -show_entries stream_side_data=rotation -of default=nokey=1:noprint_wrappers=1 "${input_file}"
+
+    return $?
+}
+
+
+#
 #  Download HLS (m3u8) MP4 Stream to File
 #
 #  $1: URL to m3u8 file containing HLS stream configuration data.
@@ -168,7 +183,7 @@ function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
     typeset output_file=$(unique_path "${input_file:r}-trimmed.${input_file:e}")
 
     # NOTE: The ordering of these arguments is very important in order to achieve the expected trimming behavior.
-    ffmpeg -loglevel panic -ss ${start_time} -to ${end_time} -noaccurate_seek -i "${input_file}" -avoid_negative_ts make_zero -c:v copy -c:a copy "${output_file}" || fail 'FFmpeg failed to trim the video.' $?
+    ffmpeg -loglevel 'panic' -ss ${start_time} -to ${end_time} -noaccurate_seek -i "${input_file}" -avoid_negative_ts 'make_zero' -c 'copy' "${output_file}" || fail 'FFmpeg failed to trim the video.' $?
 
     return 0
 }
