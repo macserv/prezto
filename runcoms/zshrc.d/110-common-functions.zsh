@@ -573,7 +573,7 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     # Read the selected operating mode.  If the mode is not set or is not valid,
     # set the 'help' flag so that the usage text will be displayed.
     typeset mode="${1}"
-    [[ "$mode" =~ "^(${(j'|')modes})\$" ]] || { help=( '--help' ) }
+    (( ${${(@v)modes}[(Ie)$mode]} )) || { help=( '--help' ) }
 
     # If the 'help' flag is set, display this function's usage text.
     if (( $#help )); then
