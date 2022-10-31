@@ -11,9 +11,11 @@
 #      brew install martido/brew-graph/brew-graph
 #      brew install graphviz
 #
-function brew_dependency_graph() #
+function brew_dependency_graph() # [package ...]
 {
-    brew graph --installed --highlight-leaves --highlight-outdated | dot -Tpdf -oBrewDependencies.pdf
+    local dependency_name="${(j'-')@}"
+    [[ -z "$dependency_name" ]] && dependency_name="all"
+    brew graph --installed --highlight-leaves --highlight-outdated $@ | dot -Tpdf -obrew-dependencies-${dependency_name}.pdf
 }
 
 
