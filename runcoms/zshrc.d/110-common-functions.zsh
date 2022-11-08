@@ -601,21 +601,21 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
     )
 
     # Create arrays to hold the patterns and actions for this function run.
-    # Populate with values required regardless of mode.
-    typeset -a filter_patterns=( "${filters[is_not_blank]}" "${filters[is_not_status]}" )
-    typeset -a filter_actions=( "${actions[print_first_field]}" )
+    # Populate with filters and required regardless of mode.
+    typeset -a awk_filters=( "${filters[is_not_blank]}" "${filters[is_not_status]}" )
+    typeset -a awk_actions=( "${actions[print_first_field]}" )
 
     # If we're in 'recent' mode, we'll stop reading after the filtering action.
-    [[ "${mode}" == "${modes[mode_recent]}" ]] && { filter_actions+=( "${actions[stop_reading]}" ) }
+    [[ "${mode}" == "${modes[mode_recent]}" ]] && { awk_actions+=( "${actions[stop_reading]}" ) }
 
-    # Add each filter to the list of patterns, unless disabled by flags.
-    (( $#include_non_sid )) || { filter_patterns+=( "${filters[is_sid]}" ) }
-    (( $#include_tty ))     || { filter_patterns+=( "${filters[is_console]}" ) }
-    (( $#online_only ))     && { filter_patterns+=( "${filters[is_online]}" ) }
+    # Add filters based on flags passed to command.
+    (( $#include_non_sid )) || { awk_filters+=( "${filters[is_sid]}" ) }
+    (( $#include_tty ))     || { awk_filters+=( "${filters[is_console]}" ) }
+    (( $#online_only ))     && { awk_filters+=( "${filters[is_online]}" ) }
 
     # Construct the 'awk' script, using the (j) zsh parameter expansion flag to
     # join the patterns and actions determined above.
-    awk_script="${(j' && ')filter_patterns} { ${(j'; ')filter_actions} }"
+    awk_script="${(j' && ')awk_filters} { ${(j'; ')awk_actions} }"
 
     # Run the 'awk' command, using the constructed script.
     awk_output=$( /usr/bin/last | awk "${awk_script}" )
