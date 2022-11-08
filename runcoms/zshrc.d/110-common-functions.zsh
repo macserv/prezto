@@ -541,26 +541,27 @@ function remove_existing() # <path_to_remove>
 ##  Print either the most recently logged-in user, or the user who logs in most
 ##  commonly, with options to filter out undesired users.
 ##
-##  ARGUMENTS
-##  ---------
-##  <recent | common>  Operating Mode
-##      'recent': Print the name of the most recently logged-in user, filtered
+##  OPERATING MODES:
+##      'recent' : Print the name of the most recently logged-in user, filtered
 ##          by the options below.
-##      'commmon': Print the name of the user who logs in most commonly,
+##      'commmon' : Print the name of the user who logs in most commonly,
 ##          filtered by the options below.
 ##
-##  FILTERING OPTIONS (Optional):
-##      [-o | --online-only]  Consider only users who are currently logged in.
-##      [-t | --include-tty]  Include logins that are not bound to a console
-##          session; i.e., non-GUI logins such as terminal or SSH sessions.
+##  FILTERING OPTIONS:
+##      -o --online-only : Consider only users who are currently logged in.
+##      -n --include-non-sid : Include users whose names do not match this pattern:
+##          '/[[:alpha:]][[:digit:]]{6}/' (one letter followed by six digits)
+##      -t --include-tty : Include logins that are not bound to a console session;
+##          i.e., non-GUI logins, such as terminal or SSH sessions.
 ##
-function user_most() # <recent | common> [-o | --online_only] [-t | --include-tty]
+function user_most() # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
     zparseopts -D -E -F -- \
         {h,-help}=help \
         {o,-online-only}=online_only \
+        {n,-include-non-sid}=include_non_sid \
         {t,-include-tty}=include_tty \
     || return 1
 
@@ -579,7 +580,7 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     if (( $#help )); then
         print -rC1 -- \
             "$0 [-h | --help]" \
-            "$0 (${(j' | ')modes}) [-t | --include-tty] [-o | --online-only]"
+            "$0 (${(j' | ')modes}) [-n | --include-non-sid] [-t | --include-tty] [-o | --online-only]"
         return
     fi
 
@@ -587,6 +588,7 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     typeset -A filters=(
         is_not_blank  '(! /^$/)'
         is_not_status '(! /wtmp begins/)'
+        is_sid        '($1 ~ /[[:alpha:]][[:digit:]]{6}/)'
         is_console    '($2 == "console")'
         is_online     '/still logged in/'
     )
@@ -607,8 +609,9 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     [[ "${mode}" == "${modes[mode_recent]}" ]] && { filter_actions+=( "${actions[stop_reading]}" ) }
 
     # Add each filter to the list of patterns, unless disabled by flags.
-    (( $#include_tty )) || { filter_patterns+=( "${filters[is_console]}" ) }
-    (( $#online_only )) && { filter_patterns+=( "${filters[is_online]}" ) }
+    (( $#include_non_sid )) || { filter_patterns+=( "${filters[is_sid]}" ) }
+    (( $#include_tty ))     || { filter_patterns+=( "${filters[is_console]}" ) }
+    (( $#online_only ))     && { filter_patterns+=( "${filters[is_online]}" ) }
 
     # Construct the 'awk' script, using the (j) zsh parameter expansion flag to
     # join the patterns and actions determined above.
@@ -619,7 +622,7 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
 
     # If we're in 'recent' mode, we're done here... echo the output and exit.
     [[ "${mode}" == "${modes[mode_recent]}" ]] &&
-    {
+    { 
         echo "${awk_output}"
         return 0
     }
