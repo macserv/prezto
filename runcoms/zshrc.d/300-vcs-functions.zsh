@@ -298,3 +298,32 @@ function git_sync_to_subbranches_and_push # <remote>
     }
 }
 
+
+function git_commit_jira() # [(-j | --jira-id) <jira_id>] [message]
+{
+    typeset help jira_id
+
+    zparseopts -D -E -F -K -- \
+        {h,-help}=help \
+        {j,-jira-id}:=jira_id \
+    || return 1
+
+    # If the 'help' flag is set, display this function's usage text.
+    if (( $#help )); then
+        print -rC1 -- \
+            "$0 [-h | --help]" \
+            "$0 [-j | --jira-id <issue_id>] <message>"
+        return
+    fi
+
+    (( $#jira_id )) && jira_id="${jira_id[2]}"
+    (( $#jira_id )) || jira_id="${GIT_COMMIT_JIRA_ISSUE}"
+    [[ -n "${jira_id}" ]] || fail "No JIRA issue ID was provided, and the GIT_COMMIT_JIRA_ISSUE environment variable is empty." 10
+
+    typeset message="${1}"
+    [[ -n "${message}" ]] || fail "No commit message was provided." 20
+
+    typeset -gx GIT_COMMIT_JIRA_ISSUE="${jira_id}"
+
+    git commit -m "${message}  (${jira_id})"
+}
