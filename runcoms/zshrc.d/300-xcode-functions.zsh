@@ -81,3 +81,52 @@ function xckill() # [-signal]
     echo
 }
 
+
+#
+#  Wrapper around `sudo log` which generates a predicate to search all fields
+#  for a given string.
+#
+function log-filter() # --case-insensitive <search_term>
+{
+    ## Create usage output.
+    typeset usage=(
+        "$0 [--help]"
+        "$0 [--case-insensitive] [--level default | info | debug]"
+        '    [--style default | compact | json | syslog] <filter_text>'
+    )
+
+    ## Define parameter defaults.
+    typeset -a flag_help=( $( (( $# > 0 )) || echo "NO_ARGS" ) )
+    typeset -a flag_case_insensitive=( )
+    typeset -a arg_level=( default )
+    typeset -a arg_style=( compact )
+    
+    ## Parse function arguments.
+    zparseopts -D -F -K -- \
+        -help=flag_help \
+        -case-insensitive=flag_case_insensitive \
+        -level:=arg_level \
+        -style:=arg_style \
+    || return 1
+
+    ## Display usage if help flag is set.
+    (( $#flag_help )) && { print -l $usage && return }
+
+    typeset modifier=""
+    (( $#flag_case_insensitive )) && modifier='[c]'
+
+    typeset -a subpredicates=(
+        "(category          CONTAINS${modifier} \"${1}\")"
+        "(composedMessage   CONTAINS${modifier} \"${1}\")"
+        "(process           CONTAINS${modifier} \"${1}\")"
+        "(processIdentifier ==                  \"${1}\")"
+    #   "(processImagePath  CONTAINS${modifier} \"${1}\")"
+        "(sender            CONTAINS${modifier} \"${1}\")"
+    #   "(senderImagePath   CONTAINS${modifier} \"${1}\")"
+        "(subsystem         CONTAINS${modifier} \"${1}\")"
+    )
+
+    typeset predicate="${(j' OR ')subpredicates}"
+
+    sudo log stream --level "${arg_level[-1]}" --style "${arg_style[-1]}" --predicate "${predicate}"
+}
