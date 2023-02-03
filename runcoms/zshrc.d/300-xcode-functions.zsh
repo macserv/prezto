@@ -130,3 +130,13 @@ function log-filter() # --case-insensitive <search_term>
 
     sudo log stream --level "${arg_level[-1]}" --style "${arg_style[-1]}" --predicate "${predicate}"
 }
+
+
+#
+#  Open VSCodium.  Avoids need to install `codium` executable.
+#
+function code()
+{
+    /Applications/VSCodium.app/Contents/Resources/app/bin/codium
+}
+
