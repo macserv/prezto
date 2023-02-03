@@ -5,11 +5,11 @@
 
 
 #
+#  Print the name (only) of each git ref in the current repo.
 #
-#
-function create_swift_gitignore() #
+function git_all_refnames
 {
-    curl -SLw "\n" "https://www.gitignore.io/api/swift,linux,xcode,macos,swiftpm,swiftpackagemanager" > .gitignore
+    git for-each-ref --format '%(refname)'
 }
 
 
@@ -232,70 +232,67 @@ function git_current_branch()
 
 
 #
-#  Sync current branch changes to any branch which is a "sub-branch" of the
-#  current branch, i.e., its name starts with the name of the current branch,
-#  followed by a period, and an additional identifying string.
+#  Synchronize changes to any branch which is a "sub-branch" of the current
+#  branch.  A sub-branch is a branch whose name starts with the name of the
+#  current branch, followed by a period, and an additional identifying string.
 #
-#  For any branch which has been pushed to an identically-named branch in the
-#  specified remote, the changes will also be pushed to the remote.
+#  EXAMPLE:
+#  * `foo/bar` (parent)
+#      * `foo/bar.baz` (sub-branch)
+#      * `foo/bar.bat` (sub-branch)
+#      * `foo/bar.boom` (sub-branch)
 #
 function git_sync_to_subbranches_and_push # <remote>
 {
-    git fetch --all --quiet || return $?
+    git fetch --all --quiet || fail "Unable to fetch branches." $?
 
-    typeset parent_branch="$(git_current_branch)"
-    typeset -a all_refs=( $(git for-each-ref --format '%(refname)') )
-    typeset -a local_refs=( ${(M)all_refs:#refs/heads/${parent_branch}*} )
+    typeset            remote="${1:-origin}"
+    typeset     parent_branch="$(git_current_branch)"
+    typeset remote_ref_prefix="refs/remotes/${remote}"
+    typeset  local_ref_prefix='refs/heads'
+    
+    typeset -a         all_refs=( $(git_all_refnames) )
+    typeset -a      remote_refs=( ${(M)all_refs:#${remote_ref_prefix}/${parent_branch}*} )
+    typeset -a       local_refs=( ${(M)all_refs:#${local_ref_prefix}/${parent_branch}*} )
+    typeset -U all_branch_names=( ${remote_refs#${remote_ref_prefix}} ${local_refs#${local_ref_prefix}} )
 
-    typeset remote="$1"
-    typeset -a remote_refs=()
-    [[ -n "${remote}" ]] && remote_refs=( ${(M)all_refs:#refs/remotes/${remote}/${parent_branch}*} )
+    typeset -i branch_is_remote
+    typeset -i branch_is_local
 
-    for local_ref ( $local_refs[@] )
+    for branch_name ( ${(i)all_branch_names[@]} )
     {
-        local_branch=${local_ref#refs/heads/}
+        branch_is_remote=${#${(M)remote_refs%/${branch_name}}}
+        branch_is_local=${#${(M)local_refs%/${branch_name}}}
 
-        echo_log "Starting sync for '${local_branch}'..." INFO
-        git checkout --quiet "${local_branch}" || return $?
+        # Checkout the branch, with remote reference if necessary.
+        echo_log "Checking out '${branch_name}'..." INFO
+        (( branch_is_remote && ! branch_is_local )) && { git checkout --quiet -b "${branch_name}" "${remote_ref_prefix}/${branch_name}" || fail }
+        (( branch_is_local )) && { git checkout --quiet "${branch_name}" || fail }
 
-        # Skip merging the parent into itself.
-        [[ "${local_branch}" != "${parent_branch}" ]] &&
-        {
-            echo_log "... Merging '${parent_branch}' into '${local_branch}'..." INFO
-            git merge --quiet --no-edit "${parent_branch}" || return $?
+        # Pull upstream changes for remote branches.
+        (( branch_is_remote )) &&
+        { 
+            echo_log "Pulling changes from '${remote}'..." INFO 1
+            git pull --quiet --no-edit "${remote}" "${branch_name}" || fail
         }
 
-        # We're done if the given remote name doesn't match any remote refs
-        (( $#remote_refs )) || continue
+        # Merge changes from parent branch, skipping the parent branch itself.
+        [[ "${branch_name}" != "${parent_branch}" ]] &&
+        { 
+            echo_log "Merging '${parent_branch}' into '${branch_name}'..." INFO 1
+            git merge --quiet --no-edit "${parent_branch}" || fail
+        }
 
-        # Check for a matching remote branch; if none, we're done.
-        remote_ref="refs/remotes/${remote}/${local_branch}"
-        [[ ${remote_refs[(ie)$remote_ref]} -le ${#remote_refs} ]] || continue
-
-        # Pull and push changes for remote.
-        echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO
-        git pull --quiet --no-edit "${remote}" "${local_branch}" || return $?
-        git push --quiet "${remote}" "${local_branch}" || return $?
+        # Push changes for remote branches.
+        (( branch_is_remote )) &&
+        { 
+            echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO 1
+            git push --quiet "${remote}" "${branch_name}" || fail
+        }
     }
 
-    # Checkout the branch where we started
+    # Check out parent branch so we end where we started.
     git checkout --quiet "${parent_branch}" || return $?
-
-    # Check for remote refs that aren't local (so didn't get synced)
-    # We're done if the given remote name doesn't match any remote refs
-    (( $#remote_refs )) || return
-
-    for remote_ref ( $remote_refs[@] )
-    {
-        # Run the inverse check from above... remote branch not found locally.
-        remote_branch=${remote_ref#refs/remotes/${remote}/}
-        local_ref="refs/heads/${remote_branch}"
-
-        [[ ${local_refs[(ie)$local_ref]} -le ${#local_refs} ]] ||
-        {
-            echo_log "Changes will not be synced to remote branch '${remote_branch}', because it has not been checked out locally." WARNING
-        }
-    }
 }
 
 
