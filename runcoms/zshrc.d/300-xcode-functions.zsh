@@ -137,7 +137,7 @@ function log-filter() # --case-insensitive <search_term>
 #
 function code()
 {
-    /Applications/VSCodium.app/Contents/Resources/app/bin/codium
+    /Applications/VSCodium.app/Contents/Resources/app/bin/codium $@
 }
 
 
