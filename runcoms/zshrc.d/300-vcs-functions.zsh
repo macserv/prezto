@@ -286,7 +286,7 @@ function git_sync_to_subbranches_and_push # <remote>
         # Push changes for remote branches.
         (( branch_is_remote )) &&
         { 
-            echo_log "... Pushing '${local_branch}' to '${remote}'..." INFO 1
+            echo_log "Pushing '${local_branch}' to '${remote}'..." INFO 1
             git push --quiet "${remote}" "${branch_name}" || fail
         }
     }
