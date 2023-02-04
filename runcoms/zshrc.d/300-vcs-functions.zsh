@@ -248,12 +248,12 @@ function git_sync_to_subbranches_and_push # <remote>
 
     typeset            remote="${1:-origin}"
     typeset     parent_branch="$(git_current_branch)"
-    typeset remote_ref_prefix="refs/remotes/${remote}"
-    typeset  local_ref_prefix='refs/heads'
+    typeset remote_ref_prefix="refs/remotes/${remote}/"
+    typeset  local_ref_prefix='refs/heads/'
     
     typeset -a         all_refs=( $(git_all_refnames) )
-    typeset -a      remote_refs=( ${(M)all_refs:#${remote_ref_prefix}/${parent_branch}*} )
-    typeset -a       local_refs=( ${(M)all_refs:#${local_ref_prefix}/${parent_branch}*} )
+    typeset -a      remote_refs=( ${(M)all_refs:#${remote_ref_prefix}${parent_branch}*} )
+    typeset -a       local_refs=( ${(M)all_refs:#${local_ref_prefix}${parent_branch}*} )
     typeset -U all_branch_names=( ${remote_refs#${remote_ref_prefix}} ${local_refs#${local_ref_prefix}} )
 
     typeset -i branch_is_remote
@@ -266,7 +266,7 @@ function git_sync_to_subbranches_and_push # <remote>
 
         # Checkout the branch, with remote reference if necessary.
         echo_log "Checking out '${branch_name}'..." INFO
-        (( branch_is_remote && ! branch_is_local )) && { git checkout --quiet -b "${branch_name}" "${remote_ref_prefix}/${branch_name}" || fail }
+        (( branch_is_remote && ! branch_is_local )) && { git checkout --quiet -b "${branch_name}" "${remote_ref_prefix}${branch_name}" || fail }
         (( branch_is_local )) && { git checkout --quiet "${branch_name}" || fail }
 
         # Pull upstream changes for remote branches.
