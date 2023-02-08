@@ -137,6 +137,16 @@ function log-filter() # --case-insensitive <search_term>
 #
 function code()
 {
-    /Applications/VSCodium.app/Contents/Resources/app/bin/codium
+    /Applications/VSCodium.app/Contents/Resources/app/bin/codium $@
+}
+
+
+#
+#  Use `gitignore.io` to create a template .gitignore file for a swift project.
+#  NOTE: Needs updating... doesn't seem to pull what I want anymore
+#
+function create_swift_gitignore() #
+{
+    curl -SLw "\n" "https://www.gitignore.io/api/swift,linux,xcode,macos,swiftpm,swiftpackagemanager" > .gitignore
 }
 
