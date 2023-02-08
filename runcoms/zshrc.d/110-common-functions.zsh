@@ -51,9 +51,7 @@ function //() # [comment_word] ...
 ##
 function echo_err() # [-n] words ...
 {
-    typeset echo_cmd="echo"
-    [[ "{$1}" == "-n" ]] && { echo_cmd="${echo_cmd} -n" ; shift }
-    $echo_cmd $@ 1>&2
+    echo $@ 1>&2
 }
 
 
