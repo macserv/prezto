@@ -14,5 +14,5 @@
 #
 function pip_upgrade_leaves()
 {
-    pip install --upgrade ${(f)"$(pip list --not-required --outdated --format 'freeze' | cut -d '=' -f 1)"}
+    pip install --upgrade ${(f)"$(pip list --not-required --outdated --format 'json' | jq --raw-output '.[].name')"}
 }
