@@ -9,7 +9,7 @@
 # typeset -gx JAVA_HOME="$(/usr/libexec/java_home &>/dev/null ; trap)"
 
 # Use Homebrew-installed OpenJDK
-typeset -gx JAVA_HOME="${HOMEBREW_PREFIX}/opt/openjdk@11/"
+typeset -gx JAVA_HOME="${HOMEBREW_PREFIX}/opt/openjdk/"
 
 path=(
     ${JAVA_HOME}/bin

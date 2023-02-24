@@ -47,6 +47,25 @@ function //() # [comment_word] ...
 
 
 ####
+##  Echo to StdErr instead of StdOut. 
+##
+function echo_err() # [-n] words ...
+{
+    echo $@ 1>&2
+}
+
+
+####
+##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
+##  greater than zero.
+##
+function echo_err_debug() # [-n] words ...
+{
+    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ }
+}
+
+
+####
 ##  Echo a log message with consistent formatting, including tracing info and
 ##  a message prefix based on the severity of the message.
 ##
@@ -125,14 +144,14 @@ function //() # [comment_word] ...
 ##      echo_log 'Error message!' ERROR
 ##      echo_log 'Debug message, unindented.' DEBUG
 ##      echo_log 'Debug message, indented once, supressing newline... \c' DEBUG 1
-##      echo     'until now!' 1>&2
+##      echo_err 'until now!'
 ##      echo_log 'Debug, indented 2 times, with dash fill and final space.' DEBUG 2 '-' ' '
 ##      echo_log 'Debug, indented 2 times, with space fill and final arrow.' DEBUG 2 ' ' '-> '
 ##      echo_log 'Debug, indented 3 times, with alternating dots and spaces.' DEBUG 3 '. '
 ##      echo_log 'Debug, indented 4 times, with dots in groups of three.' DEBUG 4 '... '
 ##      function { echo_log 'Anonymous invocation with custom 'HACK' log type.' HACK }
 ##      echo "Message from stdin with custom 'PASS' type." | echo_log -- PASS
-##      echo 1>&2
+##      echo_err
 ##  }
 ##
 ##  EXAMPLE OUTPUT (after copying the above function to the pasteboard)
@@ -209,7 +228,7 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
 
-    echo "${output}" 1>&2
+    echo_err "${output}"
 }
 
 
@@ -520,26 +539,27 @@ function remove_existing() # <path_to_remove>
 ##  Print either the most recently logged-in user, or the user who logs in most
 ##  commonly, with options to filter out undesired users.
 ##
-##  ARGUMENTS
-##  ---------
-##  <recent | common>  Operating Mode
-##      'recent': Print the name of the most recently logged-in user, filtered
+##  OPERATING MODES:
+##      'recent' : Print the name of the most recently logged-in user, filtered
 ##          by the options below.
-##      'commmon': Print the name of the user who logs in most commonly,
+##      'commmon' : Print the name of the user who logs in most commonly,
 ##          filtered by the options below.
 ##
-##  FILTERING OPTIONS (Optional):
-##      [-o | --online-only]  Consider only users who are currently logged in.
-##      [-t | --include-tty]  Include logins that are not bound to a console
-##          session; i.e., non-GUI logins such as terminal or SSH sessions.
+##  FILTERING OPTIONS:
+##      -o --online-only : Consider only users who are currently logged in.
+##      -n --include-non-sid : Include users whose names do not match this pattern:
+##          '/[[:alpha:]][[:digit:]]{6}/' (one letter followed by six digits)
+##      -t --include-tty : Include logins that are not bound to a console session;
+##          i.e., non-GUI logins, such as terminal or SSH sessions.
 ##
-function user_most() # <recent | common> [-o | --online_only] [-t | --include-tty]
+function user_most() # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
     zparseopts -D -E -F -- \
         {h,-help}=help \
         {o,-online-only}=online_only \
+        {n,-include-non-sid}=include_non_sid \
         {t,-include-tty}=include_tty \
     || return 1
 
@@ -552,13 +572,13 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     # Read the selected operating mode.  If the mode is not set or is not valid,
     # set the 'help' flag so that the usage text will be displayed.
     typeset mode="${1}"
-    [[ "$mode" =~ "^(${(j'|')modes})\$" ]] || { help=( '--help' ) }
+    (( ${${(@v)modes}[(Ie)$mode]} )) || { help=( '--help' ) }
 
     # If the 'help' flag is set, display this function's usage text.
     if (( $#help )); then
         print -rC1 -- \
             "$0 [-h | --help]" \
-            "$0 (${(j' | ')modes}) [-t | --include-tty] [-o | --online-only]"
+            "$0 (${(j' | ')modes}) [-n | --include-non-sid] [-t | --include-tty] [-o | --online-only]"
         return
     fi
 
@@ -566,6 +586,7 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     typeset -A filters=(
         is_not_blank  '(! /^$/)'
         is_not_status '(! /wtmp begins/)'
+        is_sid        '($1 ~ /[[:alpha:]][[:digit:]]{6}/)'
         is_console    '($2 == "console")'
         is_online     '/still logged in/'
     )
@@ -578,27 +599,28 @@ function user_most() # <recent | common> [-o | --online_only] [-t | --include-tt
     )
 
     # Create arrays to hold the patterns and actions for this function run.
-    # Populate with values required regardless of mode.
-    typeset -a filter_patterns=( "${filters[is_not_blank]}" "${filters[is_not_status]}" )
-    typeset -a filter_actions=( "${actions[print_first_field]}" )
+    # Populate with filters and required regardless of mode.
+    typeset -a awk_filters=( "${filters[is_not_blank]}" "${filters[is_not_status]}" )
+    typeset -a awk_actions=( "${actions[print_first_field]}" )
 
     # If we're in 'recent' mode, we'll stop reading after the filtering action.
-    [[ "${mode}" == "${modes[mode_recent]}" ]] && { filter_actions+=( "${actions[stop_reading]}" ) }
+    [[ "${mode}" == "${modes[mode_recent]}" ]] && { awk_actions+=( "${actions[stop_reading]}" ) }
 
-    # Add each filter to the list of patterns, unless disabled by flags.
-    (( $#include_tty )) || { filter_patterns+=( "${filters[is_console]}" ) }
-    (( $#online_only )) && { filter_patterns+=( "${filters[is_online]}" ) }
+    # Add filters based on flags passed to command.
+    (( $#include_non_sid )) || { awk_filters+=( "${filters[is_sid]}" ) }
+    (( $#include_tty ))     || { awk_filters+=( "${filters[is_console]}" ) }
+    (( $#online_only ))     && { awk_filters+=( "${filters[is_online]}" ) }
 
     # Construct the 'awk' script, using the (j) zsh parameter expansion flag to
     # join the patterns and actions determined above.
-    awk_script="${(j' && ')filter_patterns} { ${(j'; ')filter_actions} }"
+    awk_script="${(j' && ')awk_filters} { ${(j'; ')awk_actions} }"
 
     # Run the 'awk' command, using the constructed script.
     awk_output=$( /usr/bin/last | awk "${awk_script}" )
 
     # If we're in 'recent' mode, we're done here... echo the output and exit.
     [[ "${mode}" == "${modes[mode_recent]}" ]] &&
-    {
+    { 
         echo "${awk_output}"
         return 0
     }
