@@ -47,21 +47,6 @@ function ff_duration() # <path>
 
 
 #
-#  Return the rotation metadata of the specified video file.
-#
-#  $1: Path to video file to query for rotation metadata.
-#
-function ff_rotation
-{
-    typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
-
-    ffprobe -loglevel fatal -v 0 -select_streams v:0 -show_entries stream_side_data=rotation -of default=nokey=1:noprint_wrappers=1 "${input_file}"
-
-    return $?
-}
-
-
-#
 #  Download HLS (m3u8) MP4 Stream to File
 #
 #  $1: URL to m3u8 file containing HLS stream configuration data.
@@ -139,14 +124,20 @@ function ff_mp4ify() # <stream_url>
 #  player is not modern, the video may not be presented with rotation.
 #
 #  $1: The path to the file to be rotated.
-#  $2: The rotation which should be applied when played.
+#  $2: Optional.  The rotation which should be applied when played.  If omitted,
+#       the current rotation metadata will be displayed.
 #
-function ff_rotate() # <video_file> <angle>
+function ff_rotation() # <video_file> [angle]
 {
     [[ -v TMPDIR ]] || fail "The '\$TMPDIR' variable is not set.  This should have been done by macOS when your shell started." 10
 
-    typeset          input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 20
-    typeset            rotation="${2}"  ; [[ -n "${rotation}" ]]                         || fail 'Argument for rotation is missing or empty' 30
+    typeset input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 20
+    typeset   rotation="${2}"  ; [[ -n "${rotation}" ]] ||
+    {
+        ffprobe -loglevel fatal -v 0 -select_streams v:0 -show_entries stream_side_data=rotation -of default=nokey=1:noprint_wrappers=1 "${input_file}"
+        return $?
+    }
+
     typeset      input_basename="${input_file:t}"     # foo.mp4
     typeset          input_name="${input_basename:r}" # foo
     typeset     input_extension="${input_basename:e}" # mp4
@@ -209,4 +200,53 @@ function ff_selfie() # <video_file> <clip_start_time> <clip_end_time>
     # Handle exit status '123' when break is sent.
     [[ $? == 123 ]] && return 0
 }
+
+
+#
+#  Use `yt-dlp` to fetch a URL stored in the pasteboard.
+#
+function yt-dlpaste()
+{
+    typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
+    typeset audio_ext_best='ext=m4a'             # Prefer M4A audio format.
+    typeset video_codec_non_av1='vcodec!*=av01'  # Avoid AV1 video codec.
+    typeset -i max_filename_length=200           # Maximum length of downloaded file name.
+
+    typeset best_video="bestvideo[${video_ext_best}][${video_codec_non_av1}]"
+    typeset best_audio="bestaudio[${audio_ext_best}]"
+    typeset best_fallback="best[${video_ext_best}]"
+    typeset best_failsafe="best"
+    typeset best_format="${best_video}+${best_audio}"
+    typeset format="${best_format}/${best_fallback}/${best_failsafe}"
+
+    typeset default_output_path='~/Desktop'      # Output path if Safari's download path isn't set.
+    typeset safari_download_path="$(defaults read com.apple.Safari DownloadsPath)"
+    typeset output_dir="${safari_download_path:-${default_output_path}}"
+    typeset output_filename_format="%(title).${max_filename_length}s-%(id)s.%(ext)s"
+
+    typeset output_path="${output_dir}/${output_filename_format}"
+    typeset source_url="$(pbpaste)"
+
+    echo_log "Downloading '${source_url}' to '${output_dir}'..." INFO
+
+    typeset -a ytdlp_command=(
+        yt-dlp
+            --format "${format}"        # Use the download format specifier above.
+            --no-mtime                  # Do not change the file modification time.
+            --embed-metadata            # Embed metadata and chapters/infojson if present
+            --xattrs                    # Write metadata to the video file's xattrs
+            --output "${output_path}"
+        "${source_url}"
+    )
+
+    $ytdlp_command[@] ||
+    {
+        typeset -i ytdlp_status=$?
+        display_notification "The yt-dlp download failed with status ${ytdlp_status}." "Video Download Failed"
+        return
+    }
+
+    # Notify on success?
+}
+
 
