@@ -317,10 +317,15 @@ function git_commit_jira() # [(-j | --jira-id) <jira_id>] [message]
     (( $#jira_id )) || jira_id="${GIT_COMMIT_JIRA_ISSUE}"
     [[ -n "${jira_id}" ]] || fail "No JIRA issue ID was provided, and the GIT_COMMIT_JIRA_ISSUE environment variable is empty." 10
 
-    typeset message="${1}"
-    [[ -n "${message}" ]] || fail "No commit message was provided." 20
-
     typeset -gx GIT_COMMIT_JIRA_ISSUE="${jira_id}"
+    typeset -a commit_cmd=( 'git' 'commit' )
+    typeset message="${1}"
+
+    [[ -z "${message}" ]] &&
+    {
+        echo_log "No commit message was provided, so no changes will be committed.  JIRA issue ID is '${jira_id}'." INFO
+        return
+    }
 
     git commit -m "${message}  (${jira_id})"
 }

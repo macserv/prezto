@@ -11,6 +11,8 @@
 [[ -o INTERACTIVE && -t 2 ]] && {
 
 SAYINGS=(
+    "ENCOM MX 16-923   USER #0176825  06:00  INFORMATION\n\nVIDEO GAME PROGRAM:  SPACE PARANOIDS\nANNEXED 9/22 BY E. DILLENGER\nORIGINAL PROGRAM WRITTEN BY K. FLYNN\nTHIS INFORMATION PRIORITY ONE\nEND OF LINE"
+    "SEE YOU SPACE COWBOY..."
     "So long and thanks for all the fish.\n  -- Douglas Adams"
     "Good morning! And in case I don't see ya, good afternoon, good evening and goodnight.\n  --Truman Burbank"
 )
