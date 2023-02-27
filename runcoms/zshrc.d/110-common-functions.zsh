@@ -368,6 +368,33 @@ EOAPPLESCRIPT
 
 
 ####
+##  Present a notification in the notification center.
+##
+##  ARGUMENTS
+##  ---------
+##  $1: <message>  The "message" to be shown in the notification.
+##  $2: [title]  Optional.  The notification's title.  Default: "Notification"
+##  $3: [subtitle]  Optional.  The notification's subtitle.
+##
+function display_notification() # <message> <title> <button_label>
+{
+    [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
+
+    echo_debug "Displaying notification to user with message '${message}', title '${2}', subtitle '${3}'."
+
+    /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
+
+        tell application "System Events"
+            tell process "SystemUIServer"
+                display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
+            end tell
+        end tell
+
+EOAPPLESCRIPT
+}
+
+
+####
 ##  Present a GUI selection user interface to allow the user to choose from a
 ##  list of available options.
 ##
@@ -694,7 +721,7 @@ function mv_replace() # <source_file> <target_file>
 ####
 ##  ARGUMENTS
 ##  ---------
-##  --validate-only : Dry run.  Print matching files without modification.
+##  --dry-run : Evaluate specified files, but do not make modifications.
 ##
 ##  <description_pattern> : Each file specified by <input_files> will be
 ##      scanned by the 'file --brief' command.  If that command's output
@@ -717,11 +744,11 @@ function mv_replace() # <source_file> <target_file>
 ##  COMMAND:
 ##      % fix_extension 'JPEG*' 'jpg' ^*.*(.)
 ##
-function fix_extension() # [--validate-only] <description_pattern> <replacement_extension> <input_file ...>
+function fix_extension() # [--dry-run] <description_pattern> <replacement_extension> <input_file ...>
 {
     typeset -i validate_only=0
 
-    [[ "${1}" = '--validate-only' ]] &&
+    [[ "${1}" = '--dry-run' ]] &&
     {
         echo_log "Validating only... no modifications will be made." INFO
         validate_only=1
@@ -740,28 +767,39 @@ function fix_extension() # [--validate-only] <description_pattern> <replacement_
     for input_file ( ${input_files} )
     {
         input_file=${~"${input_file}"}
+        file_info="$(file --brief -- ${input_file})"
 
+        echo_debug "Checking '{${input_file:t}'..." INFO
         # If the output of `file` doesn't match what we're looking for, skip to the next file.
-        [[ "$(file --brief -- ${input_file})" != ${~file_command_pattern} ]] && continue
+        [[ "${file_info}" != ${~file_command_pattern} ]] &&
+        {
+            echo_debug "Skipped.  Output of 'file' does not match the specified pattern." INFO 1
+            echo_debug "Output: '${file_info:0:100}'..." INFO 1
+            continue
+        }
 
         # Use the `file` command to determine the valid extensions for the file.
         typeset -a valid_extensions=( ${(s:/:)$(file --brief --extension ${input_file})} )
 
-        # If the file's extension matches one of the specified extensions, skip to the next file.
-        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } && continue
+        # If the file's extension matches one of the valid extensions, skip to the next file.
+        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } &&
+        {
+            echo_debug "Skipped.  File extension is already correct." INFO 1
+            echo_debug "Output: '${file_info:0:100}'..." INFO 1
+            continue
+        }
 
-        echo_log "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'." INFO
+        echo_log "File '${input_file:t}' has incorrect extension; should be one of: '${(j', ')valid_extensions}'." INFO
 
         (( $valid_extensions[(I)(#i)${replacement_extension}] )) ||
         {
-            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING
+            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING 1
             continue
         }
 
         (( validate_only )) && { continue }
 
-
-        echo_log "Changing extension to '${replacement_extension}'." INFO 4 ' ' '-> '
+        echo_log "Changing extension to '${replacement_extension}'." INFO 1
         mv -- ${input_file} "${input_file:r}.${replacement_extension}"
     }
 }
