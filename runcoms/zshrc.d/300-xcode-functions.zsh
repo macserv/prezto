@@ -137,7 +137,9 @@ function log-filter() # --case-insensitive <search_term>
 #
 function code()
 {
-    /Applications/VSCodium.app/Contents/Resources/app/bin/codium $@
+    typeset code_helper_path='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
+    [[ ! -f "${code_helper_path}" ]] && code_helper_path="${HOME}${code_helper_path}"
+    "${code_helper_path}" $@
 }
 
 
