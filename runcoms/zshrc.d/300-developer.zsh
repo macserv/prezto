@@ -1,57 +1,57 @@
-#
-# ZSHRC EXTENSION:
-# Functions: Xcode
-#
+##
+##  ZSHRC EXTENSION:
+##  Functions: Xcode
+##
 
 
 ################################################################################
-#  CONFIGURATION: GLOBAL PARAMETERS
+##  CONFIGURATION: GLOBAL PARAMETERS
 
 typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
 
 
 ################################################################################
-#  FUNCTIONS: Xcode / Developer Tools
+##  FUNCTIONS: Xcode / Developer Tools
 
 
-#
-#  Trigger `softwareupdate` to download and install the Command-Line Tools for
-#  the currently installed versions of Xcode and macOS.
-#
+##
+##  Trigger `softwareupdate` to download and install the Command-Line Tools for
+##  the currently installed versions of Xcode and macOS.
+##
 function install_command_line_tools()
 {
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
     # packages in its list of packages available for installation.
     typeset trigger_file_path="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
-    
+
     touch "${trigger_file_path}" || return 1
-    
+
     echo_log "Installing / Updating Command-Line Tools..." INFO
-    
+
     typeset package_name && package_name="$( softwareupdate --verbose --list \
         | grep "\*.*Command Line" \
         | sort \
         | tail -n 1 \
         | sed -E 's/^ *\*( Label:)? *//' \
         | tr -d '\n' )" || return 1
-    
+
     typeset swu_status
     softwareupdate --verbose --install "${package_name}"
     swu_status=$?
-    
+
     rm -f "${trigger_file_path}"
     return $swu_status
 }
 
 
-#
-#  Use 'pgrep' to list process within the Xcode bundle (i.e., processes with
-#  'Xcode' in their path or process name), and processes within the
-#  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
-#  their path or process name)
-#
+##
+##  Use 'pgrep' to list process within the Xcode bundle (i.e., processes with
+##  'Xcode' in their path or process name), and processes within the
+##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
+##  their path or process name)
+##
 function xcgrep()
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
@@ -64,12 +64,12 @@ function xcgrep()
 }
 
 
-#
-#  Use 'pgrep' to kill process within the Xcode bundle (i.e., processes with
-#  'Xcode' in their path or process name), and processes within the
-#  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
-#  their path or process name).
-#
+##
+##  Use 'pgrep' to kill process within the Xcode bundle (i.e., processes with
+##  'Xcode' in their path or process name), and processes within the
+##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
+##  their path or process name).
+##
 function xckill() # [-signal]
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
@@ -82,10 +82,10 @@ function xckill() # [-signal]
 }
 
 
-#
-#  Wrapper around `sudo log` which generates a predicate to search all fields
-#  for a given string.
-#
+##
+##  Wrapper around `sudo log` which generates a predicate to search all fields
+##  for a given string.
+##
 function log-filter() # --case-insensitive <search_term>
 {
     ## Create usage output.
@@ -100,7 +100,7 @@ function log-filter() # --case-insensitive <search_term>
     typeset -a flag_case_insensitive=( )
     typeset -a arg_level=( default )
     typeset -a arg_style=( compact )
-    
+
     ## Parse function arguments.
     zparseopts -D -F -K -- \
         -help=flag_help \
@@ -132,9 +132,9 @@ function log-filter() # --case-insensitive <search_term>
 }
 
 
-#
-#  Open VSCodium.  Avoids need to install `codium` executable.
-#
+##
+##  Open VSCodium.  Avoids need to install `codium` executable.
+##
 function code()
 {
     typeset code_helper_path='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
@@ -143,10 +143,10 @@ function code()
 }
 
 
-#
-#  Use `gitignore.io` to create a template .gitignore file for a swift project.
-#  NOTE: Needs updating... doesn't seem to pull what I want anymore
-#
+##
+##  Use `gitignore.io` to create a template .gitignore file for a swift project.
+##  NOTE: Needs updating... doesn't seem to pull what I want anymore
+##
 function create_swift_gitignore() #
 {
     curl -SLw "\n" "https://www.gitignore.io/api/swift,linux,xcode,macos,swiftpm,swiftpackagemanager" > .gitignore

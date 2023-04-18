@@ -1,11 +1,11 @@
-#
-# Executes commands at logout.
-#
-# zshenv ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ zlogin ➠ ❰zlogout❱
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+##
+##  Executes commands at logout.
+##
+##  zshenv ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ zlogin ➠ ❰zlogout❱
+##
+##  Authors:
+##    Sorin Ionescu <sorin.ionescu@gmail.com>
+##
 
 # Execute code only if STDERR is bound to a TTY.
 [[ -o INTERACTIVE && -t 2 ]] && {
