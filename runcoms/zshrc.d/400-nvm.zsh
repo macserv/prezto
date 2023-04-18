@@ -1,7 +1,7 @@
-#
-# ZSHRC EXTENSION:
-# Node Version Manager (nvm)
-#
+##
+##  ZSHRC EXTENSION:
+##  Node Version Manager (nvm)
+##
 
 
 typeset -gx NVM_DIR="${HOME}/.nvm"
