@@ -1,11 +1,11 @@
-#
-# Executes commands at login pre-zshrc.
-#
-# zshenv ➠ ❰zprofile❱ ➠ zshrc ➠ zpreztorc ➠ zlogin ➠ zlogout
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+##
+##  Executes commands at login pre-zshrc.
+##
+##  zshenv ➠ ❰zprofile❱ ➠ zshrc ➠ zpreztorc ➠ zlogin ➠ zlogout
+##
+##  Authors:
+##    Sorin Ionescu <sorin.ionescu@gmail.com>
+##
 
 #
 # Browser
@@ -79,9 +79,10 @@ if [[ -z "$LESSOPEN" ]] && (( $#commands[(i)lesspipe(|.sh)] )); then
   typeset -gx LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
 
-#
-# Process `zprofile.d` Extension Files
-#
+
+################################################################################
+##  PROCESS ADDITIONAL PROFILE FILES IN zprofile.d
+
 for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
 {
     [[ -s "${profile_file}" ]] && { source "${profile_file}" }

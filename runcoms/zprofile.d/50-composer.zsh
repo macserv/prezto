@@ -1,7 +1,7 @@
-#
-# ZPROFILE EXTENSION:
-# composer (PHP)
-#
+##
+##  ZPROFILE EXTENSION:
+##  composer (PHP)
+##
 
 
 path=(
