@@ -1,11 +1,11 @@
-#
-# ZSHRC EXTENSION:
-# Functions: Common
-#
+##
+##  ZSHRC EXTENSION:
+##  Functions: Common
+##
 
 
 ################################################################################
-#  SHARED / HELPERS
+##  SHARED / HELPERS
 
 ####
 ##  "Comment" a line of text in a way that is visible in a list of commands.
@@ -15,43 +15,53 @@
 ##  This differs from '#' in that comments following '//' will appear in the
 ##  listing of a function's script as reported by commands like 'which'.
 ##
+##  Caveat: The comment words are arguments to the function named '//'.  Unlike
+##      a normal comment created by using the '#' character, the "commenting"
+##      effect of '//' ends at a control structure (e.g., ';', '&&', parentheses
+##      or braces, etc.).
+##
 ##  EXAMPLE 1
 ##  ---------
-##  % function comment_hash() { # comment, yo! }
+##  % function comment_hash () { # comment, yo! }
 ##  function>
 ##  # The octalthorpe character prevented the closing brace from being
 ##  # interpreted, so zle is now expecting more lines.
 ##
 ##  EXAMPLE 2
 ##  ---------
-##  % function comment_hash() {
+##  % function comment_hash () {
 ##  function>     # comment, yo!
 ##  function> }
 ##  % which comment_hash
 ##  comment_hash () {
 ##
-##  }
+##      }
+##  # Normal '#' comments are not stored when a function is created, so they
+##  # can't be seen in the output of 'which'.
 ##
 ##  EXAMPLE 3
 ##  ---------
-##  % function comment_slash() { // comment, yo! }
+##  % function comment_slash () { // comment, yo! }
 ##  % which comment_slash
 ##  comment_slash () {
 ##      // comment, yo!
 ##  }
+##  # The slashed command is included in 'which` output.
 ##
-function //() # [comment_word] ...
+function // ()  # [comment_word ...]
 {
     # Function intentionally empty.
 }
 
 
 ####
-##  Echo to StdErr instead of StdOut. 
+##  Echo to StdErr instead of StdOut.
 ##
-function echo_err() # [-n] words ...
+function echo_err ()  # [-n] words ...
 {
-    echo $@ 1>&2
+    typeset echo_cmd='echo'
+    [[ "${1}" == "-n" ]] && { echo_cmd="${echo_cmd} -n" ; shift ; }
+    "${echo_cmd}" $@ 1>&2
 }
 
 
@@ -59,9 +69,9 @@ function echo_err() # [-n] words ...
 ##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
 ##  greater than zero.
 ##
-function echo_err_debug() # [-n] words ...
+function echo_err_debug ()  # [-n] words ...
 {
-    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ }
+    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ ; }
 }
 
 
@@ -101,6 +111,11 @@ function echo_err_debug() # [-n] words ...
 ##  $5: [spacer]  Optional.  A string which will replace the filler immediately
 ##      before the message.  Default: none.
 ##
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_log' command will return the same status as the command which was
+##  executed immediately beforehand.
+##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
 ##  ${ECHO_LOG_INDENT_SPACES}: If this parameter is set to an non-negative
@@ -135,7 +150,7 @@ function echo_err_debug() # [-n] words ...
 ##
 ##  EXAMPLE
 ##  -------
-##  function test_logs()
+##  function test_logs ()
 ##  {
 ##      echo_log
 ##      echo_log '' INFO
@@ -175,8 +190,9 @@ function echo_err_debug() # [-n] words ...
 ##  % echo_log "Direct invocation on command line with custom 'OK' type." OK
 ##  [-zsh:4] [OK] Direct invocation on command line with custom 'OK' type.
 ##
-function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
+function echo_log ()  # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
 {
+    typeset -i passthrough_status=$?
     typeset -i transparent=0
     [[ "${1}" == "--transparent" ]] && { transparent=1 ; shift ; }
 
@@ -227,8 +243,9 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
     typeset func=${funcstack[$func_stack_index]}
 
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
-
     echo_err "${output}"
+
+    return ${passthrough_status}
 }
 
 
@@ -252,25 +269,33 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 ##  $3: [fill]  Optional.  Default: space.
 ##  $4: [spacer] Optional.  Default: none.
 ##
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_debug' command will return the same status as the command which
+##  was executed immediately beforehand.
+##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
 ##  ${ENABLE_ECHO_DEBUG}: This parameter must be set to an integer greater
 ##      than zero for messages to be printed to the console.
 ##
-function echo_debug() # <message> [indent_level] [fill] [spacer]
+function echo_debug ()  # <message> [indent_level] [fill] [spacer]
 {
-    (( ENABLE_ECHO_DEBUG )) || return
+    typeset -i passthrough_status=$?
+
+    (( ENABLE_ECHO_DEBUG )) || return 0
 
     typeset message="${1}"
-
     [[ "${message}" == '--' ]] && read -r message
 
     echo_log --transparent "${message}" DEBUG "$2" "$3" "$4"
+
+    return ${passthrough_status}
 }
 
 
 ####
-##  Print a consistently-formatted log message useful for tracing a fatal error,
+##  Print a consistently-formatted log message useful for tracing a failure,
 ##  and issue an additional `return` command (with customizable status code)
 ##  in the environment where `fail` was called.
 ##
@@ -290,7 +315,7 @@ function echo_debug() # <message> [indent_level] [fill] [spacer]
 ##      eject_warp_core
 ##      eject_status=$?
 ##      if [ eject_status -neq 0 ] ; then
-##          echo_log "Ejector systems off-line (${eject_status})." ERROR
+##          echo_log "Ejector systems off-line (${eject_status})." FAIL
 ##          return $eject_status
 ##      fi
 ##
@@ -305,19 +330,46 @@ function echo_debug() # <message> [indent_level] [fill] [spacer]
 ##  and debugging), prevent this behavior, a subshell can be used to allow
 ##  execution to continue.  For example:
 ##      % fail 'Bar' || echo 'Baz'
-##      [-zsh:1] [ERROR] Bar
+##      [-zsh:1] [FAIL] Bar
 ##      % ( fail 'Bar' ) || echo 'Baz'
-##      [-zsh:2] [ERROR] Bar
+##      [-zsh:2] [FAIL] Bar
 ##      Baz
 ##
-function fail() # [message] [status]
+function fail ()  # [message] [status]
 {
     typeset fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     typeset fail_status=${2:-1}
 
-    trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
+    trap "echo_log ${(qq)fail_message} FAIL ; return ${fail_status}"  EXIT
 
-    return
+    return 0
+}
+
+
+####
+##  Returns the user name of the user associated with this system.
+##
+function local_user_name ()
+{
+    user_most common
+}
+
+
+####
+##  Returns the UID for the system's local user.
+##
+function local_user_uid ()
+{
+    /usr/bin/id -u $(local_user_name)
+}
+
+
+####
+##  Returns the local home directory for the system's local user.
+##
+function local_user_home ()
+{
+    /usr/bin/dscl -plist '.' -read "/Users/$(local_user_name)" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
 }
 
 
@@ -344,7 +396,7 @@ function fail() # [message] [status]
 ##               'RED ALERT' \
 ##               'BATTLE STATIONS'
 ##
-function display_alert_dialog() # <message> <title> <button_label>
+function display_alert_dialog ()  # <message> <title> <button_label>
 {
     typeset message="$1"
     typeset title="${2:-An error occurred.}"
@@ -413,7 +465,7 @@ EOAPPLESCRIPT
 ##  0: An item was chosen normally.
 ##  10: The "Cancel" button was clicked.
 ##
-function select_from_list_dialog() # [title] [message] [item] ...
+function select_from_list_dialog ()  # [title] [message] [item] ...
 {
     typeset title="$1"
     typeset message="$2"
@@ -460,7 +512,7 @@ EOAPPLESCRIPT
 ##        n: The user is not a member of the given group, or the membership
 ##           check failed, `dseditgroup` code returned.
 ##
-function check_user_for_group_membership() # <user_name> <group_name>
+function check_user_for_group_membership ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -484,7 +536,7 @@ function check_user_for_group_membership() # <user_name> <group_name>
 ##      122: Argument for group name is missing or empty.
 ##        n: The operation to add the user failed; returns `dseditgroup` status.
 ##
-function add_user_to_group() # <user_name> <group_name>
+function add_user_to_group ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -492,7 +544,7 @@ function add_user_to_group() # <user_name> <group_name>
     check_user_for_group_membership "${user_name}" "${group_name}" && return 0
 
     echo_debug "Adding '${user_name}' to group '${group_name}'..."
-    /usr/sbin/dseditgroup -o edit -a "${user_name}" -t user "${group_name}" >/dev/null || return $?
+    /usr/sbin/dseditgroup -o edit -a "${user_name}" -t user "${group_name}" >/dev/null
 }
 
 
@@ -506,30 +558,33 @@ function add_user_to_group() # <user_name> <group_name>
 ##      of megabytes.
 ##
 ##  $1: <volume_path>  The mount point or device path.  If no argument is
-##      provided, '${JAMF_GLOBAL_TARGET_DRIVE_MOUNT_POINT}' will be read.
-##      If that is also unset, the root path '/' will be used.
+##      provided, the root path '/' will be used.
 ##
-function free_in_volume() # [--bytes] <volume_path>
+function free_in_volume ()  # [--bytes] <volume_path>
 {
     typeset -i use_bytes=0
     [[ "${1}" == "--bytes" ]] && { use_bytes=1 ; shift ; }
 
     typeset volume_path="${1}"
-    [[ -n "${volume_path}" ]] || volume_path="${JAMF_GLOBAL_TARGET_DRIVE_MOUNT_POINT}"
-    [[ -n "${volume_path}" ]] || volume_path="/"
-
-    typeset volume_info ; volume_info="$( /usr/sbin/diskutil info -plist "${volume_path}" )" ||
+    [[ -z "${volume_path}" ]] && { volume_path='/' } ||  # Use default if unset.  Otherwise...
     {
-        diskutil_status=$? ; echo_log "Unable to get free disk space for '${volume_path}'." ERROR
-        return $diskutil_status
+        [[ -d "${volume_path}" ]] ||  # Verify provided path is a directory.
+        {
+             echo_debug "Specified volume path '${volume_path}' is not a directory."
+             return 1
+        }
     }
 
-    typeset free_bytes_keypath=':APFSContainerFree'
-    typeset free_bytes && free_bytes="$( /usr/libexec/PlistBuddy -c "Print ${free_bytes_keypath}" /dev/stdin <<< "${volume_info}" )" ||
+    typeset volume_info && volume_info="$( /usr/sbin/diskutil info -plist "${volume_path}" )" ||
     {
-        typeset plistbuddy_status=$?
-        echo_log "Unable to parse disk info for '${volume_path}'." ERROR
-        return $plistbuddy_status
+        echo_debug "Unable to get disk info for '${volume_path}'."
+        return $?
+    }
+
+    typeset free_bytes && free_bytes="$( echo "${volume_info}" | /usr/bin/plutil -extract 'APFSContainerFree' raw - )" ||
+    {
+        echo_debug "Unable to parse free disk space for '${volume_path}'."
+        return $?
     }
 
     (( use_bytes )) &&
@@ -539,8 +594,7 @@ function free_in_volume() # [--bytes] <volume_path>
     }
 
     # Limit MB format output to three decimal places.
-    typeset -F3 free_mbytes
-    free_mbytes=$(( ${free_bytes} / (1024.0 ** 2) ))
+    typeset -F 3 free_mbytes && free_mbytes=$(( free_bytes / (1024.0 ** 2) ))
 
     echo "${free_mbytes}"
 }
@@ -553,12 +607,13 @@ function free_in_volume() # [--bytes] <volume_path>
 ##  ---------
 ##  $1: <path_to_remove>  The path to the file or directory to be removed.
 ##
-function remove_existing() # <path_to_remove>
+function remove_existing ()  # <path_to_remove>
 {
-    [[ -f "${1}" ]] && { echo_debug "Removing file '${1}'..."      ; /bin/rm  -f "${1}" ; return $? }
-    [[ -d "${1}" ]] && { echo_debug "Removing directory '${1}'..." ; /bin/rm -rf "${1}" ; return $? }
+    [[ -f "${1}" ]] && { echo_debug "Removing file '${1}'..."      ; /bin/rm  -f "${1}" ; return $? ; }
+    [[ -d "${1}" ]] && { echo_debug "Removing directory '${1}'..." ; /bin/rm -rf "${1}" ; return $? ; }
 
     echo_debug "No file or directory exists at '${1}'... skipped."
+    return 0
 }
 
 
@@ -566,20 +621,22 @@ function remove_existing() # <path_to_remove>
 ##  Print either the most recently logged-in user, or the user who logs in most
 ##  commonly, with options to filter out undesired users.
 ##
-##  OPERATING MODES:
-##      'recent' : Print the name of the most recently logged-in user, filtered
+##  ARGUMENTS
+##  ---------
+##  <recent | common>  Operating Mode
+##      'recent': Print the name of the most recently logged-in user, filtered
 ##          by the options below.
-##      'commmon' : Print the name of the user who logs in most commonly,
+##      'commmon': Print the name of the user who logs in most commonly,
 ##          filtered by the options below.
 ##
-##  FILTERING OPTIONS:
-##      -o --online-only : Consider only users who are currently logged in.
-##      -n --include-non-sid : Include users whose names do not match this pattern:
-##          '/[[:alpha:]][[:digit:]]{6}/' (one letter followed by six digits)
-##      -t --include-tty : Include logins that are not bound to a console session;
-##          i.e., non-GUI logins, such as terminal or SSH sessions.
+##  FILTERING OPTIONS (Optional):
+##      [-o | --online-only]  Consider only users who are currently logged in.
+##      [-n | --include-non-sid]  Include users whose names do not appear to be
+##          a standard identifier (a letter followed by siz digits).
+##      [-t | --include-tty]  Include logins that are not bound to a console
+##          session; i.e., non-GUI logins such as terminal or SSH sessions.
 ##
-function user_most() # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
+function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
@@ -606,7 +663,7 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
         print -rC1 -- \
             "$0 [-h | --help]" \
             "$0 (${(j' | ')modes}) [-n | --include-non-sid] [-t | --include-tty] [-o | --online-only]"
-        return
+        return 0
     fi
 
     # Configure 'awk' filter patterns to be ANDed together later.
@@ -647,7 +704,7 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
 
     # If we're in 'recent' mode, we're done here... echo the output and exit.
     [[ "${mode}" == "${modes[mode_recent]}" ]] &&
-    { 
+    {
         echo "${awk_output}"
         return 0
     }
@@ -678,11 +735,9 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
 ##        appending the smallest-possible integer to the end which would result
 ##        in a unique file path.
 ##
-function unique_path() # <path>
+function unique_path ()  # <path>
 {
-    (( ${#@} > 1 )) && fail "Only one argument (file path) may be evaluated."
-
-    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || fail 'Missing input path argument.' 10
+    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || { echo_log 'Missing input path argument.' ERROR ; return 10 ; }
     typeset base_and_stem="${working_path:r}"
     typeset extension_with_dot="${${working_path:e}:+.${working_path:e}}"
     typeset -i index=0
@@ -696,7 +751,7 @@ function unique_path() # <path>
         unset extension_with_dot
     }
 
-    while [[ -e $working_path ]] { working_path="${base_and_stem}-$((++index))${extension_with_dot}" }
+    while [[ -e $working_path ]] { working_path="${base_and_stem}-$((++index))${extension_with_dot}" ; }
 
     echo "${working_path}"
 }
@@ -706,100 +761,90 @@ function unique_path() # <path>
 ##  Replace the contents of target_file with those of source_file, preserving
 ##  the metadata and modification date of the target_file.
 ##
-function mv_replace() # <source_file> <target_file>
+function mv_replace ()  # <source_file> <target_file>
 {
-    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
-    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
+    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || { echo_log 'Argument for source file is missing or empty, or file does not exist.' ; return 10 ; }
+    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || { echo_log 'Argument for target file is missing or empty, or file does not exist.' ; return 11 ; }
 
-    typeset target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")"
+    typeset target_date_modified && target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")" ||
 
-    mv    -f       "${source_file}"          "${target_file}" || fail     'Could not replace target file contents with source.' $?
-    touch -c -m -t "${target_date_modified}" "${target_file}" || echo_log 'Could not reset target file modification date to pre-operation date.' WARNING
+    mv    -f       "${source_file}"          "${target_file}" || { echo_log 'Could not replace target file contents with source.' ERROR ; return $? ; }
+    touch -c -m -t "${target_date_modified}" "${target_file}" || { echo_log 'Could not reset target file modification date to pre-operation date.' WARNING ; }
+
+    return 0
 }
 
 
 ####
+##  Add an extension to files whose extension is incorrect, using the 'file'
+##  command to assess the file's type and valid extensions.
+##
 ##  ARGUMENTS
 ##  ---------
-##  --dry-run : Evaluate specified files, but do not make modifications.
+##  --validate-only : Dry run.  Print matching files without modification.
 ##
-##  <description_pattern> : Each file specified by <input_files> will be
-##      scanned by the 'file --brief' command.  If that command's output
-##      does not matches this pattern, the file will its extension will be checked against the provided
-##      list of <"valid extensions">.
+##  $1: <description_pattern>  Pattern which will be tested against the output
+##      of the 'file --brief' command for each input file.  If the output of
+##      the 'file' command does not match this pattern, it will be skipped.
 ##
-##  <replacement_extension> : The extension which should be appended to
-##      files which, according to the above criteria, do not have a valid
-##      extension.
+##  #2: <replacement_extension>  The desired extension to append to files which
+##      which do not have a proper extension.  This value will be checked
+##      against the list of valid extensions returned by 'file --extension'.
 ##
-##  <input_file ...> : The path to the file to be evaluated.  Multiple paths
-##      and glob patterns can be provided to evaluate multiple files.
+##  $3-$n: <input_file ...>  The path to the file(s) to be evaluated.  Multiple
+##      file paths and glob patterns can be provided.
 ##
 ##  EXAMPLE
 ##  -------
-##  TASK: Add a 'jpg' extension to files (not directories) which:
-##      * are identified by the 'file' command as "JPEG" data, AND
-##      * do not already have one of the following extensions:
-##          * "jpeg", "jpg", "jpe", or "jfif" (case insensitive)
-##  COMMAND:
-##      % fix_extension 'JPEG*' 'jpg' ^*.*(.)
+##  For every file (not folder) in the current path: if it contains JPEG data
+##  and does not have a proper extension, add the extension 'jpg' to the file.
 ##
-function fix_extension() # [--dry-run] <description_pattern> <replacement_extension> <input_file ...>
+##  % fix_extension 'JPEG*' 'jpg' ^*.*(.)
+##
+function fix_extension ()  # [--validate-only] <description_pattern> <replacement_extension> <input_file ...>
 {
     typeset -i validate_only=0
 
-    [[ "${1}" = '--dry-run' ]] &&
+    [[ "${1}" = '--validate-only' ]] &&
     {
         echo_log "Validating only... no modifications will be made." INFO
         validate_only=1
         shift
     }
 
-    [[ -n "${1}" ]] || fail "Argument for 'file --brief' match pattern is missing or empty" 10
+    [[ -n "${1}" ]] || { echo_log "Argument for 'file --brief' match pattern is missing or empty" ERROR ; return 10 ; }
     typeset file_command_pattern="${1}"
 
-    shift ; [[ -n "${1}" ]] || fail "Argument for replacement extension is missing or empty" 30
+    shift ; [[ -n "${1}" ]] || { echo_log "Argument for replacement extension is missing or empty" ERROR ; return 30 ; }
     typeset replacement_extension="${1}"
 
-    shift ; (( ${#@} )) || fail "Input file(s) missing or empty" 40
+    shift ; (( ${#@} )) || { echo_log "Input file(s) missing or empty" ERROR ; return 40 ; }
     typeset -a input_files=( ${@} )
 
     for input_file ( ${input_files} )
     {
         input_file=${~"${input_file}"}
-        file_info="$(file --brief -- ${input_file})"
 
-        echo_debug "Checking '{${input_file:t}'..." INFO
         # If the output of `file` doesn't match what we're looking for, skip to the next file.
-        [[ "${file_info}" != ${~file_command_pattern} ]] &&
-        {
-            echo_debug "Skipped.  Output of 'file' does not match the specified pattern." INFO 1
-            echo_debug "Output: '${file_info:0:100}'..." INFO 1
-            continue
-        }
+        [[ "$(file --brief -- ${input_file})" != ${~file_command_pattern} ]] && continue
 
         # Use the `file` command to determine the valid extensions for the file.
         typeset -a valid_extensions=( ${(s:/:)$(file --brief --extension ${input_file})} )
 
-        # If the file's extension matches one of the valid extensions, skip to the next file.
-        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } &&
-        {
-            echo_debug "Skipped.  File extension is already correct." INFO 1
-            echo_debug "Output: '${file_info:0:100}'..." INFO 1
-            continue
-        }
+        # If the file's extension matches one of the specified extensions, skip to the next file.
+        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } && continue
 
-        echo_log "File '${input_file:t}' has incorrect extension; should be one of: '${(j', ')valid_extensions}'." INFO
+        echo_log "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'." INFO
 
         (( $valid_extensions[(I)(#i)${replacement_extension}] )) ||
         {
-            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING 1
+            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING
             continue
         }
 
-        (( validate_only )) && { continue }
+        (( validate_only )) && continue
 
-        echo_log "Changing extension to '${replacement_extension}'." INFO 1
+        echo_log "Changing extension to '${replacement_extension}'." INFO 4 ' ' '-> '
         mv -- ${input_file} "${input_file:r}.${replacement_extension}"
     }
 }
@@ -808,7 +853,7 @@ function fix_extension() # [--dry-run] <description_pattern> <replacement_extens
 ####
 ##  Remove macOS-specific Finder metadata files, stored as files prefixed with '._'
 ##
-function remove_finder_metadata_files() # [--recursive] [--dry-run]
+function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 {
     typeset working_path='.'
     typeset -a remove_cmd=(rm -v -f)
@@ -816,7 +861,7 @@ function remove_finder_metadata_files() # [--recursive] [--dry-run]
     typeset file_brief_description="AppleDouble encoded Macintosh file"
 
     [[ "${1}" = '--recursive' ]] && { working_path='**' ; shift ; }
-    [[ "${1}" = '--dry-run'    ]] && { remove_cmd='echo' ; }
+    [[ "${1}" = '--dry-run'   ]] && { remove_cmd='echo' ; }
 
     for macos_file ( ${~"${working_path}"}/._*(.N) )
     {
@@ -834,10 +879,10 @@ function remove_finder_metadata_files() # [--recursive] [--dry-run]
 ####
 ##  Print a recursive tree of files and folders from the given path.
 ##
-function file_tree() # <start_path>
+function file_tree ()  # <start_path>
 {
     typeset start_path=${~"${1}"}
-    [[ -n "${start_path}" && -e "${start_path}" ]] || fail 'Argument for starting path is missing or empty, or nothing exists at the specified path.' 10
+    [[ -n "${start_path}" && -e "${start_path}" ]] || { echo_log 'Argument for starting path is missing or empty, or nothing exists at the specified path.' ERROR ; return 10 ; }
 
     find "${start_path}" | sed -e 's/[^-][^\/]*\// |/g' -e 's/|\([^ ]\)/|-\1/'
 }
@@ -860,7 +905,7 @@ function file_tree() # <start_path>
 ##  Provide a password to the `curl` command:
 ##      % curl --user v076726:$(ask_for_password) ...
 ##
-function ask_for_password()
+function ask_for_password ()
 {
     typeset password_input
     read -s 'password_input?Password:'
@@ -868,17 +913,272 @@ function ask_for_password()
 }
 
 
-# #
-# #  Download a large file, broken into chunks of a specified size
-# #  (in megabytes, default is 20).
-# #
+####
+##  Create a new directory for temporary files.  The location will be:
+##  * a uniquely named directory
+##      * inside a directory named after the script
+##          * inside a directory named with `$JPMC_ORGANIZATION`
+##              * located either in `$TMPDIR` (if it is set) or `/tmp/`.
+##
+##  For example, if `$TMPDIR` is not set, and this function is called from a
+##  script named `do_something_awesome.zsh`, the new directory's path could be:
+##  > `/tmp/net.jpmchase.gti.mac-engineering/do_something_awesome/0C4D2B82-C99D-4E1E-B71D-AD0577A8F507/`
+##
+function new_tmp_dir ()  # <purpose>
+{
+    typeset base_tmp_dir="${TMPDIR:-/tmp/}"
+    typeset purpose="${1:-${ZSH_ARGZERO:t:r}}" # Use the script name if not set.
+
+    [[ -n "${purpose}" ]] || { echo_log 'Purpose for the temporary directory may not be empty.' ERROR ; return 1 ; }
+
+    typeset unique_id="$( /usr/bin/uuidgen )"
+    typeset new_tmp_dir_path="${base_tmp_dir}${JPMC_ORGANIZATION}/${purpose}.${unique_id}"
+
+    echo_debug "Creating empty temporary directory for script-related task at '${new_tmp_dir_path}'..."
+
+    /bin/mkdir -p  "${new_tmp_dir_path}" &&
+        /bin/chmod 700 "${new_tmp_dir_path}" ||
+            { echo_log 'Unable to create or change mode on new temporary directory.' ERROR ; return $? ; }
+
+    echo "${new_tmp_dir_path}"
+}
+
+
+####
+##  Read the contents for the given AuthorizationDB right, formatted as an
+##  XML property list.
+##
+function authdb_read ()  # <right_name>
+{
+    typeset right_name="${1}"
+    echo_debug "Reading AuthorizationDB right '${right_name}'..."
+
+    eval "$( ( /usr/bin/security authorizationdb read "${right_name}" ) \
+            2> >(read_status=$(cat); typeset -p read_status) \
+            > >(right_contents=$(cat); typeset -p right_contents); result_code=$?; typeset -p result_code )"
+
+    (( result_code > 0 )) && { echo_log "Unable to read right '${right_name}'.  Error: '${read_status}'." ERROR ; return result_code ; }
+
+    echo_debug "Contents of right '${right_name}' are as follows:\n${right_contents}"
+    echo_debug "Read Status: '${read_status}'"
+    echo "${right_contents}"
+}
+
+
+####
+##  Update the contents of the given AuthorizationDB right.
+##
+##  The updated content can be specified as either a single rule (provided via
+##  the second argument), or as an XML property list (provided via stdin).
+##
+function authdb_write ()  # <right_name> [rule_id | plist-content-via-stdin]
+{
+    typeset right_name="${1}"
+    typeset rule_id="${2}"
+
+    ###############################################################
+    ## PATH 1 - UPDATE RIGHT TO DELEGATE TO rule_id SPECIFIED IN $2
+    [[ -n "${rule_id}" ]] &&
+    {
+        echo_debug "Updating AuthorizationDB right to invoke rule '${rule_id}'..."
+        /usr/bin/security authorizationdb write "${right_name}" "${rule_id}" ||
+        {
+            echo_log "Unable to update right '${right_name}'; the AuthDB 'write' operation failed." ERROR
+            return 1
+        }
+
+        return 0
+    }
+
+    ###############################################
+    ## PATH 2 - UPDATE RIGHT WITH CONTENTS OF STDIN
+    echo_debug "Updating AuthorizationDB right '${right_name}' with Plist contents from stdin..."
+
+    typeset right_contents && right_contents="$( [[ -t 0 ]] || cat - )"  ||
+    {
+        echo_log "Unable to update right '${right_name}'; no Plist content was provided via stdin." ERROR
+        return 1
+    }
+
+    echo_debug "Updated contents of right '${right_name}' will be as follows:\n\n${right_contents}\n"
+
+    echo "${right_contents}" | /usr/bin/security authorizationdb write "${right_name}" ||
+    {
+        echo_log "Unable to update right '${right_name}'; the AuthDB 'write' operation failed." ERROR
+        return $?
+    }
+}
+
+
+####
+##  Remove an AuthorizationDB right.
+##
+function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
+{
+    typeset system_removal_flag='--bypass-system-right-restriction'
+    typeset -i system_removal_enabled=0
+    [[ "${1}" == "${system_removal_flag}" ]] && { system_removal_enabled=1 ; shift ; }
+
+    typeset right_name="${1}"
+
+    #################################################################
+    ## HAPPY PATH: REMOVE NON-"system.*" RIGHT USING 'security' TOOL.
+
+    [[ "${right_name}" != 'system.'* ]] &&
+    {
+        echo_debug "Removing right '${right_name}' from the AuthorizationDB..."
+
+        /usr/bin/security authorizationdb remove "${right_name}" ||
+        {
+            echo_log "Unable to remove right '${right_name}' from the AuthDB." ERROR
+            return $?
+        }
+
+        return 0
+    }
+
+    ##########################################################################
+    ## TREACHEROUS PATH: REMOVE "system.*" RIGHT BY EDITING 'auth.db' DIRECTLY
+
+    (( system_removal_enabled )) ||
+    {
+        echo_log "Rights which begin with 'system.' may not be removed without enabling system right removal." ERROR
+        echo_log "You can forcibly remove the right named '${right_name}' by adding the '${system_removal_flag}' flag to this command." ERROR
+        echo_log "PLEASE NOTE: Using this flag will sidestep Apple's logic, and edit the AuthorizationDB directly using SQLite commands." ERROR
+        echo_log "This is highly undesirable, and should be avoided in standard practice." ERROR
+        return 1
+    }
+
+    typeset authdb_file='/private/var/db/auth.db'
+    typeset -a sqlite_cmd=('/usr/bin/sqlite3' '-bail' "${authdb_file}")
+    typeset -i right_id
+
+    echo_log "Bypassing Apple's logic to remove right '${right_name}' from the AuthorizationDB using SQLite commands."
+    echo_log "This is highly undesirable, and should be avoided in standard practice." WARNING
+
+    # VERIFY THAT A RULE EXISTS IN THE AUTH DB WITH THE SPECIFIED NAME.
+    # RESTRICT QUERY TO "RIGHT" RULES ONLY (type = 1).  GRAB VALUE.
+    right_id=$( "${sqlite_cmd[@]}" "SELECT id FROM rules WHERE name = '${right_name}' AND type = 1;" )  && (( right_id > 0 )) ||
+    {
+        echo_log "Unable to find right with name '${right_name}' in the Authorization DB." ERROR
+        return 1
+    }
+
+    echo_debug "Right named '${right_name}' has ID '${right_id}' in the Authorization DB."
+
+    typeset -a modification_query=(
+        'PRAGMA    foreign_keys = ON;'
+        'PRAGMA    temp_store   = MEMORY;'
+        'PRAGMA    auto_vacuum  = FULL;'
+        'PRAGMA    journal_mode = WAL;'
+        '.filectrl persist_wal    ON'
+        "DELETE FROM rules WHERE id = ${right_id};"
+    )
+
+    echo_debug "Executing database query:\n    ${(j'\n    ')modification_query}\n"
+    echo "${(j'\n')modification_query}" | "${sqlite_cmd[@]}" ||
+    {
+        echo_log "SQLite query failed with status '$?'.  Right '${right_name}' will not be removed." ERROR
+        return $?
+    }
+
+    return 0
+}
+
+
+####
+##  Reset the configuration of the the given AuthorizationDB right to its
+##  "factory-default" state, as provided by the SIP-protected reference at
+##  `/System/Library/Security/authorization.plist`.
+##
+function authdb_factory_reset ()  # <right_name>
+{
+    typeset right_name="${1}"
+    typeset factory_config_file='/System/Library/Security/authorization.plist'
+
+    echo_debug "Resetting AuthorizationDB right '${right_name}' to its factory-default configuration from '${factory_config_file}'..."
+
+    typeset factory_contents && factory_contents=$( /usr/libexec/PlistBuddy -x -c "Print :rights:${right_name}" "${factory_config_file}" )  ||
+    {
+        echo_log "Unable to fetch factory state for right '${right_name}'." ERROR
+        return $?
+    }
+
+    echo "${factory_contents}" | authdb_write "${right_name}"
+}
+
+
+####
+##  Boot out a list of launchd service targets.
+##  A service target is the domain target (e.g., 'system' or 'gui/<UID>')
+##  and the service name ('com.foo.bar'), seperated by a slash.
+##
+function launchd_boot_out_service_targets ()  # <service-target [...]>
+{
+    typeset -a service_targets=( $@ )
+    typeset launch_service
+    typeset -i launchctl_status
+
+    for service_target ( ${service_targets} )
+    {
+        echo_debug "Booting out launchd service target '${service_target}'..."
+        /bin/launchctl bootout "${service_target}" ||
+        {
+            # If launchctl exits with status 3 (No such process; i.e., not
+            # bootstrapped), continue normally.  Otherwise, return the status
+            # from launchctl.
+            launchctl_status=$?
+            (( launchctl_status == 3 )) && { echo_log "Service target '${service_target}' is not bootstrapped.  Skipping...'" INFO ; continue ; }
+
+            return ${launchctl_status}
+        }
+    }
+
+    return 0
+}
+
+
+####
+##  Returns launchd domain target for the local user's GUI session.
+##
+function launchd_local_user_domain_target ()
+{
+    echo "gui/$(local_user_uid))"
+}
+
+
+####
+##  Boot out a list of system-level launchd service targets with the specified
+##  service names.  The 'system' domain target will be prefixed for you.
+##
+function launchd_boot_out_system_services_named ()  # <service-name-in-system-domain [...]>
+{
+    launchd_boot_out_service_targets ${@/#/system/}
+}
+
+
+####
+##  Boot out a list of launchd service targets associated with the current
+##  user's GUI launchd session.  The 'gui/<UID>' domain target will be
+##  prefixed for you.
+##
+function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
+{
+    launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
+}
+
+
+####
+##  Download a large file, broken into chunks of a specified size
+##  (in megabytes, default is 20).
+##
 # function download_chunked() # <remote_url> <output_file_path> <chunk_size=20>
 # {
 #     typeset dl_command remote_url output_file_path chunk_input
 #     typeset -i chunk_size
-
+#
 #     dl_command="curl"
-
+#
 #     remote_url="${1}" ; [[ -n "${remote_url}" ]] || fail 'Argument for remote URL is missing or empty.' 10
 #     output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
 #     # Check output path's last directory exists, or fail
@@ -886,6 +1186,6 @@ function ask_for_password()
 #     chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
 #     (( chunk_size = $chunk_input )) ; [[ "${chunk_size}" == <-> && -n "${chunk_size}" ]] || echo 'Using default chunk size of 20 MB.' INFO
 #     # Check that chunk size is a non-zero integer, or log that the default will be used
-
-
+#
+#
 # }

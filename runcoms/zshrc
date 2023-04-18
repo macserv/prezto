@@ -1,16 +1,16 @@
-#
-# Executes commands at the start of an interactive session.
-#
-# zshenv ➠ zprofile ➠ ❰zshrc❱ ➠ zpreztorc ➠ zlogin ➠ zlogout
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#   Matthew Judy <macserv>
-#
+##
+##  Executes commands at the start of an interactive session.
+##
+##  zshenv ➠ zprofile ➠ ❰zshrc❱ ➠ zpreztorc ➠ zlogin ➠ zlogout
+##
+##  Authors:
+##      Sorin Ionescu <sorin.ionescu@gmail.com>
+##      Matthew Judy <macserv>
+##
 
 
 ################################################################################
-#  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
+##  PREZTO INITIALIZATION (ZSH MODULE MANAGER)
 
 typeset zprezto_dir="${ZDOTDIR:-$HOME}/.zprezto"
 typeset zprezto_init="${zprezto_dir}/init.zsh"
@@ -19,7 +19,7 @@ typeset zprezto_init="${zprezto_dir}/init.zsh"
 
 
 ################################################################################
-#  EXTRA INITIALIZATION FILES (e.g. custom aliases and functions)
+##  PROCESS ADDITIONAL STARTUP FILES IN zshrc.d
 
 zshrc_extension_dir="${zprezto_dir}/runcoms/zshrc.d"
 
