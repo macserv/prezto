@@ -1,7 +1,7 @@
-#
-# ZPROFILE EXTENSION:
-# Home Directory
-#
+##
+##  ZPROFILE EXTENSION:
+##  Home Directory
+##
 
 
 ################################################################################

@@ -1,11 +1,11 @@
-#
-# ZSHRC EXTENSION:
-# Functions: ffmpeg
-#
+##
+##  ZSHRC EXTENSION:
+##  Functions: ffmpeg
+##
 
 
 ################################################################################
-#  CONFIGURATION: GLOBAL PARAMETERS
+##  CONFIGURATION: GLOBAL PARAMETERS
 
 typeset -agx Z_RC_FFMPEG_H264_OPTIONS
 
@@ -13,14 +13,14 @@ Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:
 
 
 ################################################################################
-#  FUNCTIONS
+##  FUNCTIONS
 
-#
-#  Checks the codec used to encode a video file, and returns just the encoder
-#  name, with no other information.
-#
-#  $1: Path to video file.
-#
+##
+##  Checks the codec used to encode a video file, and returns just the encoder
+##  name, with no other information.
+##
+##  $1: Path to video file.
+##
 function ff_codec() # <path>
 {
     typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
@@ -31,11 +31,11 @@ function ff_codec() # <path>
 }
 
 
-#
-#  Return the duration (hh:mm:ss) of the specified video file.
-#
-#  $1: Path to video file to analyze for duration.
-#
+##
+##  Return the duration (hh:mm:ss) of the specified video file.
+##
+##  $1: Path to video file to analyze for duration.
+##
 function ff_duration() # <path>
 {
     typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty.' 10
@@ -46,11 +46,11 @@ function ff_duration() # <path>
 }
 
 
-#
-#  Download HLS (m3u8) MP4 Stream to File
-#
-#  $1: URL to m3u8 file containing HLS stream configuration data.
-#
+##
+##  Download HLS (m3u8) MP4 Stream to File
+##
+##  $1: URL to m3u8 file containing HLS stream configuration data.
+##
 function ff_m3u8_to_mp4() # <stream_url>
 {
     typeset stream_url="${1}" ; [[ -n "${stream_url}" ]] || fail 'Argument for stream URL is missing or empty.' 10
@@ -62,15 +62,15 @@ function ff_m3u8_to_mp4() # <stream_url>
 }
 
 
-#
-#  Convert file to mp4 (h264).
-#
-#  If video stream is already encoded using 'h264', it will be copied into the
-#  new wrapper.  Otherwise, it will be converted, using the '-preset slower'
-#  option, for better quality.
-#
-#  $1: File to convert to mp4.
-#
+##
+##  Convert file to mp4 (h264).
+##
+##  If video stream is already encoded using 'h264', it will be copied into the
+##  new wrapper.  Otherwise, it will be converted, using the '-preset slower'
+##  option, for better quality.
+##
+##  $1: File to convert to mp4.
+##
 function ff_mp4ify() # <stream_url>
 {
     typeset input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
@@ -113,20 +113,20 @@ function ff_mp4ify() # <stream_url>
 }
 
 
-#
-#  "Rotate" video file.
-#
-#  This only adds metadata to the video; it does not re-encode the
-#  video in a rotated orientation.  This has two benefits: it's fast,
-#  and does not impact the video quality.
-#
-#  It does require the player to interpret the metadata, so if your
-#  player is not modern, the video may not be presented with rotation.
-#
-#  $1: The path to the file to be rotated.
-#  $2: Optional.  The rotation which should be applied when played.  If omitted,
-#       the current rotation metadata will be displayed.
-#
+##
+##  "Rotate" video file.
+##
+##  This only adds metadata to the video; it does not re-encode the
+##  video in a rotated orientation.  This has two benefits: it's fast,
+##  and does not impact the video quality.
+##
+##  It does require the player to interpret the metadata, so if your
+##  player is not modern, the video may not be presented with rotation.
+##
+##  $1: The path to the file to be rotated.
+##  $2: Optional.  The rotation which should be applied when played.  If omitted,
+##       the current rotation metadata will be displayed.
+##
 function ff_rotation() # <video_file> [angle]
 {
     [[ -v TMPDIR ]] || fail "The '\$TMPDIR' variable is not set.  This should have been done by macOS when your shell started." 10
@@ -152,20 +152,20 @@ function ff_rotation() # <video_file> [angle]
 }
 
 
-#
-#  Trim video file using start/end timestamps.
-#
-#  Regarding timestamp format, from FFmpeg documentation...
-#
-#      You can use two different time unit formats:
-#      sexagesimal(HOURS:MM:SS.MILLISECONDS, as in 01:23:45.678),
-#      or in seconds. If a fraction is used, such as 02:30.05, this
-#      is interpreted as "5 100ths of a second", not as frame 5.
-#
-#  $1: The path to the video file to be trimmed.
-#  $2: The starting mark, before which any video content should be deleted.
-#  $3: The ending mark, after which any video content should be deleted.
-#
+##
+##  Trim video file using start/end timestamps.
+##
+##  Regarding timestamp format, from FFmpeg documentation...
+##
+##      You can use two different time unit formats:
+##      sexagesimal(HOURS:MM:SS.MILLISECONDS, as in 01:23:45.678),
+##      or in seconds. If a fraction is used, such as 02:30.05, this
+##      is interpreted as "5 100ths of a second", not as frame 5.
+##
+##  $1: The path to the video file to be trimmed.
+##  $2: The starting mark, before which any video content should be deleted.
+##  $3: The ending mark, after which any video content should be deleted.
+##
 function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
 {
     typeset  input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
@@ -180,15 +180,15 @@ function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
 }
 
 
-#
-#  Present a video player window whose input is the FaceTime HD Camera built
-#  into the current device.
-#
-#  The resolution will be 1920x1080, presented in a 1280x720 window.
-#  The displayed video will be flipped horizontally for self-adjustment.
-#
-#  Send break to exit from the command
-#
+##
+##  Present a video player window whose input is the FaceTime HD Camera built
+##  into the current device.
+##
+##  The resolution will be 1920x1080, presented in a 1280x720 window.
+##  The displayed video will be flipped horizontally for self-adjustment.
+##
+##  Send break to exit from the command
+##
 function ff_selfie() # <video_file> <clip_start_time> <clip_end_time>
 {
     ffplay -hide_banner -loglevel 'warning' \
@@ -202,9 +202,9 @@ function ff_selfie() # <video_file> <clip_start_time> <clip_end_time>
 }
 
 
-#
-#  Use `yt-dlp` to fetch a URL stored in the pasteboard.
-#
+##
+##  Use `yt-dlp` to fetch a URL stored in the pasteboard.
+##
 function yt-dlpaste()
 {
     typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
