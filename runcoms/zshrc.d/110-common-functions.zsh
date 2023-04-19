@@ -347,7 +347,7 @@ function fail ()  # [message] [status]
 
 
 ####
-##  Returns the user name of the user associated with this system.
+##  Get the user name of the user associated with this system.
 ##
 function local_user_name ()
 {
@@ -356,7 +356,7 @@ function local_user_name ()
 
 
 ####
-##  Returns the UID for the system's local user.
+##  Get the UID for the system's local user.
 ##
 function local_user_uid ()
 {
@@ -365,11 +365,32 @@ function local_user_uid ()
 
 
 ####
-##  Returns the local home directory for the system's local user.
+##  Get the local home directory for the system's local user.
 ##
 function local_user_home ()
 {
     /usr/bin/dscl -plist '.' -read "/Users/$(local_user_name)" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+}
+
+
+####
+##  Extract the value of the given keypath from a JSON object string.
+##
+##  NOTE: This uses the `plutil` command, whose JSON-handling capability is
+##  undocumented, and may disappear without notice.
+##
+function value_for_keypath_in_json ()  # <keypath> <json_string>
+{
+    typeset keypath="${1}"
+    typeset json_string="${2}"
+
+    [[ -z "${keypath}" || -z "${json_string}" ]] &&
+    {
+        echo_log "Missing input for either the key to be extracted or the JSON object." ERROR
+        return 1
+    }
+
+    echo "${json_string}" | plutil -extract "${keypath}" raw -
 }
 
 
@@ -1109,6 +1130,15 @@ function authdb_factory_reset ()  # <right_name>
 
 
 ####
+##  Returns launchd domain target for the local user's GUI session.
+##
+function launchd_local_user_domain_target ()
+{
+    echo "gui/$(local_user_uid))"
+}
+
+
+####
 ##  Boot out a list of launchd service targets.
 ##  A service target is the domain target (e.g., 'system' or 'gui/<UID>')
 ##  and the service name ('com.foo.bar'), seperated by a slash.
@@ -1135,15 +1165,6 @@ function launchd_boot_out_service_targets ()  # <service-target [...]>
     }
 
     return 0
-}
-
-
-####
-##  Returns launchd domain target for the local user's GUI session.
-##
-function launchd_local_user_domain_target ()
-{
-    echo "gui/$(local_user_uid))"
 }
 
 
