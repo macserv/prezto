@@ -11,7 +11,7 @@
 ##      brew install martido/brew-graph/brew-graph
 ##      brew install graphviz
 ##
-function brew_dependency_graph() # [package ...]
+function brew_dependency_graph ()  # [package ...]
 {
     local dependency_name="${(j'-')@}"
     [[ -z "$dependency_name" ]] && dependency_name="all"
@@ -27,7 +27,7 @@ function brew_dependency_graph() # [package ...]
 ##
 ##  $1: Installed package name.
 ##
-function brew_installed_options() # <package>
+function brew_installed_options ()  # <package>
 {
     [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
@@ -55,7 +55,7 @@ function brew_installed_options() # <package>
 ##
 ##  List all brew leaves with their description appended.
 ##
-function brew_leaves_with_info()
+function brew_leaves_with_info ()
 {
     for formula ( $(brew leaves) )
     {
@@ -68,7 +68,7 @@ function brew_leaves_with_info()
 ##
 ##  WIP
 ##
-function update_brew_ssl_certs_from_keychain()
+function update_brew_ssl_certs_from_keychain ()
 {
     typeset -a keychains=(
         '/System/Library/Keychains/SystemRootCertificates.keychain'
