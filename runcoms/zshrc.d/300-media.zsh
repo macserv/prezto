@@ -21,7 +21,7 @@ Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:
 ##
 ##  $1: Path to video file.
 ##
-function ff_codec() # <path>
+function ff_codec ()  # <path>
 {
     typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
 
@@ -36,7 +36,7 @@ function ff_codec() # <path>
 ##
 ##  $1: Path to video file to analyze for duration.
 ##
-function ff_duration() # <path>
+function ff_duration ()  # <path>
 {
     typeset input_file="${~1}" ; [[ -n "${input_file}" ]] || fail 'Argument for input file is missing or empty.' 10
     typeset ffmpeg_output && ffmpeg_output=$(ffmpeg -i "${input_file}" -map 0:v:0 -c copy -f null /dev/null 2>&1) || fail "Failed to use ffmpeg to get information about input file: '${input_file}'." $?
@@ -51,7 +51,7 @@ function ff_duration() # <path>
 ##
 ##  $1: URL to m3u8 file containing HLS stream configuration data.
 ##
-function ff_m3u8_to_mp4() # <stream_url>
+function ff_m3u8_to_mp4 ()  # <stream_url>
 {
     typeset stream_url="${1}" ; [[ -n "${stream_url}" ]] || fail 'Argument for stream URL is missing or empty.' 10
     typeset output_file=$(unique_path "${stream_url:h:t}-${stream_url:t:r}.mp4")
@@ -71,7 +71,7 @@ function ff_m3u8_to_mp4() # <stream_url>
 ##
 ##  $1: File to convert to mp4.
 ##
-function ff_mp4ify() # <stream_url>
+function ff_mp4ify ()  # <stream_url>
 {
     typeset input_file="${1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
     typeset output_file=$(unique_path "${input_file:r}.mp4")
@@ -127,7 +127,7 @@ function ff_mp4ify() # <stream_url>
 ##  $2: Optional.  The rotation which should be applied when played.  If omitted,
 ##       the current rotation metadata will be displayed.
 ##
-function ff_rotation() # <video_file> [angle]
+function ff_rotation ()  # <video_file> [angle]
 {
     [[ -v TMPDIR ]] || fail "The '\$TMPDIR' variable is not set.  This should have been done by macOS when your shell started." 10
 
@@ -166,7 +166,7 @@ function ff_rotation() # <video_file> [angle]
 ##  $2: The starting mark, before which any video content should be deleted.
 ##  $3: The ending mark, after which any video content should be deleted.
 ##
-function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
+function ff_trim ()  # <video_file> <clip_start_time> <clip_end_time>
 {
     typeset  input_file="${~1}" ; [[ -n "${input_file}" && -f "${input_file}" ]] || fail 'Argument for input file is missing or empty, or file does not exist.' 10
     typeset  start_time="${2}"  ; [[ -n "${start_time}" ]]                       || fail 'Argument for clip start time is missing or empty.' 11
@@ -189,7 +189,7 @@ function ff_trim() # <video_file> <clip_start_time> <clip_end_time>
 ##
 ##  Send break to exit from the command
 ##
-function ff_selfie() # <video_file> <clip_start_time> <clip_end_time>
+function ff_selfie ()  # <video_file> <clip_start_time> <clip_end_time>
 {
     ffplay -hide_banner -loglevel 'warning' \
         -f 'avfoundation' -i 'FaceTime HD Camera' \
@@ -205,7 +205,7 @@ function ff_selfie() # <video_file> <clip_start_time> <clip_end_time>
 ##
 ##  Use `yt-dlp` to fetch a URL stored in the pasteboard.
 ##
-function yt-dlpaste()
+function yt_dlpaste()
 {
     typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
     typeset audio_ext_best='ext=m4a'             # Prefer M4A audio format.
