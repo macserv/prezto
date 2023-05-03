@@ -4,23 +4,23 @@
 #
 
 
-function prompt_my_cpu_temp
+function prompt_my_cpu_temp ()
 {
     typeset -i cpu_temp="$( sysctl 'machdep.xcpm.cpu_thermal_level' 2>& - | awk '{print $2}' )"
 
     (( ! cpu_temp ))     && return
-    (( cpu_temp >= 89 )) && { p10k segment -s FIRE     -f maroon      -b grey30 -i $'\U0001F525 ' ; return }
-    (( cpu_temp >= 78 )) && { p10k segment -s SCALDING -f orangered1  -b grey30 -i $'\U0000F2C7 ' ; return }
-    (( cpu_temp >= 67 )) && { p10k segment -s HOT      -f orange3     -b grey30 -i $'\U0000F2C8 ' ; return }
-    (( cpu_temp >= 56 )) && { p10k segment -s WARM     -f olive       -b grey30 -i $'\U0000F2C9 ' ; return }
-    (( cpu_temp >= 45 )) && { p10k segment -s TEPID    -f green       -b grey30 -i $'\U0000F2CA ' ; return }
+    (( cpu_temp >= 89 )) && { p10k segment -s FIRE     -f maroon      -b grey30 -i $'\U0001F525 ' ; return ; }
+    (( cpu_temp >= 78 )) && { p10k segment -s SCALDING -f orangered1  -b grey30 -i $'\U0000F2C7 ' ; return ; }
+    (( cpu_temp >= 67 )) && { p10k segment -s HOT      -f orange3     -b grey30 -i $'\U0000F2C8 ' ; return ; }
+    (( cpu_temp >= 56 )) && { p10k segment -s WARM     -f olive       -b grey30 -i $'\U0000F2C9 ' ; return ; }
+    (( cpu_temp >= 45 )) && { p10k segment -s TEPID    -f green       -b grey30 -i $'\U0000F2CA ' ; return ; }
                               p10k segment -s COOL     -f dodgerblue1 -b grey30 -i $'\U0000F2CB ' ; return
 }
 
 
-function prompt_my_caffeinate
+function prompt_my_caffeinate ()
 {
-    pgrep -f 'caffeinate' &>/dev/null && { p10k segment -f grey15 -b silver -i $'\U0000E005 ' ; return }
+    pgrep -f 'caffeinate' &>/dev/null && { p10k segment -f grey15 -b silver -i $'\U0000E005 ' ; return ; }
 }
 
 

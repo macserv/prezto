@@ -35,7 +35,7 @@ typeset -a NOPROXY_ENV_PARAMETER_NAMES=(
 ##  Reference:
 ##  https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/
 ##
-function shell_noproxy_from_macos_bypass
+function shell_noproxy_from_macos_bypass ()
 {
     typeset -a exception_list=()
 
@@ -64,7 +64,7 @@ function shell_noproxy_from_macos_bypass
 ##  If no URL is specified with the `set` action, the value of the
 ##  `$USER_PROXY_URL` parameter will be evaluated.
 ##
-function user_proxy() # [set | unset] [user_proxy_url]
+function user_proxy ()  # [set | unset] [user_proxy_url]
 {
     typeset -a actions=( 'set' 'unset' )
     typeset action="${1}"
