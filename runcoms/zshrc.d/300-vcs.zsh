@@ -35,7 +35,7 @@ function git_all_refnames
 ##       All components: 6 https://www.domain.net:8443/ https gituser Project.git Project
 ##       Last component (repository name): Project
 ##
-function git_repo_url_components() # [repo_url]
+function git_repo_url_components ()  # [repo_url]
 {
     typeset repo_url="${1}" ; [[ -n "${repo_url}" ]] ||
     {
@@ -71,7 +71,7 @@ function git_repo_url_components() # [repo_url]
 ##  with a URL created by substituting the specified owner for the owner present
 ##  in the original URL.
 ##
-function git_add_blessed_remote_with_owner() # <blessed_owner> [blessed_url]
+function git_add_blessed_remote_with_owner ()  # <blessed_owner> [blessed_url]
 {
     git remote get-url 'blessed' &>/dev/null && { fail "Unable to add 'blessed' remote: a remote already exists with that name." $? }
 
@@ -103,7 +103,7 @@ function git_add_blessed_remote_with_owner() # <blessed_owner> [blessed_url]
 ##  <repo_dir> : Optional.  Specifies the name of the repository directory which
 ##  will be created by the `git clone` operation.
 ##
-function git_clone_cd() # <repo_url> [<repo_dir>]
+function git_clone_cd ()  # <repo_url> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
 
@@ -125,7 +125,7 @@ function git_clone_cd() # <repo_url> [<repo_dir>]
 ##  <repo_dir> : Optional.  Specifies the name of the repository directory which
 ##  will be created by the `git clone` operation.
 ##
-function git_clone_fork_with_parent_owner() # <fork_repo_url> <blessed_repo_owner> [<repo_dir>]
+function git_clone_fork_with_parent_owner ()  # <fork_repo_url> <blessed_repo_owner> [<repo_dir>]
 {
     [[ -n "${1}" ]] || fail 'Argument for repository URL is missing or empty.' 10
     [[ -n "${2}" ]] || fail 'Argument for blessed repository owner username is missing or empty.' 20
@@ -144,7 +144,7 @@ function git_clone_fork_with_parent_owner() # <fork_repo_url> <blessed_repo_owne
 ##  <repo_dir> : Optional.  Specifies the name of the repository directory which
 ##  will be created by the `git clone` operation.
 ##
-function github_clone() # <repo_url> [<repo_dir>]
+function github_clone ()  # <repo_url> [<repo_dir>]
 {
     [[ -n "${GITHUB_ACCESS_TOKEN}" ]] || fail "Unable to continue: Shell parameter 'GITHUB_ACCESS_TOKEN' is unset or empty."  5
 
@@ -178,7 +178,7 @@ function github_clone() # <repo_url> [<repo_dir>]
 ##  Pull changes into all branches from the specified upstream remote, and push
 ##  them to the specified origin remote.
 ##
-function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_name]
+function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_name]
 {
     typeset -i fetch_all_branches=0
 
@@ -225,7 +225,7 @@ function git_remote_sync() # [--all] <pull_from_remote_name> [push_to_remote_nam
 ##
 ##  Print the name of the current branch, with no additional decoration.
 ##
-function git_current_branch()
+function git_current_branch ()
 {
     git rev-parse --abbrev-ref 'HEAD'
 }
@@ -299,7 +299,7 @@ function git_sync_to_subbranches_and_push # <remote>
 ##
 ##  Streamline commits related to a specific JIRA issue ID.
 ##
-function git_commit_jira() # [(-j | --jira-id) <jira_id>] [message]
+function git_commit_jira ()  # [(-j | --jira-id) <jira_id>] [message]
 {
     typeset help jira_id
 

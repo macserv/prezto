@@ -449,7 +449,7 @@ EOAPPLESCRIPT
 ##  $2: [title]  Optional.  The notification's title.  Default: "Notification"
 ##  $3: [subtitle]  Optional.  The notification's subtitle.
 ##
-function display_notification() # <message> <title> <button_label>
+function display_notification ()  # <message> <title> <button_label>
 {
     [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
 
@@ -1193,7 +1193,7 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
 ##  Download a large file, broken into chunks of a specified size
 ##  (in megabytes, default is 20).
 ##
-# function download_chunked() # <remote_url> <output_file_path> <chunk_size=20>
+# function download_chunked () # <remote_url> <output_file_path> <chunk_size=20>
 # {
 #     typeset dl_command remote_url output_file_path chunk_input
 #     typeset -i chunk_size
