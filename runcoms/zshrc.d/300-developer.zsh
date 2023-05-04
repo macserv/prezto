@@ -19,7 +19,7 @@ typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework'
 ##  Trigger `softwareupdate` to download and install the Command-Line Tools for
 ##  the currently installed versions of Xcode and macOS.
 ##
-function install_command_line_tools ()
+function install_command_line_tools()
 {
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
@@ -52,7 +52,7 @@ function install_command_line_tools ()
 ##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
 ##  their path or process name)
 ##
-function xcgrep ()
+function xcgrep()
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
     {
@@ -70,7 +70,7 @@ function xcgrep ()
 ##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
 ##  their path or process name).
 ##
-function xckill ()  # [-signal]
+function xckill() # [-signal]
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
     {
@@ -104,20 +104,21 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
     typeset -a arg_predicate=( )
 
     ## Parse function arguments.
-    zparseopts -D -F -K --                      \
-        -help=flag_help                         \
+    zmodload zsh/zutil || return 1
+    zparseopts -D -F -K -- \
+        -help=flag_help \
         -case-insensitive=flag_case_insensitive \
-        -level:=arg_level                       \
-        -style:=arg_style                       \
-        -hide-subsystem:=arg_hide_subsystem     \
-        -predicate:=arg_predicate               \
+        -level:=arg_level \
+        -style:=arg_style \
+        -hide-subsystem:=arg_hide_subsystem \
+        -predicate:=arg_predicate \
     || return 1
 
     ## Display usage if:
     ## * help flag is set
     ## * wrong number of positional args
     ## * positional arg value is empty string
-    (( $#flag_help || ( $# != 1 ) || ( $#1 == 0 ) )) && { print -l $usage && return ; }
+    (( $#flag_help || ( $# != 1 ) || ( $#1 == 0 ) )) && { print -l $usage && return 0; }
 
     typeset filter="${1}"
     typeset modifier=""
@@ -157,7 +158,7 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
 ##
 ##  Open VSCodium.  Avoids need to install `codium` executable.
 ##
-function code ()
+function code()
 {
     typeset code_helper_path='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
     [[ ! -f "${code_helper_path}" ]] && code_helper_path="${HOME}${code_helper_path}"
