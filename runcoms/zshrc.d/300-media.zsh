@@ -205,7 +205,7 @@ function ff_selfie ()  # <video_file> <clip_start_time> <clip_end_time>
 ##
 ##  Use `yt-dlp` to fetch a URL stored in the pasteboard.
 ##
-function yt_dlpaste()
+function yt_dlpaste ()
 {
     typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
     typeset audio_ext_best='ext=m4a'             # Prefer M4A audio format.
