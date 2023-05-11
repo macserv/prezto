@@ -19,7 +19,7 @@ typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework'
 ##  Trigger `softwareupdate` to download and install the Command-Line Tools for
 ##  the currently installed versions of Xcode and macOS.
 ##
-function install_command_line_tools()
+function install_command_line_tools ()
 {
     # trigger_file_path: The presence of an empty file with this specific name
     # and location causes the `softwareupdate` tool to include Command Line Tool
