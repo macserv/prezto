@@ -299,20 +299,20 @@ function git_sync_to_subbranches_and_push # <remote>
 ##
 ##  Streamline commits related to a specific JIRA issue ID.
 ##
-function git_commit_jira ()  # [(-j | --jira-id) <jira_id>] [message]
+function git_commit_jira ()  # [(-i | --id) <jira_id>] [message]
 {
     typeset help jira_id
 
     zparseopts -D -E -F -K -- \
         {h,-help}=help \
-        {j,-jira-id}:=jira_id \
+        {i,-id}:=jira_id \
     || return 1
 
     # If the 'help' flag is set, display this function's usage text.
     if (( $#help )); then
         print -rC1 -- \
             "$0 [-h | --help]" \
-            "$0 [-j | --jira-id <issue_id>] <message>"
+            "$0 [-i | --id <jira_id>] <message>"
         return
     fi
 

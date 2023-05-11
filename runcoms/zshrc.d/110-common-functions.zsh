@@ -22,14 +22,14 @@
 ##
 ##  EXAMPLE 1
 ##  ---------
-##  % function comment_hash() { # comment, yo! }
+##  % function comment_hash () { # comment, yo! }
 ##  function>
 ##  # The octalthorpe character prevented the closing brace from being
 ##  # interpreted, so zle is now expecting more lines.
 ##
 ##  EXAMPLE 2
 ##  ---------
-##  % function comment_hash() {
+##  % function comment_hash () {
 ##  function>     # comment, yo!
 ##  function> }
 ##  % which comment_hash
@@ -41,7 +41,7 @@
 ##
 ##  EXAMPLE 3
 ##  ---------
-##  % function comment_slash() { // comment, yo! }
+##  % function comment_slash () { // comment, yo! }
 ##  % which comment_slash
 ##  comment_slash () {
 ##      // comment, yo!
@@ -57,7 +57,7 @@ function // ()  # [comment_word ...]
 ####
 ##  Echo to StdErr instead of StdOut.
 ##
-function echo_err() # [-n] words ...
+function echo_err ()  # [-n] words ...
 {
     typeset echo_cmd='echo'
     [[ "${1}" == "-n" ]] && { echo_cmd="${echo_cmd} -n" ; shift ; }
@@ -69,7 +69,7 @@ function echo_err() # [-n] words ...
 ##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
 ##  greater than zero.
 ##
-function echo_err_debug() # [-n] words ...
+function echo_err_debug ()  # [-n] words ...
 {
     (( ENABLE_ECHO_DEBUG )) && { echo_err $@ ; }
 }
@@ -150,7 +150,7 @@ function echo_err_debug() # [-n] words ...
 ##
 ##  EXAMPLE
 ##  -------
-##  function test_logs()
+##  function test_logs ()
 ##  {
 ##      echo_log
 ##      echo_log '' INFO
@@ -190,7 +190,7 @@ function echo_err_debug() # [-n] words ...
 ##  % echo_log "Direct invocation on command line with custom 'OK' type." OK
 ##  [-zsh:4] [OK] Direct invocation on command line with custom 'OK' type.
 ##
-function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
+function echo_log ()  # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
 {
     typeset -i passthrough_status=$?
     typeset -i transparent=0
@@ -279,7 +279,7 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 ##  ${ENABLE_ECHO_DEBUG}: This parameter must be set to an integer greater
 ##      than zero for messages to be printed to the console.
 ##
-function echo_debug() # <message> [indent_level] [fill] [spacer]
+function echo_debug ()  # <message> [indent_level] [fill] [spacer]
 {
     typeset -i passthrough_status=$?
 
@@ -335,7 +335,7 @@ function echo_debug() # <message> [indent_level] [fill] [spacer]
 ##      [-zsh:2] [FAIL] Bar
 ##      Baz
 ##
-function fail() # [message] [status]
+function fail ()  # [message] [status]
 {
     typeset fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     typeset fail_status=${2:-1}
@@ -417,7 +417,7 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 ##               'RED ALERT' \
 ##               'BATTLE STATIONS'
 ##
-function display_alert_dialog() # <message> <title> <button_label>
+function display_alert_dialog ()  # <message> <title> <button_label>
 {
     typeset message="$1"
     typeset title="${2:-An error occurred.}"
@@ -449,7 +449,7 @@ EOAPPLESCRIPT
 ##  $2: [title]  Optional.  The notification's title.  Default: "Notification"
 ##  $3: [subtitle]  Optional.  The notification's subtitle.
 ##
-function display_notification() # <message> <title> <button_label>
+function display_notification ()  # <message> <title> <button_label>
 {
     [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
 
@@ -486,7 +486,7 @@ EOAPPLESCRIPT
 ##  0: An item was chosen normally.
 ##  10: The "Cancel" button was clicked.
 ##
-function select_from_list_dialog() # [title] [message] [item] ...
+function select_from_list_dialog ()  # [title] [message] [item] ...
 {
     typeset title="$1"
     typeset message="$2"
@@ -533,7 +533,7 @@ EOAPPLESCRIPT
 ##        n: The user is not a member of the given group, or the membership
 ##           check failed, `dseditgroup` code returned.
 ##
-function check_user_for_group_membership() # <user_name> <group_name>
+function check_user_for_group_membership ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -557,7 +557,7 @@ function check_user_for_group_membership() # <user_name> <group_name>
 ##      122: Argument for group name is missing or empty.
 ##        n: The operation to add the user failed; returns `dseditgroup` status.
 ##
-function add_user_to_group() # <user_name> <group_name>
+function add_user_to_group ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -581,7 +581,7 @@ function add_user_to_group() # <user_name> <group_name>
 ##  $1: <volume_path>  The mount point or device path.  If no argument is
 ##      provided, the root path '/' will be used.
 ##
-function free_in_volume() # [--bytes] <volume_path>
+function free_in_volume ()  # [--bytes] <volume_path>
 {
     typeset -i use_bytes=0
     [[ "${1}" == "--bytes" ]] && { use_bytes=1 ; shift ; }
@@ -628,7 +628,7 @@ function free_in_volume() # [--bytes] <volume_path>
 ##  ---------
 ##  $1: <path_to_remove>  The path to the file or directory to be removed.
 ##
-function remove_existing() # <path_to_remove>
+function remove_existing ()  # <path_to_remove>
 {
     [[ -f "${1}" ]] && { echo_debug "Removing file '${1}'..."      ; /bin/rm  -f "${1}" ; return $? ; }
     [[ -d "${1}" ]] && { echo_debug "Removing directory '${1}'..." ; /bin/rm -rf "${1}" ; return $? ; }
@@ -657,7 +657,7 @@ function remove_existing() # <path_to_remove>
 ##      [-t | --include-tty]  Include logins that are not bound to a console
 ##          session; i.e., non-GUI logins such as terminal or SSH sessions.
 ##
-function user_most() # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
+function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
@@ -756,7 +756,7 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
 ##        appending the smallest-possible integer to the end which would result
 ##        in a unique file path.
 ##
-function unique_path() # <path>
+function unique_path ()  # <path>
 {
     typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || { echo_log 'Missing input path argument.' ERROR ; return 10 ; }
     typeset base_and_stem="${working_path:r}"
@@ -782,7 +782,7 @@ function unique_path() # <path>
 ##  Replace the contents of target_file with those of source_file, preserving
 ##  the metadata and modification date of the target_file.
 ##
-function mv_replace() # <source_file> <target_file>
+function mv_replace ()  # <source_file> <target_file>
 {
     typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || { echo_log 'Argument for source file is missing or empty, or file does not exist.' ; return 10 ; }
     typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || { echo_log 'Argument for target file is missing or empty, or file does not exist.' ; return 11 ; }
@@ -874,7 +874,7 @@ function fix_extension ()  # [--validate-only] <description_pattern> <replacemen
 ####
 ##  Remove macOS-specific Finder metadata files, stored as files prefixed with '._'
 ##
-function remove_finder_metadata_files() # [--recursive] [--dry-run]
+function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 {
     typeset working_path='.'
     typeset -a remove_cmd=(rm -v -f)
@@ -900,7 +900,7 @@ function remove_finder_metadata_files() # [--recursive] [--dry-run]
 ####
 ##  Print a recursive tree of files and folders from the given path.
 ##
-function file_tree() # <start_path>
+function file_tree ()  # <start_path>
 {
     typeset start_path=${~"${1}"}
     [[ -n "${start_path}" && -e "${start_path}" ]] || { echo_log 'Argument for starting path is missing or empty, or nothing exists at the specified path.' ERROR ; return 10 ; }
@@ -926,7 +926,7 @@ function file_tree() # <start_path>
 ##  Provide a password to the `curl` command:
 ##      % curl --user v076726:$(ask_for_password) ...
 ##
-function ask_for_password()
+function ask_for_password ()
 {
     typeset password_input
     read -s 'password_input?Password:'
@@ -1196,7 +1196,7 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
 ##  If command or arguments contain the substring '<PASTE>', that subtring will
 ##  be replaced by the pasteboard's contents.
 ##
-# function when_pasteboard_changes() # [--one-run-only] [--interval <seconds>] command_template [arg_template ...]
+# function when_pasteboard_changes ()  # [--one-run-only] [--interval <seconds>] command_template [arg_template ...]
 # {
 #     zmodload zsh/zutil || return 1
 
@@ -1273,7 +1273,7 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
 # #  Download a large file, broken into chunks of a specified size
 # #  (in megabytes, default is 20).
 # #
-# function download_chunked() # <remote_url> <output_file_path> <chunk_size=20>
+# function download_chunked ()  # <remote_url> <output_file_path> <chunk_size=20>
 # {
 #     typeset dl_command remote_url output_file_path chunk_input
 #     typeset -i chunk_size
