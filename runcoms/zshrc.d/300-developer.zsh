@@ -28,7 +28,7 @@ function install_command_line_tools ()
 
     touch "${trigger_file_path}" || return 1
 
-    echo_log "Installing / Updating Command-Line Tools..." INFO
+    echo_log --level 'INFO' "Installing / Updating Command-Line Tools..."
 
     typeset package_name && package_name="$( softwareupdate --verbose --list \
         | grep "\*.*Command Line" \
@@ -52,12 +52,12 @@ function install_command_line_tools ()
 ##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
 ##  their path or process name)
 ##
-function xcgrep()
+function xcgrep ()
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
     {
         echo
-        echo_log "Showing processes matching '${pvictim}'..." INFO
+        echo_log --level 'INFO' "Showing processes matching '${pvictim}'..."
         pgrep -fl "${pvictim}"
     }
     echo
@@ -70,12 +70,12 @@ function xcgrep()
 ##  CoreSimulator framework bundle (i.e., processes with 'CoreSimulator' in
 ##  their path or process name).
 ##
-function xckill() # [-signal]
+function xckill () # [-signal]
 {
     for pvictim ( ${Z_RC_XCODE_PROCESS_SEARCH_ITEMS[*]} )
     {
         echo
-        echo_log "Killing processes matching '${pvictim}'..." INFO
+        echo_log --level 'INFO' "Killing processes matching '${pvictim}'..."
         pkill ${1} -fl "${pvictim}"
     }
     echo
@@ -158,7 +158,7 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
 ##
 ##  Open VSCodium.  Avoids need to install `codium` executable.
 ##
-function code()
+function code ()  # [vscode_arg ...] [project_path]
 {
     typeset code_helper_path='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
     [[ ! -f "${code_helper_path}" ]] && code_helper_path="${HOME}${code_helper_path}"

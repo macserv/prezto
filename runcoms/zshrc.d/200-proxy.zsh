@@ -100,7 +100,7 @@ function user_proxy ()  # [set | unset] [user_proxy_url]
     [[ -n "${noproxy_value}" ]] || noproxy_value="$( shell_noproxy_from_macos_bypass )"
     [[ -n "${noproxy_value}" ]] ||
     {
-        echo_log "The 'NO_PROXY' environment variable could not be set automatically for this shell session." WARN
+        echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
         return 0
     }
 
