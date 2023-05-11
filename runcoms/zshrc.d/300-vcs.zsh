@@ -113,7 +113,7 @@ function git_clone_cd ()  # <repo_url> [<repo_dir>]
         git clone "${1}" || fail "Unable to clone repository at ${1}" $?
     fi
 
-    cd ${${2}:-${1:t:r}}    || { echo_log "Unable to change working directory to ${1:t:r}" WARNING ; return 30 ; }
+    cd ${${2}:-${1:t:r}}    || { echo_log --level 'WARNING' "Unable to change working directory to ${1:t:r}" ; return 30 ; }
 }
 
 
@@ -175,6 +175,15 @@ function github_clone ()  # <repo_url> [<repo_dir>]
 
 
 ##
+##  Print the name of the current branch, with no additional decoration.
+##
+function git_current_branch ()
+{
+    git rev-parse --abbrev-ref 'HEAD'
+}
+
+
+##
 ##  Pull changes into all branches from the specified upstream remote, and push
 ##  them to the specified origin remote.
 ##
@@ -188,7 +197,7 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
     typeset pull_remote="${1}" ; [[ -n "${pull_remote}" ]] ||
     {
         pull_remote="${default_pull_remote}"
-        echo_log "Using default ('${pull_remote}') as name for pull remote." INFO ;
+        echo_log --level 'INFO' "Using default ('${pull_remote}') as name for pull remote." ;
     }
     typeset push_remote="${2}"
     typeset starting_branch=$( git_current_branch )
@@ -199,7 +208,7 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 
     for branch ( ${branch_names[@]} )
     {
-        echo_log "Checking out local '${branch}'... \c" INFO
+        echo_log --level 'INFO' "Checking out local '${branch}'... \c"
 
         git checkout "${branch}" &>/dev/null ||
         {
@@ -219,15 +228,6 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 
         git checkout ${starting_branch}
     }
-}
-
-
-##
-##  Print the name of the current branch, with no additional decoration.
-##
-function git_current_branch ()
-{
-    git rev-parse --abbrev-ref 'HEAD'
 }
 
 
@@ -265,28 +265,28 @@ function git_sync_to_subbranches_and_push # <remote>
         branch_is_local=${#${(M)local_refs%/${branch_name}}}
 
         # Checkout the branch, with remote reference if necessary.
-        echo_log "Checking out '${branch_name}'..." INFO
+        echo_log --level 'INFO' "Checking out '${branch_name}'..."
         (( branch_is_remote && ! branch_is_local )) && { git checkout --quiet -b "${branch_name}" "${remote_ref_prefix}${branch_name}" || fail }
         (( branch_is_local )) && { git checkout --quiet "${branch_name}" || fail }
 
         # Pull upstream changes for remote branches.
         (( branch_is_remote )) &&
         {
-            echo_log "Pulling changes from '${remote}'..." INFO 1
+            echo_log --level 'INFO' --indent 1 "Pulling changes from '${remote}'..."
             git pull --quiet --no-edit "${remote}" "${branch_name}" || fail
         }
 
         # Merge changes from parent branch, skipping the parent branch itself.
         [[ "${branch_name}" != "${parent_branch}" ]] &&
         {
-            echo_log "Merging '${parent_branch}' into '${branch_name}'..." INFO 1
+            echo_log --level 'INFO' --indent 1 "Merging '${parent_branch}' into '${branch_name}'..."
             git merge --quiet --no-edit "${parent_branch}" || fail
         }
 
         # Push changes for remote branches.
         (( branch_is_remote )) &&
         {
-            echo_log "Pushing '${branch_name}' to '${remote}'..." INFO 1
+            echo_log --level 'INFO' --indent 1 "Pushing '${branch_name}' to '${remote}'..."
             git push --quiet "${remote}" "${branch_name}" || fail
         }
     }
@@ -326,7 +326,7 @@ function git_commit_jira ()  # [(-i | --id) <jira_id>] [message]
 
     [[ -z "${message}" ]] &&
     {
-        echo_log "No commit message was provided, so no changes will be committed.  JIRA issue ID is '${jira_id}'." INFO
+        echo_log --level 'INFO' "No commit message was provided, so no changes will be committed.  JIRA issue ID is '${jira_id}'."
         return
     }
 
