@@ -227,7 +227,7 @@ function yt_dlpaste ()
     typeset output_path="${output_dir}/${output_filename_format}"
     typeset source_url="$(pbpaste)"
 
-    echo_log "Downloading '${source_url}' to '${output_dir}'..." INFO
+    echo_log --level 'INFO' "Downloading '${source_url}' to '${output_dir}'..."
 
     typeset -a ytdlp_command=(
         yt-dlp

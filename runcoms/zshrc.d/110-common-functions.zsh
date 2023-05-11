@@ -56,8 +56,9 @@ function // ()  # [comment_word ...]
 
 ####
 ##  Echo to StdErr instead of StdOut.
+##  Arguments will be passed through to 'echo' command.
 ##
-function echo_err ()  # [-n] words ...
+function echo_err ()  # [echo-arg ...] words ...
 {
     typeset echo_cmd='echo'
     [[ "${1}" == "-n" ]] && { echo_cmd="${echo_cmd} -n" ; shift ; }
@@ -66,12 +67,12 @@ function echo_err ()  # [-n] words ...
 
 
 ####
-##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
-##  greater than zero.
+##  Echo to StdErr when $ENABLE_ECHO_DEBUG is greater than zero.
+##  Arguments will be passed through to 'echo' command.
 ##
 function echo_err_debug ()  # [-n] words ...
 {
-    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ ; }
+    (( ENABLE_ECHO_DEBUG )) && echo_err $@
 }
 
 
@@ -87,34 +88,52 @@ function echo_err_debug ()  # [-n] words ...
 ##
 ##  ARGUMENTS
 ##  ---------
+##  --help : Print command usage and exit.
+##
+##  --level : Optional.  Indicates the severity of the message to be logged.
+##      Can be any of the following:
+##
+##      | Type     | Sample              |
+##      | -------- | ------------------- |
+##      | ERROR    | "[ERROR] message"   |
+##      | WARNING  | "[WARNING] message" |
+##      | INFO     | "[INFO] message"    |
+##      | DEBUG    | "[DEBUG] message"   |
+##      | <custom> | "[custom] message"  |
+##      | (none)   | "message"           |
+##
+##  --indent : Optional.  The number of indentation levels which should
+##      precede the message.  Default: 0.
+##
+##  --fill : Optional.  The string which will be repeated to fill the
+##      indented space.  Default: spaces will be used as fill.
+##
+##  --spacer : Optional.  A string which will replace the filler immediately
+##      before the message.  Default: none.
+##
 ##  --transparent : Make the caller transparent; that is, ignore the calling
 ##      function, and report its parent instead.  This is useful when you want
 ##      to "transparently" wrap `echo_log` in another logging function without
 ##      it being displayed as the caller.
 ##
-##  $1: <message>  The message to be logged.  To read this from stdin, use '--'.
-##  $2: [log_type]  Optional. Can be any of the following.
+##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##      This function will interpret its last positional argument as the
+##      message; bear this in mind if you include arguments for the 'echo'
+##      command (see the next section).
 ##
-##      Type     | Sample
-##      ----------------------------------
-##      ERROR    | "[ERROR] <message>"
-##      WARNING  | "[WARNING] <message>"
-##      INFO     | "[INFO] <message>"
-##      DEBUG    | "[DEBUG] <message>"
-##      <custom> | "[<custom>] <message>"
-##      (none)   | "<message>"
-##
-##  $3: [indent_level]  Optional.  The number of indentation levels which should
-##      precede the message.  Default: 0.
-##  $4: [fill]  Optional.  The string which will be repeated to fill the
-##      indented space.  Default: spaces will be used as fill.
-##  $5: [spacer]  Optional.  A string which will replace the filler immediately
-##      before the message.  Default: none.
+##  ADDITIONAL ARGUMENTS PASSED THROUGH TO 'echo'
+##  ---------------------------------------------
+##  Any additional options provided to this function will be passed along to
+##  the 'echo' command (via the 'echo_err' function).  Bear in mind that this
+##  function will interpret its last positional argument as the message, so,
+##  to provide arguments for 'echo' with no message, add an empty
+##  string argument.
 ##
 ##  STATUS PASS-THROUGH
 ##  ---------------------
 ##  The 'echo_log' command will return the same status as the command which was
-##  executed immediately beforehand.
+##  executed immediately beforehand.  This eliminates the need to capture the
+##  prior command's status to return it after logging.
 ##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
@@ -122,14 +141,6 @@ function echo_err_debug ()  # [-n] words ...
 ##      integer value, it will be used to determine the number of spaces
 ##      leading the message for each level of indentation.
 ##      Default: 4.
-##
-##  SUPPRESSING TRAILING NEWLINE
-##  ----------------------------
-##  The log message will end with a newline ('\n') character, causing a
-##  line-feed and carriage return after printing.  To prevent this default
-##  behavior, a '\c' (escape) character can be added to the end of the specified
-##  message string, which will suppress the addition of the newline, allowing
-##  more characters to be appended to the same line in the shell.
 ##
 ##  LOG MESSAGE TRACE PREFIX
 ##  ------------------------
@@ -153,19 +164,19 @@ function echo_err_debug ()  # [-n] words ...
 ##  function test_logs ()
 ##  {
 ##      echo_log
-##      echo_log '' INFO
-##      echo_log 'Info message.' INFO
-##      echo_log 'Warning message.' WARNING
-##      echo_log 'Error message!' ERROR
-##      echo_log 'Debug message, unindented.' DEBUG
-##      echo_log 'Debug message, indented once, supressing newline... \c' DEBUG 1
+##      echo_log --level 'INFO' ''
+##      echo_log --level 'INFO' 'Info message.'
+##      echo_log --level 'WARNING' 'Warning message.'
+##      echo_log --level 'ERROR' 'Error message!'
+##      echo_log --level 'DEBUG' 'Debug message, unindented.'
+##      echo_log --level 'DEBUG' --indent 1 'Debug message, indented once, supressing newline... \c'
 ##      echo_err 'until now!'
-##      echo_log 'Debug, indented 2 times, with dash fill and final space.' DEBUG 2 '-' ' '
-##      echo_log 'Debug, indented 2 times, with space fill and final arrow.' DEBUG 2 ' ' '-> '
-##      echo_log 'Debug, indented 3 times, with alternating dots and spaces.' DEBUG 3 '. '
-##      echo_log 'Debug, indented 4 times, with dots in groups of three.' DEBUG 4 '... '
-##      function { echo_log 'Anonymous invocation with custom 'HACK' log type.' HACK }
-##      echo "Message from stdin with custom 'PASS' type." | echo_log -- PASS
+##      echo_log --level 'DEBUG' --indent 2 --fill '-' --spacer ' ' 'Debug, indented 2 times, with dash fill and final space.'
+##      echo_log --level 'DEBUG' --indent 2 --fill ' ' --spacer '-> ' 'Debug, indented 2 times, with space fill and final arrow.'
+##      echo_log --level 'DEBUG' --indent 3 --fill '. ' 'Debug, indented 3 times, with alternating dots and spaces.'
+##      echo_log --level 'DEBUG' --indent 4 --fill '... ' 'Debug, indented 4 times, with dots in groups of three.'
+##      function { echo_log --level 'HACK' 'Anonymous invocation with custom 'HACK' log type.' }
+##      echo "Message from stdin with custom 'PASS' type." | echo_log --level 'PASS' --
 ##      echo_err
 ##  }
 ##
@@ -187,36 +198,71 @@ function echo_err_debug ()  # [-n] words ...
 ##  [logtest.zsh:14(test_logs)] [DEBUG] ... ... ... ... Debug, indented 4 times, with dots in groups of three.
 ##  [logtest.zsh:15((anon))] [HACK] Anonymous invocation with custom HACK log type.
 ##  [logtest.zsh:16(test_logs)] [PASS] Message from stdin with custom 'PASS' type
-##  % echo_log "Direct invocation on command line with custom 'OK' type." OK
+##  % echo_log --level 'OK' "Direct invocation on command line with custom 'OK' type."
 ##  [-zsh:4] [OK] Direct invocation on command line with custom 'OK' type.
 ##
-function echo_log ()  # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
+function echo_log ()
 {
+    ## Capture status of previous command.
     typeset -i passthrough_status=$?
-    typeset -i transparent=0
-    [[ "${1}" == "--transparent" ]] && { transparent=1 ; shift ; }
 
-    typeset message="${1}"
+    ## Create usage output.
+    typeset usage=(
+        "$0 [--help | -h | -?]"
+        "$0 [--level ERROR | WARNING | INFO | DEBUG | <custom>]"
+        '    [--indent <levels>] [--fill <chars>] [--spacer <chars>]'
+        '    [--transparent] [message]'
+    )
+
+    ## Define options array with defaults.
+    typeset -A options=( '--transparent' 0 )
+
+    ## Configure parser and process function arguments.
+    typeset -a parse_config=(
+    #   '-a' 'options' # Specifies a default array to contain recognized options.
+        '-A' 'options' # Same as -a, but using an associative array. Test: (( ${+options[--foo]} ))
+        '-D'           # Remove found options from the positional parameters array ($@).
+        '-E'           # Don't stop at the first string that isn't described by the specs.
+    #   '-F'           # Stop and exit if a param is found which is not in the specs.
+    #   '-K'           # Don't replace existing arrays (allows default values).
+        '-M'           # Allows the 'name' in '=name' to reference another spec.
+        '--'           # Indicates that options end here and spec starts.
+        '-help' 'h=-help' '?=-help'
+        '-level:'
+        '-indent:'
+        '-fill:'
+        '-spacer:'
+        '-transparent'
+    )
+
+    ## Load parser and process function arguments.
+    zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
+
+    ## Display usage if help flag is set.
+    (( ${+options[--help]} )) && { print -l $usage && return 0; }
+
+    typeset message="${@[-1]}"
     [[ "${message}" == '--' ]] && read -r message
 
+    typeset level="${options[--level]}"
     typeset prefix
-    case $2 in
-        ERROR)   prefix="[ERROR]"      ;;
-        WARNING) prefix="[WARNING]"    ;;
-        INFO)    prefix="[INFO]"       ;;
-        DEBUG)   prefix="[DEBUG]"      ;;
-        *)       prefix="${2:+[${2}]}" ;;
+    case "${level}" in
+        ERROR)   prefix="[ERROR]"              ;;
+        WARNING) prefix="[WARNING]"            ;;
+        INFO)    prefix="[INFO]"               ;;
+        DEBUG)   prefix="[DEBUG]"              ;;
+        *)       prefix="${level:+[${level}]}" ;;
     esac
 
-    typeset -i indent_level=$3
+    typeset -i indent_level=$(( ${options[--indent]} ))
     (( indent_level )) &&
     {
         typeset -i indent_spaces=${ECHO_LOG_INDENT_SPACES:-4}
         (( indent_spaces < 0 )) && indent_spaces=0
 
         typeset -i message_length=$(( ${#message} + (${indent_level} * ${indent_spaces}) ))
-        typeset filler="${4:- }"
-        typeset spacer="$5"
+        typeset filler="${options[--fill]}"
+        typeset spacer="${options[--spacer]}"
 
         [[ -n "$spacer" ]] &&
             { message=${(pl:$message_length::$filler::$spacer:)message} ; } ||
@@ -233,7 +279,7 @@ function echo_log ()  # [--transparent] <message> [log_type] [indent_level] [fil
 
     # If the '--transparent' flag is set, look one index higher in the stack
     # and file trace arrays to functionally ignore the caller.
-    (( transparent )) &&
+    (( ${options[--transparent]} )) &&
     {
         file_trace_index+=1
         func_stack_index+=1
@@ -264,31 +310,65 @@ function echo_log ()  # [--transparent] <message> [log_type] [indent_level] [fil
 ##
 ##  ARGUMENTS
 ##  ---------
-##  $1: <message>
-##  $2: [indent_level]  Optional.  Default: 0.
-##  $3: [fill]  Optional.  Default: space.
-##  $4: [spacer] Optional.  Default: none.
+##  --help : Print command usage and exit.
+##
+##  --level : Optional.  Indicates the severity of the message to be logged.
+##      Can be any of the following:
+##
+##      | Type     | Sample              |
+##      | -------- | ------------------- |
+##      | ERROR    | "[ERROR] message"   |
+##      | WARNING  | "[WARNING] message" |
+##      | INFO     | "[INFO] message"    |
+##      | DEBUG    | "[DEBUG] message"   |
+##      | <custom> | "[custom] message"  |
+##      | (none)   | "message"           |
+##
+##  --indent : Optional.  The number of indentation levels which should
+##      precede the message.  Default: 0.
+##
+##  --fill : Optional.  The string which will be repeated to fill the
+##      indented space.  Default: spaces will be used as fill.
+##
+##  --spacer : Optional.  A string which will replace the filler immediately
+##      before the message.  Default: none.
+##
+##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##      This function will interpret its last positional argument as the
+##      message; bear this in mind if you include arguments for the 'echo'
+##      command (see the next section).
+##
+##  ADDITIONAL ARGUMENTS PASSED THROUGH TO 'echo'
+##  ---------------------------------------------
+##  Any additional options provided to this function will be passed along to
+##  the 'echo' command (via the 'echo_err' function).  Bear in mind that this
+##  function will interpret its last positional argument as the message, so,
+##  to provide arguments for 'echo' with no message, add an empty
+##  string argument.
 ##
 ##  STATUS PASS-THROUGH
 ##  ---------------------
 ##  The 'echo_debug' command will return the same status as the command which
-##  was executed immediately beforehand.
+##  was executed immediately beforehand.  This eliminates the need to capture
+##  the prior command's status to return it after logging.
 ##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
 ##  ${ENABLE_ECHO_DEBUG}: This parameter must be set to an integer greater
 ##      than zero for messages to be printed to the console.
 ##
-function echo_debug ()  # <message> [indent_level] [fill] [spacer]
+function echo_debug ()
 {
     typeset -i passthrough_status=$?
 
-    (( ENABLE_ECHO_DEBUG )) || return 0
+    (( ENABLE_ECHO_DEBUG )) || return ${passthrough_status}
 
     typeset message="${1}"
     [[ "${message}" == '--' ]] && read -r message
 
-    echo_log --transparent "${message}" DEBUG "$2" "$3" "$4"
+    # TODO strip --level argument (if present) to force DEBUG
+
+    echo_log --level 'DEBUG' --transparent $@
 
     return ${passthrough_status}
 }
@@ -315,7 +395,7 @@ function echo_debug ()  # <message> [indent_level] [fill] [spacer]
 ##      eject_warp_core
 ##      eject_status=$?
 ##      if [ eject_status -neq 0 ] ; then
-##          echo_log "Ejector systems off-line (${eject_status})." FAIL
+##          echo_log --level 'FAIL' "Ejector systems off-line (${eject_status})."
 ##          return $eject_status
 ##      fi
 ##
@@ -340,7 +420,7 @@ function fail ()  # [message] [status]
     typeset fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     typeset fail_status=${2:-1}
 
-    trap "echo_log ${(qq)fail_message} FAIL ; return ${fail_status}"  EXIT
+    trap "echo_log --level 'FAIL' ${(qq)fail_message} ; return ${fail_status}" EXIT
 
     return 0
 }
@@ -386,7 +466,7 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 
     [[ -z "${keypath}" || -z "${json_string}" ]] &&
     {
-        echo_log "Missing input for either the key to be extracted or the JSON object." ERROR
+        echo_log --level 'ERROR' "Missing input for either the key to be extracted or the JSON object."
         return 1
     }
 
@@ -758,7 +838,7 @@ function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-
 ##
 function unique_path ()  # <path>
 {
-    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || { echo_log 'Missing input path argument.' ERROR ; return 10 ; }
+    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || { echo_log --level 'ERROR' 'Missing input path argument.' ; return 10 ; }
     typeset base_and_stem="${working_path:r}"
     typeset extension_with_dot="${${working_path:e}:+.${working_path:e}}"
     typeset -i index=0
@@ -784,13 +864,13 @@ function unique_path ()  # <path>
 ##
 function mv_replace ()  # <source_file> <target_file>
 {
-    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || { echo_log 'Argument for source file is missing or empty, or file does not exist.' ; return 10 ; }
-    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || { echo_log 'Argument for target file is missing or empty, or file does not exist.' ; return 11 ; }
+    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || { echo_log --level 'INFO' 'Argument for source file is missing or empty, or file does not exist.' ; return 10 ; }
+    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || { echo_log --level 'INFO' 'Argument for target file is missing or empty, or file does not exist.' ; return 11 ; }
 
     typeset target_date_modified && target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")" ||
 
-    mv    -f       "${source_file}"          "${target_file}" || { echo_log 'Could not replace target file contents with source.' ERROR ; return $? ; }
-    touch -c -m -t "${target_date_modified}" "${target_file}" || { echo_log 'Could not reset target file modification date to pre-operation date.' WARNING ; }
+    mv    -f       "${source_file}"          "${target_file}" || { echo_log --level 'ERROR' 'Could not replace target file contents with source.' ; return $? ; }
+    touch -c -m -t "${target_date_modified}" "${target_file}" || { echo_log --level 'WARNING' 'Could not reset target file modification date to pre-operation date.' ; }
 
     return 0
 }
@@ -828,18 +908,18 @@ function fix_extension ()  # [--validate-only] <description_pattern> <replacemen
 
     [[ "${1}" = '--validate-only' ]] &&
     {
-        echo_log "Validating only... no modifications will be made." INFO
+        echo_log --level 'INFO' "Validating only... no modifications will be made."
         validate_only=1
         shift
     }
 
-    [[ -n "${1}" ]] || { echo_log "Argument for 'file --brief' match pattern is missing or empty" ERROR ; return 10 ; }
+    [[ -n "${1}" ]] || { echo_log --level 'ERROR' "Argument for 'file --brief' match pattern is missing or empty" ; return 10 ; }
     typeset file_command_pattern="${1}"
 
-    shift ; [[ -n "${1}" ]] || { echo_log "Argument for replacement extension is missing or empty" ERROR ; return 30 ; }
+    shift ; [[ -n "${1}" ]] || { echo_log --level 'ERROR' "Argument for replacement extension is missing or empty" ; return 30 ; }
     typeset replacement_extension="${1}"
 
-    shift ; (( ${#@} )) || { echo_log "Input file(s) missing or empty" ERROR ; return 40 ; }
+    shift ; (( ${#@} )) || { echo_log --level 'ERROR' "Input file(s) missing or empty" ; return 40 ; }
     typeset -a input_files=( ${@} )
 
     for input_file ( ${input_files} )
@@ -855,17 +935,17 @@ function fix_extension ()  # [--validate-only] <description_pattern> <replacemen
         # If the file's extension matches one of the specified extensions, skip to the next file.
         { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } && continue
 
-        echo_log "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'." INFO
+        echo_log --level 'INFO' "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'."
 
         (( $valid_extensions[(I)(#i)${replacement_extension}] )) ||
         {
-            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING
+            echo_log --level 'WARNING' "Specified replacement extension '${}' is not valid for this file type."
             continue
         }
 
         (( validate_only )) && continue
 
-        echo_log "Changing extension to '${replacement_extension}'." INFO 4 ' ' '-> '
+        echo_log --level 'INFO' --indent 1 --fill ' ' --spacer '-> ' "Changing extension to '${replacement_extension}'."
         mv -- ${input_file} "${input_file:r}.${replacement_extension}"
     }
 }
@@ -888,7 +968,7 @@ function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
     {
         [[ "$( "${file_brief_cmd[@]}" "${macos_file}" )" == "${file_brief_description}" ]] ||
         {
-            echo "Not removing '${macos_file}' because '${file_brief_cmd}' does not describe it as '${file_brief_description}'."
+            echo_log --level 'INFO' "Not removing '${macos_file}' because '${file_brief_cmd}' does not describe it as '${file_brief_description}'."
             continue
         }
 
@@ -903,7 +983,7 @@ function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 function file_tree ()  # <start_path>
 {
     typeset start_path=${~"${1}"}
-    [[ -n "${start_path}" && -e "${start_path}" ]] || { echo_log 'Argument for starting path is missing or empty, or nothing exists at the specified path.' ERROR ; return 10 ; }
+    [[ -n "${start_path}" && -e "${start_path}" ]] || { echo_log --level 'ERROR' 'Argument for starting path is missing or empty, or nothing exists at the specified path.' ; return 10 ; }
 
     find "${start_path}" | sed -e 's/[^-][^\/]*\// |/g' -e 's/|\([^ ]\)/|-\1/'
 }
@@ -950,7 +1030,7 @@ function new_tmp_dir ()  # <purpose>
     typeset base_tmp_dir="${TMPDIR:-/tmp/}"
     typeset purpose="${1:-${ZSH_ARGZERO:t:r}}" # Use the script name if not set.
 
-    [[ -n "${purpose}" ]] || { echo_log 'Purpose for the temporary directory may not be empty.' ERROR ; return 1 ; }
+    [[ -n "${purpose}" ]] || { echo_log --level 'ERROR' 'Purpose for the temporary directory may not be empty.' ; return 1 ; }
 
     typeset unique_id="$( /usr/bin/uuidgen )"
     typeset new_tmp_dir_path="${base_tmp_dir}${JPMC_ORGANIZATION}/${purpose}.${unique_id}"
@@ -959,7 +1039,7 @@ function new_tmp_dir ()  # <purpose>
 
     /bin/mkdir -p  "${new_tmp_dir_path}" &&
         /bin/chmod 700 "${new_tmp_dir_path}" ||
-            { echo_log 'Unable to create or change mode on new temporary directory.' ERROR ; return $? ; }
+            { echo_log --level 'ERROR' 'Unable to create or change mode on new temporary directory.' ; return $? ; }
 
     echo "${new_tmp_dir_path}"
 }
@@ -978,7 +1058,7 @@ function authdb_read ()  # <right_name>
             2> >(read_status=$(cat); typeset -p read_status) \
             > >(right_contents=$(cat); typeset -p right_contents); result_code=$?; typeset -p result_code )"
 
-    (( result_code > 0 )) && { echo_log "Unable to read right '${right_name}'.  Error: '${read_status}'." ERROR ; return result_code ; }
+    (( result_code > 0 )) && { echo_log --level 'ERROR' "Unable to read right '${right_name}'.  Error: '${read_status}'." ; return result_code ; }
 
     echo_debug "Contents of right '${right_name}' are as follows:\n${right_contents}"
     echo_debug "Read Status: '${read_status}'"
@@ -1004,7 +1084,7 @@ function authdb_write ()  # <right_name> [rule_id | plist-content-via-stdin]
         echo_debug "Updating AuthorizationDB right to invoke rule '${rule_id}'..."
         /usr/bin/security authorizationdb write "${right_name}" "${rule_id}" ||
         {
-            echo_log "Unable to update right '${right_name}'; the AuthDB 'write' operation failed." ERROR
+            echo_log --level 'ERROR' "Unable to update right '${right_name}'; the AuthDB 'write' operation failed."
             return 1
         }
 
@@ -1017,7 +1097,7 @@ function authdb_write ()  # <right_name> [rule_id | plist-content-via-stdin]
 
     typeset right_contents && right_contents="$( [[ -t 0 ]] || cat - )"  ||
     {
-        echo_log "Unable to update right '${right_name}'; no Plist content was provided via stdin." ERROR
+        echo_log --level 'ERROR' "Unable to update right '${right_name}'; no Plist content was provided via stdin."
         return 1
     }
 
@@ -1025,7 +1105,7 @@ function authdb_write ()  # <right_name> [rule_id | plist-content-via-stdin]
 
     echo "${right_contents}" | /usr/bin/security authorizationdb write "${right_name}" ||
     {
-        echo_log "Unable to update right '${right_name}'; the AuthDB 'write' operation failed." ERROR
+        echo_log --level 'ERROR' "Unable to update right '${right_name}'; the AuthDB 'write' operation failed."
         return $?
     }
 }
@@ -1051,7 +1131,7 @@ function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
 
         /usr/bin/security authorizationdb remove "${right_name}" ||
         {
-            echo_log "Unable to remove right '${right_name}' from the AuthDB." ERROR
+            echo_log --level 'ERROR' "Unable to remove right '${right_name}' from the AuthDB."
             return $?
         }
 
@@ -1063,10 +1143,10 @@ function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
 
     (( system_removal_enabled )) ||
     {
-        echo_log "Rights which begin with 'system.' may not be removed without enabling system right removal." ERROR
-        echo_log "You can forcibly remove the right named '${right_name}' by adding the '${system_removal_flag}' flag to this command." ERROR
-        echo_log "PLEASE NOTE: Using this flag will sidestep Apple's logic, and edit the AuthorizationDB directly using SQLite commands." ERROR
-        echo_log "This is highly undesirable, and should be avoided in standard practice." ERROR
+        echo_log --level 'ERROR' "Rights which begin with 'system.' may not be removed without enabling system right removal."
+        echo_log --level 'ERROR' "You can forcibly remove the right named '${right_name}' by adding the '${system_removal_flag}' flag to this command."
+        echo_log --level 'ERROR' "PLEASE NOTE: Using this flag will sidestep Apple's logic, and edit the AuthorizationDB directly using SQLite commands."
+        echo_log --level 'ERROR' "This is highly undesirable, and should be avoided in standard practice."
         return 1
     }
 
@@ -1075,13 +1155,13 @@ function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
     typeset -i right_id
 
     echo_log "Bypassing Apple's logic to remove right '${right_name}' from the AuthorizationDB using SQLite commands."
-    echo_log "This is highly undesirable, and should be avoided in standard practice." WARNING
+    echo_log --level 'WARNING' "This is highly undesirable, and should be avoided in standard practice."
 
     # VERIFY THAT A RULE EXISTS IN THE AUTH DB WITH THE SPECIFIED NAME.
     # RESTRICT QUERY TO "RIGHT" RULES ONLY (type = 1).  GRAB VALUE.
     right_id=$( "${sqlite_cmd[@]}" "SELECT id FROM rules WHERE name = '${right_name}' AND type = 1;" )  && (( right_id > 0 )) ||
     {
-        echo_log "Unable to find right with name '${right_name}' in the Authorization DB." ERROR
+        echo_log --level 'ERROR' "Unable to find right with name '${right_name}' in the Authorization DB."
         return 1
     }
 
@@ -1099,7 +1179,7 @@ function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
     echo_debug "Executing database query:\n    ${(j'\n    ')modification_query}\n"
     echo "${(j'\n')modification_query}" | "${sqlite_cmd[@]}" ||
     {
-        echo_log "SQLite query failed with status '$?'.  Right '${right_name}' will not be removed." ERROR
+        echo_log --level 'ERROR' "SQLite query failed with status '$?'.  Right '${right_name}' will not be removed."
         return $?
     }
 
@@ -1121,7 +1201,7 @@ function authdb_factory_reset ()  # <right_name>
 
     typeset factory_contents && factory_contents=$( /usr/libexec/PlistBuddy -x -c "Print :rights:${right_name}" "${factory_config_file}" )  ||
     {
-        echo_log "Unable to fetch factory state for right '${right_name}'." ERROR
+        echo_log --level 'ERROR' "Unable to fetch factory state for right '${right_name}'."
         return $?
     }
 
@@ -1158,7 +1238,7 @@ function launchd_boot_out_service_targets ()  # <service-target [...]>
             # bootstrapped), continue normally.  Otherwise, return the status
             # from launchctl.
             launchctl_status=$?
-            (( launchctl_status == 3 )) && { echo_log "Service target '${service_target}' is not bootstrapped.  Skipping...'" INFO ; continue ; }
+            (( launchctl_status == 3 )) && { echo_log --level 'INFO' "Service target '${service_target}' is not bootstrapped.  Skipping...'" ; continue ; }
 
             return ${launchctl_status}
         }
@@ -1186,6 +1266,19 @@ function launchd_boot_out_system_services_named ()  # <service-name-in-system-do
 function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
 {
     launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
+}
+
+
+####
+##
+##
+function remove_duplicates ()  #
+{
+    for dupe ( *\(<1->\).* )
+    {
+        echo_log --level 'INFO' "Evaluating '${dupe}'..."
+        typeset original="${${dupe:r}/%\(<1->\)/}.${dupe:e}"
+    }
 }
 
 
@@ -1228,7 +1321,7 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
 #     while ( true ) { echo "$@" ; sleep "${interval}" ; }
 # }
 
-# function when_pasteboard_changes() # [--every <seconds>] command_template [arg_template ...]
+# function when_pasteboard_changes ()  # [--every <seconds>] command_template [arg_template ...]
 # {
 #     ## Create usage output.
 #     typeset usage=(
