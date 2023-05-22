@@ -517,7 +517,7 @@ EOAPPLESCRIPT
 ##
 function display_notification ()  # <message> <title> <button_label>
 {
-    [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
+    [[ -n "${1}" ]] || { echo_log --level 'ERROR' "A message must be provided for the notification." ; return 1 ; }
 
     echo_debug "Displaying notification to user with message '${message}', title '${2}', subtitle '${3}'."
 
