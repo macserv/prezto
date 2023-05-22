@@ -310,18 +310,6 @@ function echo_log ()
 ##  ---------
 ##  --help : Print command usage and exit.
 ##
-##  --level : Optional.  Indicates the severity of the message to be logged.
-##      Can be any of the following:
-##
-##      | Type     | Sample              |
-##      | -------- | ------------------- |
-##      | ERROR    | "[ERROR] message"   |
-##      | WARNING  | "[WARNING] message" |
-##      | INFO     | "[INFO] message"    |
-##      | DEBUG    | "[DEBUG] message"   |
-##      | <custom> | "[custom] message"  |
-##      | (none)   | "message"           |
-##
 ##  --indent : Optional.  The number of indentation levels which should
 ##      precede the message.  Default: 0.
 ##
@@ -529,7 +517,7 @@ EOAPPLESCRIPT
 ##
 function display_notification ()  # <message> <title> <button_label>
 {
-    [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
+    [[ -n "${1}" ]] || { echo_log --level 'ERROR' "A message must be provided for the notification." ; return 1 ; }
 
     echo_debug "Displaying notification to user with message '${message}', title '${2}', subtitle '${3}'."
 
