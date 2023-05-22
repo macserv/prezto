@@ -310,18 +310,6 @@ function echo_log ()
 ##  ---------
 ##  --help : Print command usage and exit.
 ##
-##  --level : Optional.  Indicates the severity of the message to be logged.
-##      Can be any of the following:
-##
-##      | Type     | Sample              |
-##      | -------- | ------------------- |
-##      | ERROR    | "[ERROR] message"   |
-##      | WARNING  | "[WARNING] message" |
-##      | INFO     | "[INFO] message"    |
-##      | DEBUG    | "[DEBUG] message"   |
-##      | <custom> | "[custom] message"  |
-##      | (none)   | "message"           |
-##
 ##  --indent : Optional.  The number of indentation levels which should
 ##      precede the message.  Default: 0.
 ##
