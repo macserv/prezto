@@ -10,13 +10,13 @@
 ##  parameter list.  These values will be used to generate the uppercase and
 ##  lowercase parameter names later.
 ##
-typeset -a PROXY_ENV_PARAMETER_NAMES=(
+typeset -a USER_PROXY_ENV_PARAMETERS=(
     'HTTP_PROXY'
     'HTTPS_PROXY'
     'ALL_PROXY'
 )
 
-typeset -a NOPROXY_ENV_PARAMETER_NAMES=(
+typeset -a USER_PROXY_ENV_PARAMETERS_NOPROXY=(
     'NO_PROXY'
 )
 
@@ -35,7 +35,7 @@ typeset -a NOPROXY_ENV_PARAMETER_NAMES=(
 ##  Reference:
 ##  https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/
 ##
-function shell_noproxy_from_macos_bypass ()
+function user_proxy_convert_gui_bypass_to_noproxy ()
 {
     typeset -a exception_list=()
 
@@ -69,7 +69,7 @@ function user_proxy ()  # [set | unset] [user_proxy_url]
     typeset -a actions=( 'set' 'unset' )
     typeset action="${1}"
 
-    typeset -a all_param_names=( ${PROXY_ENV_PARAMETER_NAMES} ${NOPROXY_ENV_PARAMETER_NAMES} )
+    typeset -a all_param_names=( ${USER_PROXY_ENV_PARAMETERS} ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
 
     [[ -z "${action}" ]] &&
     {
@@ -91,13 +91,13 @@ function user_proxy ()  # [set | unset] [user_proxy_url]
     [[ -n "${proxy_url}" ]] || fail 'No proxy URL was provided.  $USER_PROXY_URL is also unset or empty.' 20
 
     echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
-    for param ( ${PROXY_ENV_PARAMETER_NAMES:u} ${PROXY_ENV_PARAMETER_NAMES:l} )
+    for param ( ${USER_PROXY_ENV_PARAMETERS:u} ${USER_PROXY_ENV_PARAMETERS:l} )
     {
         typeset -gx "${param}"="${proxy_url}"
     }
 
     typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
-    [[ -n "${noproxy_value}" ]] || noproxy_value="$( shell_noproxy_from_macos_bypass )"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
     [[ -n "${noproxy_value}" ]] ||
     {
         echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
@@ -105,7 +105,7 @@ function user_proxy ()  # [set | unset] [user_proxy_url]
     }
 
     echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
-    for noproxy_param ( ${NOPROXY_ENV_PARAMETER_NAMES:u} ${NOPROXY_ENV_PARAMETER_NAMES:l} )
+    for noproxy_param ( ${USER_PROXY_ENV_PARAMETERS_NOPROXY:u} ${USER_PROXY_ENV_PARAMETERS_NOPROXY:l} )
     {
         typeset -gx "${noproxy_param}"="${noproxy_value}"
     }
