@@ -413,20 +413,33 @@ function fail ()  # [message] [status]
 
 
 ####
-##  Get the user name of the user associated with this system.
+##  Get the user name of the account which logs into this system most commonly.
 ##
 function local_user_name ()
 {
-    user_most common
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most common )}"
 }
 
 
 ####
-##  Get the UID for the system's local user.
+##  Get the user name of the account which is currently logged in to this
+##  system's console
 ##
-function local_user_uid ()
+function console_user_name ()
 {
-    /usr/bin/id -u $(local_user_name)
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most recent --online-only )}"
+}
+
+
+####
+##  Get the UID for the the specified user name.
+##
+function user_id_for_name ()  # <user_name>
+{
+    typeset user_name="${1}"
+    [[ -n "${user_name}" ]] || { echo_log --level 'ERROR' "Missing argument for user name." ; return 1 ; }
+
+    /usr/bin/id -u "${user_name}"
 }
 
 
@@ -435,7 +448,89 @@ function local_user_uid ()
 ##
 function local_user_home ()
 {
-    /usr/bin/dscl -plist '.' -read "/Users/$(local_user_name)" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+}
+
+
+####
+##  Get the info dictionary plist for a network user.
+##
+function network_user_info ()  # [standard_id] [ad_domain]
+{
+    typeset -l standard_id="${1:-$( local_user_name )}"
+    typeset -l ad_domain="${2}"
+    typeset -a search_domains=( ${DSCL_ACTIVE_DIRECTORY_HOSTS} )
+
+    [[ -n "${ad_domain}" ]] &&
+    {
+        (( ${DSCL_ACTIVE_DIRECTORY_HOSTS[(Ie)$ad_domain]} )) || { echo_log --level 'ERROR' "Specified AD domain '${ad_domain}' is not one of '${(j:', ':)DSCL_ACTIVE_DIRECTORY_HOSTS}'." ; return 10 ; }
+
+        search_domains=( ${ad_domain} )
+    }
+
+    typeset user_info
+    for search_domain ( ${search_domains} )
+    {
+        echo_debug "Fetching info for SID '${standard_id}' in '${search_domain}' domain..."
+        user_info=$( /usr/bin/dscl -plist -q "${DSCL_ACTIVE_DIRECTORY_ROOT}/${search_domain}" -read "/Users/${standard_id}" ) && break
+    }
+
+    [[ -n "${user_info}" ]] || { echo_log --level 'ERROR' "Unable to find user info for SID '${standard_id} in '${(j:', ':)search_domains}'."; return 20 ; }
+
+    echo -E "${user_info}"
+}
+
+
+####
+##  Get the local home directory for the system's local user.
+##
+function network_user_home ()  # [standard_id] [ad_domain]
+{
+    typeset user_info && user_info=$( network_user_info $@ ) || return $?
+
+    echo -E "${user_info}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:SMBHome.0' raw -
+}
+
+
+####
+##  Run a command as user with the given UID.
+##
+function run_as_user_id ()  # <user_id> [command word ...]
+{
+    typeset -i user_id="${1}" ; shift ;
+    launchctl asuser "${user_id}" sudo --user "#${user_id}" $@
+}
+
+
+####
+##  Run a command as user with the given user name.
+##
+function run_as_user_named ()  # <user_name> [command word ...]
+{
+    typeset user_name="${1}" ; shift ;
+    run_as_user_id $( user_id_for_name "${user_name}" ) $@
+}
+
+
+####
+##  Run a command as the account which logs in most frequently.
+##
+function run_as_local_user ()  # [command word ...]
+{
+    typeset local_user && local_user=$( local_user_name )
+    [[ -n "${local_user}" ]] || { echo_log --level 'ERROR' 'No local user could be identified.' ; return 1 ; }
+    run_as_user_named "${local_user}" $@
+}
+
+
+####
+##  Run a command as the logged-in user.
+##
+function run_as_console_user ()  # [command word ...]
+{
+    typeset console_user && console_user=$( console_user_name )
+    [[ -n "${console_user}" ]] || { echo_log --level 'ERROR' 'No user is currently at the console.' ; return 1 ; }
+    run_as_user_named "${console_user}" $@
 }
 
 
@@ -456,7 +551,7 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
         return 1
     }
 
-    echo "${json_string}" | plutil -extract "${keypath}" raw -
+    echo "${json_string}" | /usr/bin/plutil -extract "${keypath}" raw -
 }
 
 
@@ -483,24 +578,24 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 ##               'RED ALERT' \
 ##               'BATTLE STATIONS'
 ##
-function display_alert_dialog ()  # <message> <title> <button_label>
+function display_alert_dialog ()
 {
-    typeset message="$1"
-    typeset title="${2:-An error occurred.}"
-    typeset button_label="${3:-OK}"
+	typeset message="${1}"
+	typeset title="${2:-An error occurred.}"
+	typeset button_label="${3:-OK}"
 
-    echo_debug "Displaying alert dialog to user with title: '${title}' / '${message}' / [${button_label}]"
+    echo_debug "Displaying alert dialog to user:"
+    echo_debug --indent 1 "┌────────────────────────────────────────────────────────────────────────────────"
+    echo_debug --indent 1 "│ ${title}"
+    echo_debug --indent 1 "├────────────────────────────────────────────────────────────────────────────────"
+    echo_debug --indent 1 "│ ${message}"
+    echo_debug --indent 1 "│"
+    echo_debug --indent 1 "│ [${button_label}]"
+    echo_debug --indent 1 "└────────────────────────────────────────────────────────────────────────────────"
 
-    /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
+	/usr/bin/osascript 2> /dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
-                display alert "$title" as critical \
-                    message "$message" \
-                    buttons { "$button_label" } \
-                    default button "$button_label"
-            end tell
-        end tell
+        display alert "$title" as critical message "$message" buttons { "$button_label" } default button "$button_label"
 
 EOAPPLESCRIPT
 }
@@ -521,13 +616,9 @@ function display_notification ()  # <message> <title> <button_label>
 
     echo_debug "Displaying notification to user with message '${message}', title '${2}', subtitle '${3}'."
 
-    /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
+    run_as_console_user /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
-                display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
-            end tell
-        end tell
+        display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
 
 EOAPPLESCRIPT
 }
@@ -552,28 +643,23 @@ EOAPPLESCRIPT
 ##  0: An item was chosen normally.
 ##  10: The "Cancel" button was clicked.
 ##
-function select_from_list_dialog ()  # [title] [message] [item] ...
+function select_from_list_dialog ()  # [title] [message] [item ...]
 {
-    typeset title="$1"
-    typeset message="$2"
+    typeset    title="$1"
+    typeset    message="$2"
     typeset -a items=( ${@:3} )
-    typeset -a quoted_items=${(j[, ])${(qqq)items[@]}}
+    typeset    quoted_items=${(j[, ])${(qqq)items[@]}}
 
     echo_debug "Displaying alert dialog to user: '${title}' / '${message}' / [ ${quoted_items} ]"
 
     typeset selected_item ; selected_item=$( /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
-                activate
-                set listOptions to { $quoted_items }
-                choose from list listOptions \
-                    with title "$title" \
-                    with prompt "$message" \
-                    OK button name "OK" \
-                    cancel button name "Cancel"
-            end tell
-        end tell
+        set listOptions to { $quoted_items }
+        choose from list listOptions \
+            with title "$title" \
+            with prompt "$message" \
+            OK button name "OK" \
+            cancel button name "Cancel"
 
 EOAPPLESCRIPT
     )
@@ -1032,6 +1118,97 @@ function new_tmp_dir ()  # <purpose>
 
 
 ####
+##  Generate a "universally" formatted value for use with the global `no_proxy`
+##  parameter for proxy bypass in the shell.  Output format will be governed by
+##  the following guidelines and assumptions:
+##
+##  * Use lowercase form.
+##  * Use comma-separated hostname:port values.
+##  * IP addresses are okay, but hostnames are never resolved.
+##  * Suffixes match without `*` (e.g. foo.com is the wildcard for *.foo.com).
+##  * IP ranges in CIDR format (e.g.: 10/6) are not supported.
+##
+##  Reference:
+##  https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/
+##
+function user_proxy_convert_gui_bypass_to_noproxy ()
+{
+    typeset -a exception_list=()
+
+    (( ${+commands[scutil]} )) && exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    # TODO: Support `gsettings` output, which looks like: ['localhost', '127.0.0.0/8', '::1', '*.local']
+
+    # If the exception list is empty, bail.
+    (( ${#exception_list} )) || return
+
+    # `zsh` Parameter Expansion Explanation
+    # -------------------------------------
+    # Start with the array parameter name (`exception_list`), and work outward.
+    # Operator  #\*.   : Strip the first instance of '.*' from all elements
+    #                    (no_proxy disallows this form of wildcarding).
+    # Operator  :#*/*  : Remove any element containing a slash
+    #                    (`no_proxy` doesn't support CIDR IP ranges).
+    # Flag      j','   : Join array elements into a single word using a comma.
+    echo ${(j',')${exception_list#\*.}:#*/*}
+}
+
+
+####
+##  Set or unset all proxy parameters for the current environment.
+##  With no action, print all proxy parameters.
+##
+##  If no URL is specified with the `set` action, the value of the
+##  `$USER_PROXY_URL` parameter will be evaluated.
+##
+function user_proxy ()  # [set | unset] [user_proxy_url]
+{
+    typeset -a actions=( 'set' 'unset' )
+    typeset action="${1}"
+
+    typeset -a all_param_names=( ${USER_PROXY_ENV_PARAMETERS} ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
+
+    [[ -z "${action}" ]] &&
+    {
+        typeset -i max_name_length=${${(ONn)all_param_names%%*}[1]}
+        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} '${(P)param_name}'" }
+        return
+    }
+
+    (( ${actions[(Ie)$action]} )) || fail "Specified action must be one of: (${(j', ')actions})." 10
+
+    # Always unset all values.  No need to check for that action.
+    echo_debug 'Un-setting all proxy-related environment parameters.'
+    for param_name ( ${all_param_names:u} ${all_param_names:l} ) { unset "${param_name}" }
+
+    [[ "${action}" == "set" ]] || return
+
+    typeset proxy_url="${2}"
+    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
+    [[ -n "${proxy_url}" ]] || fail 'No proxy URL was provided.  $USER_PROXY_URL is also unset or empty.' 20
+
+    echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
+    for param ( ${USER_PROXY_ENV_PARAMETERS:u} ${USER_PROXY_ENV_PARAMETERS:l} )
+    {
+        typeset -gx "${param}"="${proxy_url}"
+    }
+
+    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
+    [[ -n "${noproxy_value}" ]] ||
+    {
+        echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+        return 0
+    }
+
+    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
+    for noproxy_param ( ${USER_PROXY_ENV_PARAMETERS_NOPROXY:u} ${USER_PROXY_ENV_PARAMETERS_NOPROXY:l} )
+    {
+        typeset -gx "${noproxy_param}"="${noproxy_value}"
+    }
+}
+
+
+####
 ##  Read the contents for the given AuthorizationDB right, formatted as an
 ##  XML property list.
 ##
@@ -1200,7 +1377,7 @@ function authdb_factory_reset ()  # <right_name>
 ##
 function launchd_local_user_domain_target ()
 {
-    echo "gui/$(local_user_uid))"
+    echo "gui/$( user_id_for_name $( local_user_name ) )"
 }
 
 
@@ -1252,19 +1429,6 @@ function launchd_boot_out_system_services_named ()  # <service-name-in-system-do
 function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
 {
     launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
-}
-
-
-####
-##
-##
-function remove_duplicates ()  #
-{
-    for dupe ( *\(<1->\).* )
-    {
-        echo_log --level 'INFO' "Evaluating '${dupe}'..."
-        typeset original="${${dupe:r}/%\(<1->\)/}.${dupe:e}"
-    }
 }
 
 
