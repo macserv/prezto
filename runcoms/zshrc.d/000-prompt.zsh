@@ -20,7 +20,7 @@ function prompt_my_cpu_temp ()
 
 function prompt_my_caffeinate ()
 {
-    pgrep -f 'caffeinate' &>/dev/null && { p10k segment -f grey15 -b silver -i $'\U0000E005 ' ; return ; }
+    pgrep 'caffeinate' &>/dev/null && { p10k segment -f grey15 -b silver -i $'\U0000E005 ' ; return ; }
 }
 
 

@@ -287,7 +287,7 @@ function echo_log ()
     typeset func=${funcstack[$func_stack_index]}
 
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
-    echo_err "${output}"
+    echo_err ${@[1,-2]} "${output}"
 
     return ${passthrough_status}
 }
@@ -448,7 +448,7 @@ function user_id_for_name ()  # <user_name>
 ##
 function local_user_home ()
 {
-    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+    /usr/bin/dscl -plist '.' -read "/Users/$(local_user_name)" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
 }
 
 
@@ -581,8 +581,8 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 function display_alert_dialog ()
 {
 	typeset message="${1}"
-	typeset title="${2:-An error occurred.}"
-	typeset button_label="${3:-OK}"
+    typeset title="${2:-An error occurred.}"
+    typeset button_label="${3:-OK}"
 
     echo_debug "Displaying alert dialog to user:"
     echo_debug --indent 1 "┌────────────────────────────────────────────────────────────────────────────────"
@@ -593,7 +593,7 @@ function display_alert_dialog ()
     echo_debug --indent 1 "│ [${button_label}]"
     echo_debug --indent 1 "└────────────────────────────────────────────────────────────────────────────────"
 
-	/usr/bin/osascript 2> /dev/null <<EOAPPLESCRIPT
+    /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
         display alert "$title" as critical message "$message" buttons { "$button_label" } default button "$button_label"
 
@@ -618,7 +618,7 @@ function display_notification ()  # <message> <title> <button_label>
 
     run_as_console_user /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
+                display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
 
 EOAPPLESCRIPT
 }
@@ -645,8 +645,8 @@ EOAPPLESCRIPT
 ##
 function select_from_list_dialog ()  # [title] [message] [item ...]
 {
-    typeset    title="$1"
-    typeset    message="$2"
+    typeset title="$1"
+    typeset message="$2"
     typeset -a items=( ${@:3} )
     typeset    quoted_items=${(j[, ])${(qqq)items[@]}}
 
@@ -1429,6 +1429,32 @@ function launchd_boot_out_system_services_named ()  # <service-name-in-system-do
 function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
 {
     launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
+}
+
+
+####
+##  Remove parenthetically unique duplicates of a file by comparing their
+##  contents and deleting identical files.
+##
+function remove_duplicates ()  #
+{
+    typeset original_by_name
+
+    for duplicate_candidate ( *\(<1->\).*(N) )
+    {
+        echo_log -n --level 'INFO' "Evaluating '${duplicate_candidate}'... "
+
+        original_by_name="${${duplicate_candidate:r}/%\(<1->\)/}.${duplicate_candidate:e}"
+        [[ -f "${original_by_name}" ]] || { echo "no potential original found. Skipped." ; continue ; }
+
+        echo_err -n "Comparing to '${original_by_name}'..."
+        cmp --silent "${duplicate_candidate}" "${original_by_name}" || { echo "files differ. Skipped." ; continue ; }
+
+        echo_err -n "files match. 🔴 Removing... "
+        remove_existing "${duplicate_candidate}"
+
+        echo 'done.'
+    }
 }
 
 
