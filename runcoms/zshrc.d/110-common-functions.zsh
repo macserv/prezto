@@ -448,7 +448,7 @@ function user_id_for_name ()  # <user_name>
 ##
 function local_user_home ()
 {
-    /usr/bin/dscl -plist '.' -read "/Users/$(local_user_name)" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
 }
 
 
@@ -645,8 +645,8 @@ EOAPPLESCRIPT
 ##
 function select_from_list_dialog ()  # [title] [message] [item ...]
 {
-    typeset title="$1"
-    typeset message="$2"
+    typeset    title="$1"
+    typeset    message="$2"
     typeset -a items=( ${@:3} )
     typeset    quoted_items=${(j[, ])${(qqq)items[@]}}
 
