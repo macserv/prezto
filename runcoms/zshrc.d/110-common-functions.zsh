@@ -167,7 +167,7 @@ function echo_err_debug ()  # [-n] words ...
 ##      echo_log --level 'WARNING' 'Warning message.'
 ##      echo_log --level 'ERROR' 'Error message!'
 ##      echo_log --level 'DEBUG' 'Debug message, unindented.'
-##      echo_log --level 'DEBUG' --indent 1 'Debug message, indented once, supressing newline... \c'
+##      echo_log -n --level 'DEBUG' --indent 1 'Debug message, indented once, supressing newline...'
 ##      echo_err 'until now!'
 ##      echo_log --level 'DEBUG' --indent 2 --fill '-' --spacer ' ' 'Debug, indented 2 times, with dash fill and final space.'
 ##      echo_log --level 'DEBUG' --indent 2 --fill ' ' --spacer '-> ' 'Debug, indented 2 times, with space fill and final arrow.'
@@ -472,10 +472,10 @@ function network_user_info ()  # [standard_id] [ad_domain]
     for search_domain ( ${search_domains} )
     {
         echo_debug "Fetching info for SID '${standard_id}' in '${search_domain}' domain..."
-        user_info=$( /usr/bin/dscl -plist -q "${DSCL_ACTIVE_DIRECTORY_ROOT}/${search_domain}" -read "/Users/${standard_id}" ) && break
+        user_info=$( /usr/bin/dscl -plist -q "${DSCL_ACTIVE_DIRECTORY_ROOT}/${search_domain}" -read "/Users/${standard_id}" 2>/dev/null ) && break
     }
 
-    [[ -n "${user_info}" ]] || { echo_log --level 'ERROR' "Unable to find user info for SID '${standard_id} in '${(j:', ':)search_domains}'."; return 20 ; }
+    [[ -n "${user_info}" ]] || { echo_debug "Unable to find user info for SID '${standard_id} in '${(j:', ':)search_domains}'."; return 20 ; }
 
     echo -E "${user_info}"
 }
@@ -489,6 +489,64 @@ function network_user_home ()  # [standard_id] [ad_domain]
     typeset user_info && user_info=$( network_user_info $@ ) || return $?
 
     echo -E "${user_info}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:SMBHome.0' raw -
+}
+
+
+####
+##  Get the group membership for the specified user.
+##
+function network_user_groups ()  # [--csv] [standard_id] [ad_domain]
+{
+    typeset -i use_csv_output=0
+    [[ "${1}" == "--csv" ]] && { use_csv_output=1 && shift ; }
+
+    typeset user_info && user_info=$( network_user_info $@ ) || return $?
+    typeset groups_attr='dsAttrTypeNative:memberOf'
+    typeset -i group_count && group_count=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}" raw - )
+    typeset -a group_dnames=()
+
+    for group_index ( {0..$(( group_count - 1 ))} )
+    {
+        group_dnames+=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}.${group_index}" raw - )
+    }
+
+    typeset cn_segment
+    typeset -a group_segments
+    typeset -a ou_segments
+    typeset -a dc_segments
+    typeset segment_value
+    typeset -a output_lines=()
+    typeset -a output_pipe_cmd=( '/usr/bin/column' '-t' '-s' ',' )
+
+    for group_dn ( ${(i)group_dnames} )
+    {
+        group_segments=( ${(@s:=:)${(s:,:)group_dn}} )
+        ou_segments=()
+        dc_segments=()
+
+        for segment_index ( $(seq 1 2 $(( ${#group_segments} - 1 ))) )
+        {
+            segment_value="${group_segments[$(( segment_index + 1 ))]}"
+
+            case ${group_segments[segment_index]}
+            {
+                'CN') cn_segment="${segment_value}" ;;
+                'OU') ou_segments+="${segment_value}" ;;
+                'DC') dc_segments+="${segment_value}" ;;
+                *)    echo_log --level 'ERROR' 'Unexpected label found in DN: '${group_dn}'.' return 10 ;;
+            }
+        }
+
+        output_lines+="${cn_segment},${(Oaj:/:)ou_segments},${(Oaj:.:)dc_segments}"
+    }
+
+    (( use_csv_output )) &&
+    {
+        output_pipe_cmd=( 'cat' )
+        echo 'Name (CN),Path (OU),Domain (DC)'
+    }
+
+    echo ${(j:\n:)output_lines} | $output_pipe_cmd[@]
 }
 
 
