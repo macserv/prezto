@@ -191,7 +191,7 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 {
     typeset -i fetch_all_branches=0
 
-    [[ "${1}" = '--all' ]] && { validate_only=1 ; shift ; }
+    [[ "${1}" = '--all' ]] && { fetch_all_branches=1 ; shift ; }
 
     typeset -r default_pull_remote="origin"
     typeset pull_remote="${1}" ; [[ -n "${pull_remote}" ]] ||
@@ -208,7 +208,7 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 
     for branch ( ${branch_names[@]} )
     {
-        echo_log --level 'INFO' "Checking out local '${branch}'... \c"
+        echo_log -n --level 'INFO' "Checking out local '${branch}'..."
 
         git checkout "${branch}" &>/dev/null ||
         {
@@ -222,11 +222,18 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 
         git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${pull_remote}' into local '${branch}'." ; return 50 ; }
 
-        [[ -n "${push_remote}" ]] && { git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to push changes to '${push_remote}' for '${branch}'." ; return 60 ; } }
+        # If we're not pushing, finish up.
+        [[ -z "${push_remote}" ]] &&
+        {
+            echo_err "done."
+            git checkout ${starting_branch}
+            continue
+        }
 
+        # Push to specified remote.
+        echo_err -n "done.  Pushing to '${push_remote}'... "
+        git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to push changes to '${push_remote}' for '${branch}'." ; return 60 ; }
         echo_err "done.\n"
-
-        git checkout ${starting_branch}
     }
 }
 
