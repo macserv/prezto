@@ -277,7 +277,7 @@ function echo_log ()
 
     # If the '--transparent' flag is set, look one index higher in the stack
     # and file trace arrays to functionally ignore the caller.
-    (( ${options[--transparent]} )) &&
+    (( ${+options[--transparent]} )) &&
     {
         file_trace_index+=1
         func_stack_index+=1
@@ -285,8 +285,9 @@ function echo_log ()
 
     typeset file=${funcfiletrace[$file_trace_index]##*/}
     typeset func=${funcstack[$func_stack_index]}
-
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
+
+    # Call `echo_err`, passing extra arguments through (e.g., '-n').
     echo_err ${@[1,-2]} "${output}"
 
     return ${passthrough_status}
