@@ -129,9 +129,9 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
         "(composedMessage   CONTAINS${modifier} \"${filter}\")"
         "(process           CONTAINS${modifier} \"${filter}\")"
         "(processIdentifier ==                  \"${filter}\")"
-    #   "(processImagePath  CONTAINS${modifier} \"${filter}\")"
+        "(processImagePath  CONTAINS${modifier} \"${filter}\")"
         "(sender            CONTAINS${modifier} \"${filter}\")"
-    #   "(senderImagePath   CONTAINS${modifier} \"${filter}\")"
+        "(senderImagePath   CONTAINS${modifier} \"${filter}\")"
         "(subsystem         CONTAINS${modifier} \"${filter}\")"
     )
 

@@ -86,7 +86,7 @@ function update_brew_ssl_certs_from_keychain ()
     for keychain ( ${keychains} )
     {
         echo_log
-        echo_log --level 'INFO' "Loading certificates from keychain '${keychain}'... \c"
+        echo_log -n --level 'INFO' "Loading certificates from keychain '${keychain}'..."
         typeset -a cert_names && cert_names=( ${(f)"$( security find-certificate -a "${keychain}" | grep '"alis"' | cut -d '"' -f 4 )"} )
 
         echo_err "${#cert_names} found."
@@ -94,7 +94,7 @@ function update_brew_ssl_certs_from_keychain ()
 
         for cert_name ( ${cert_names} )
         {
-            echo_log --level 'INFO' --indent 1 "${cert_name}... loading... \c"
+            echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
             cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" 2>/dev/null)" || { echo_err 'unable to load certificate contents. 🔴' ; continue }
 
             echo_err -n "exporting... "
@@ -118,7 +118,7 @@ function update_brew_ssl_certs_from_keychain ()
 
     #     for cert_name ( ${cert_names} )
     #     {
-    #         echo_log --level 'INFO' --indent 1 "${cert_name}... loading... \c"
+    #         echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
     #         cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" &>/dev/null)" || { echo_err "unable to load certificate contents; status '$?'" ; continue }
 
     #         echo_err -n "exporting... "
