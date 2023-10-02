@@ -862,11 +862,19 @@ function remove_existing ()  # <path_to_remove>
 ##          filtered by the options below.
 ##
 ##  FILTERING OPTIONS (Optional):
-##      [-o | --online-only]  Consider only users who are currently logged in.
-##      [-n | --include-non-sid]  Include users whose names do not appear to be
+##      [-o | --online-only] : Consider only users who are currently logged in.
+##      [-n | --include-non-sid] : Include users whose names do not appear to be
 ##          a standard identifier (a letter followed by siz digits).
-##      [-t | --include-tty]  Include logins that are not bound to a console
+##      [-t | --include-tty] : Include logins that are not bound to a console
 ##          session; i.e., non-GUI logins such as terminal or SSH sessions.
+##
+##  ENVIRONMENT VARIABLES:
+##      $USER_MOST_ONLINE_ONLY : If set, command will behave as if the
+##          `--online-only` flag was specified.
+##      $USER_MOST_INCLUDE_NON_SID : If set, command will behave as if the
+##          `--include-non-sid` flag was specified.
+##      $USER_MOST_INCLUDE_TTY : If set, command will behave as if the
+##          `--include-tty` flag was specified.
 ##
 function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
@@ -878,6 +886,11 @@ function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-
         {n,-include-non-sid}=include_non_sid \
         {t,-include-tty}=include_tty \
     || return 1
+
+    # Check for environment variables to
+    (( ${+USER_MOST_ONLINE_ONLY} ))     && online_only+=( 'ENV' )
+    (( ${+USER_MOST_INCLUDE_NON_SID} )) && include_non_sid+=( 'ENV' )
+    (( ${+USER_MOST_INCLUDE_TTY} ))     && include_tty+=( 'ENV' )
 
     # Configure the list of valid operating modes for this function.
     typeset -A modes=(
@@ -1088,9 +1101,9 @@ function fix_extension ()  # [--validate-only] <description_pattern> <replacemen
 function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 {
     typeset working_path='.'
-    typeset -a remove_cmd=(rm -v -f)
-    typeset -a file_brief_cmd=(file --brief)
-    typeset file_brief_description="AppleDouble encoded Macintosh file"
+    typeset -a remove_cmd=( 'remove_existing' )
+    typeset -a file_brief_cmd=( 'file' '--brief' )
+    typeset file_brief_description='AppleDouble encoded Macintosh file'
 
     [[ "${1}" = '--recursive' ]] && { working_path='**' ; shift ; }
     [[ "${1}" = '--dry-run'    ]] && { remove_cmd='echo' ; }
@@ -1492,27 +1505,58 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
 
 
 ####
+##  WIP
 ##  Remove parenthetically unique duplicates of a file by comparing their
 ##  contents and deleting identical files.
 ##
-function remove_duplicates ()  #
+function remove_duplicates ()  # --dry-run
 {
     typeset original_by_name
+    typeset -a remove_cmd=( 'remove_existing' )
 
-    for duplicate_candidate ( *\(<1->\).*(N) )
+    [[ "${1}" = '--dry-run' ]] && { remove_cmd=( 'echo' 'DRY RUN - Not removing: ' ) ; shift ; }
+
+    typeset stub
+    typeset ext
+    typeset original_by_name
+
+    # Glob: all items ending in '(n)' or '(n).ext' where n is an integer; zero results is fine.
+    for duplicate_candidate ( *\(<1->\)(.*)#(N) )
     {
-        echo_log -n --level 'INFO' "Evaluating '${duplicate_candidate}'... "
+        stub="${duplicate_candidate:r}"
+        ext="${duplicate_candidate:e}"
+
+        [[ -n "${ext}" ]] && ext=".${ext}"
+
+        case "${duplicate_candidate}" in
+            *\(1\)(.*)#) # (1): remove the number and parens entirely
+                original_by_name="${${duplicate_candidate:r}/%\(1\)/}${ext}"
+                ;;
+            *) # (2+): decrement the number
+                echo twoplus
+                ;;
+        esac
+
+        continue
+
+        echo_log -n --level 'INFO' "Found '${duplicate_candidate}'... "
 
         original_by_name="${${duplicate_candidate:r}/%\(<1->\)/}.${duplicate_candidate:e}"
-        [[ -f "${original_by_name}" ]] || { echo "no potential original found. Skipped." ; continue ; }
+        [[ -f "${original_by_name}" ]] ||
+        {
+            echo_err "⏭️  Skipped: no corresponding original filename found."
+            continue
+        }
 
-        echo_err -n "Comparing to '${original_by_name}'..."
-        cmp --silent "${duplicate_candidate}" "${original_by_name}" || { echo "files differ. Skipped." ; continue ; }
+        echo_err -n "Comparing to '${original_by_name}'... "
+        cmp --silent "${duplicate_candidate}" "${original_by_name}" ||
+        {
+            echo_err "⏭️  Skipped: not equivalent."
+            continue
+        }
 
-        echo_err -n "files match. 🔴 Removing... "
-        remove_existing "${duplicate_candidate}"
-
-        echo 'done.'
+        echo_err "🗑️  Removing as duplicate."
+        "${remove_cmd[@]}" "${duplicate_candidate}"
     }
 }
 
@@ -1598,21 +1642,22 @@ function remove_duplicates ()  #
 
 
 ####
-# #  Download a large file, broken into chunks of a specified size
-# #  (in megabytes, default is 20).
-# #
+##  Download a large file, broken into chunks of a specified size in megabytes
+##  (default is 20).
+##
 # function download_chunked ()  # <remote_url> <output_file_path> <chunk_size=20>
 # {
-#     typeset dl_command remote_url output_file_path chunk_input
 #     typeset -i chunk_size
 #
-#     dl_command="curl"
+#     typeset dl_command="curl"
 #
-#     remote_url="${1}" ; [[ -n "${remote_url}" ]] || fail 'Argument for remote URL is missing or empty.' 10
-#     output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
+#     typeset remote_url="${1}"       ; [[ -n "${remote_url}" ]]       || fail 'Argument for remote URL is missing or empty.' 10
+#     typeset output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
+
 #     # Check output path's last directory exists, or fail
 #     # Check output path's last directory is writable, or fail
-#     chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
+
+#     typeset chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
 #     (( chunk_size = $chunk_input )) ; [[ "${chunk_size}" == <-> && -n "${chunk_size}" ]] || echo 'Using default chunk size of 20 MB.' INFO
 #     # Check that chunk size is a non-zero integer, or log that the default will be used
 #
