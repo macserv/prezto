@@ -203,7 +203,10 @@ function ff_selfie ()  # <video_file> <clip_start_time> <clip_end_time>
 
 
 ##
-##  Use `yt-dlp` to fetch a URL stored in the pasteboard.
+##  Use `yt-dlp` to fetch a URL stored in the pasteboard, and apply some
+##  sensible default parameters prioritizing mp4 video.
+##
+##  Passes arguments through to `yt-dlp` command.
 ##
 function yt_dlpaste ()
 {
@@ -236,6 +239,7 @@ function yt_dlpaste ()
             --embed-metadata            # Embed metadata and chapters/infojson if present
             --xattrs                    # Write metadata to the video file's xattrs
             --output "${output_path}"
+            ${@}
         "${source_url}"
     )
 
