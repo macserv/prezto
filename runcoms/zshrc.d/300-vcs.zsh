@@ -5,11 +5,33 @@
 
 
 ##
-##  Print the name (only) of each git ref in the current repo.
+##  Print the name of each git ref in the current repo, one ref per line.
 ##
-function git_all_refnames
+function git_all_refnames ()
 {
     git for-each-ref --format '%(refname)'
+}
+
+
+##
+##  Print all tags at the current HEAD, one per line.
+##
+function git_all_tags ()
+{
+    git --no-pager tag --points-at HEAD 2>/dev/null
+}
+
+
+##
+##  Identify files which, based on `.gitignore` rules, should be ignored, but
+##  are present in the version-controlled tree anyway.  There are two common
+##  cases for this:
+##  1. The file was added before a `.gitignore` rule was established.
+##  2. The file was added using `git add --force` to override `.gitignore`.
+##
+function gitignore_violations ()
+{
+    git ls-files --cached --ignored --exclude-standard
 }
 
 
@@ -184,10 +206,21 @@ function git_current_branch ()
 
 
 ##
-##  Pull changes into all branches from the specified upstream remote, and push
-##  them to the specified origin remote.
+##  Pull changes into the current branch from a specified upstream remote.
+##  Then, optionally, push to the same branch on a specified downstream remote.
 ##
-function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_name]
+##  ARGUMENTS
+##  ---------
+##  --all : Discover and pull all branches on the upstream remote, not just the
+##      currently active branch.
+##
+##  <upstream_remote> : The name of the remote from which changes will be pulled
+##      into the local working copy.  Default: 'origin'
+##
+##  [downstream_remote] : Optional.  If specified, each pulled branch will also
+##      be pushed to the same branch on this remote.
+##
+function git_remote_sync ()  # [--all] <upstream_remote> [downstream_remote]
 {
     typeset -i fetch_all_branches=0
 
@@ -222,7 +255,7 @@ function git_remote_sync ()  # [--all] <pull_from_remote_name> [push_to_remote_n
 
         git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${pull_remote}' into local '${branch}'." ; return 50 ; }
 
-        # If we're not pushing, finish up.
+        # If we're not pushing, move on to the next branch.
         [[ -z "${push_remote}" ]] &&
         {
             echo_err "done."
