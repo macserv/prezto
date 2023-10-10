@@ -266,9 +266,9 @@ function git_remote_sync ()  # <upstream_remote> [downstream_remote]
         }
 
         # Push to specified remote.
-        echo_err -n "done.  Pushing to '${downstream_remote}'... "
+        echo_err -n "complete.  Pushing to '${downstream_remote}'... "
         git push --tags "${downstream_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to push changes to '${downstream_remote}' for '${branch}'." ; return 60 ; }
-        echo_err "done.\n"
+        echo_err "done."
     }
 
     git switch ${starting_branch} &>/dev/null
