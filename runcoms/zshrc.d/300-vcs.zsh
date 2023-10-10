@@ -206,68 +206,62 @@ function git_current_branch ()
 
 
 ##
-##  Pull changes into the current branch from a specified upstream remote.
-##  Then, optionally, push to the same branch on a specified downstream remote.
+##  Pull changes into local branches from a given upstream remote, creating
+##  tracking branches for any remote branches that do not exist locally.
+##
+##  Optionally, push changes to the same branches on a given downstream remote.
 ##
 ##  ARGUMENTS
 ##  ---------
-##  --all : Discover and pull all branches on the upstream remote, not just the
-##      currently active branch.
-##
 ##  <upstream_remote> : The name of the remote from which changes will be pulled
 ##      into the local working copy.  Default: 'origin'
 ##
 ##  [downstream_remote] : Optional.  If specified, each pulled branch will also
 ##      be pushed to the same branch on this remote.
 ##
-function git_remote_sync ()  # [--all] <upstream_remote> [downstream_remote]
+function git_remote_sync ()  # <upstream_remote> [downstream_remote]
 {
-    typeset -i fetch_all_branches=0
-
-    [[ "${1}" = '--all' ]] && { fetch_all_branches=1 ; shift ; }
-
-    typeset -r default_pull_remote="origin"
-    typeset pull_remote="${1}" ; [[ -n "${pull_remote}" ]] ||
+    typeset -r default_upstream_remote="origin"
+    typeset upstream_remote="${1}" ; [[ -n "${upstream_remote}" ]] ||
     {
-        pull_remote="${default_pull_remote}"
-        echo_log --level 'INFO' "Using default ('${pull_remote}') as name for pull remote." ;
+        upstream_remote="${default_upstream_remote}"
+        echo_log --level 'INFO' "Using default ('${upstream_remote}') as name for upstream remote." ;
     }
-    typeset push_remote="${2}"
+    typeset downstream_remote="${2}"
     typeset starting_branch=$( git_current_branch )
-    typeset -a branch_names=( $(git branch --format '%(refname:short)') )
-    (( fetch_all_branches )) && branch_names=( $(git ls-remote --heads "${pull_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') )
+    typeset -a branch_names=( $(git ls-remote --heads "${upstream_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') )
 
     echo_log
 
     for branch ( ${branch_names[@]} )
     {
-        echo_log -n --level 'INFO' "Checking out local '${branch}'..."
+        echo_log -n --level 'INFO' "Switching to '${branch}'... "
 
-        git checkout "${branch}" &>/dev/null ||
+        git switch "${branch}" &>/dev/null ||
         {
-            echo_err -n "not found.  Fetching '${pull_remote}'... "
-            { git fetch ${pull_remote} ${branch} &>/dev/null && git checkout -b "${branch}" --track "${pull_remote}/${branch}" &>/dev/null } || { echo_err ; echo_log --level 'ERROR' "Unable to checkout '${branch}'." ; return 30 ; }
+            echo_err -n "Creating local, tracking '${upstream_remote}'... "
+            git switch --track "${upstream_remote}/${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to create local '${branch}' tracking '${upstream_remote}'." ; return 30 ; }
         }
 
-        echo_err -n "complete.  Pulling '${branch}'... "
+        echo_err -n "switched.  Pulling changes from '${upstream_remote}'... "
 
-        [[ -z "$(git --no-pager log "^${pull_remote}/${branch}" "${branch}")" ]] || { echo_err ; echo_log --level 'ERROR' "Local repository has unpushed commits for branch '${branch}'." ; return 40 ; }
+        [[ -z "$(git --no-pager log "^${upstream_remote}/${branch}" "${branch}")" ]]   || { echo_err ; echo_log --level 'ERROR' "Local repository has unpushed commits for branch '${branch}'." ; return 40 ; }
+        git pull --tags --force --no-ff --no-edit "${upstream_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${upstream_remote}' into local '${branch}'." ; return 50 ; }
 
-        git pull --tags --force --no-edit "${pull_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${pull_remote}' into local '${branch}'." ; return 50 ; }
-
-        # If we're not pushing, move on to the next branch.
-        [[ -z "${push_remote}" ]] &&
+        # If no downstream remote was specified, move on to the next branch.
+        [[ -z "${downstream_remote}" ]] &&
         {
             echo_err "done."
-            git checkout ${starting_branch}
             continue
         }
 
         # Push to specified remote.
-        echo_err -n "done.  Pushing to '${push_remote}'... "
-        git push --tags "${push_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to push changes to '${push_remote}' for '${branch}'." ; return 60 ; }
+        echo_err -n "done.  Pushing to '${downstream_remote}'... "
+        git push --tags "${downstream_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to push changes to '${downstream_remote}' for '${branch}'." ; return 60 ; }
         echo_err "done.\n"
     }
+
+    git switch ${starting_branch} &>/dev/null
 }
 
 
