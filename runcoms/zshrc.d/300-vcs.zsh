@@ -4,6 +4,10 @@
 ##
 
 
+typeset -gx GIT_COMMIT_JIRA_ISSUE
+typeset -gx GIT_COMMIT_JIRA_ISSUE_CACHE="${HOME}/.cache/git_commit_jira_id.txt"
+
+
 ##
 ##  Print the name of the current branch, with no additional decoration.
 ##
@@ -42,13 +46,12 @@ function git_reset_local_branch_to_remote ()  # <remote>
 
 
 ##
-##  Identify files which, based on `.gitignore` rules, should be ignored, but
-##  are present in the version-controlled tree anyway.  There are two common
-##  cases for this:
+##  Identify files which are currently being tracked, but should be
+##  ignored based on `.gitignore` rules.  There are two common cases for this:
 ##  1. The file was added before a `.gitignore` rule was established.
 ##  2. The file was added using `git add --force` to override `.gitignore`.
 ##
-function gitignore_violations ()
+function git_stowaways ()
 {
     git ls-files --cached --ignored --exclude-standard
 }
@@ -280,13 +283,18 @@ function git_remote_sync ()  # <upstream_remote> [downstream_remote]
 ##  branch.  A sub-branch is a branch whose name starts with the name of the
 ##  current branch, followed by a period, and an additional identifying string.
 ##
+##  ARGUMENTS
+##  ---------
+##  [downstream_remote] : Optional.  If specified, each pulled branch will also
+##      be pushed to the same branch on this remote.
+##
 ##  EXAMPLE:
 ##  * `foo/bar` (parent)
 ##      * `foo/bar.baz` (sub-branch)
 ##      * `foo/bar.bat` (sub-branch)
 ##      * `foo/bar.boom` (sub-branch)
 ##
-function git_sync_to_subbranches_and_push # <remote>
+function git_sync_to_subbranches_and_push ()  # [remote]
 {
     git fetch --all --quiet || { echo_log --level 'ERROR' "Unable to fetch branches." ; return $? ; }
 
@@ -310,8 +318,8 @@ function git_sync_to_subbranches_and_push # <remote>
 
         # Checkout the branch, with remote reference if necessary.
         echo_log --level 'INFO' "Checking out '${branch_name}'..."
-        (( branch_is_remote && ! branch_is_local )) && { git checkout --quiet -b "${branch_name}" "${remote_ref_prefix}${branch_name}" || { echo_log --level 'ERROR' "Unable to check out branch." ; return 1 ; } }
-        (( branch_is_local )) && { git checkout --quiet "${branch_name}" || { echo_log --level 'ERROR' "Unable to check out branch." ; return 1 ; } }
+        (( branch_is_remote && (! branch_is_local) )) && { git switch --quiet --create "${branch_name}" "${remote_ref_prefix}${branch_name}" || { echo_log --level 'ERROR' "Unable to check out branch." ; return 1 ; } }
+        (( branch_is_local ))                         && { git switch --quiet          "${branch_name}"                                      || { echo_log --level 'ERROR' "Unable to check out branch." ; return 1 ; } }
 
         # Pull upstream changes for remote branches.
         (( branch_is_remote )) &&
@@ -345,7 +353,8 @@ function git_sync_to_subbranches_and_push # <remote>
 ##
 function git_commit_jira ()  # [(-i | --id) <jira_id>] [message]
 {
-    typeset help jira_id
+    typeset help
+    typeset jira_id
 
     zparseopts -D -E -F -K -- \
         {h,-help}=help \
@@ -360,18 +369,23 @@ function git_commit_jira ()  # [(-i | --id) <jira_id>] [message]
         return
     fi
 
-    (( $#jira_id )) && jira_id="${jira_id[2]}"
-    (( $#jira_id )) || jira_id="${GIT_COMMIT_JIRA_ISSUE}"
-    [[ -n "${jira_id}" ]] || { echo_log --level 'ERROR' "No JIRA issue ID was provided, and the GIT_COMMIT_JIRA_ISSUE environment variable is empty." ; return 10 ; }
+    # Get the Jira ID, trying argument, env var, and cache file.
+    (( $#jira_id ))       && jira_id="${jira_id[2]}"
+    [[ -n "${jira_id}" ]] || jira_id="${GIT_COMMIT_JIRA_ISSUE}"
+    [[ -n "${jira_id}" ]] || { jira_id=$( < "${GIT_COMMIT_JIRA_ISSUE_CACHE}" ) 2>/dev/null ; }
+    [[ -n "${jira_id}" ]] || { echo_log --level 'ERROR' "JIRA issue ID not found in command argument, environment, or cache." ; return 10 ; }
 
+    # Update the env var and cache file.
     typeset -gx GIT_COMMIT_JIRA_ISSUE="${jira_id}"
+    echo "${jira_id}" >! "${GIT_COMMIT_JIRA_ISSUE_CACHE}"
+
     typeset -a commit_cmd=( 'git' 'commit' )
     typeset message="${1}"
 
-    [[ -z "${message}" ]] &&
+    [[ -n "${message}" ]] ||
     {
-        echo_log --level 'INFO' "No commit message was provided, so no changes will be committed.  JIRA issue ID is '${jira_id}'."
-        return
+        echo_log --level 'INFO' "No commit message was provided, so no changes will be committed.  Current JIRA issue ID is '${jira_id}'."
+        return 0
     }
 
     git commit -m "${message}  (${jira_id})"
@@ -435,4 +449,14 @@ function git_move_tag ()  # [--all-remotes] [--remote <remote_name>] <tag_name>
         git push "${remote}" "refs/tags/${tag_name}:refs/tags/${tag_name}" &>/dev/null || { echo_log --level 'ERROR' "Unable to create tag '${tag_name}' in remote '${remote}'."   ; return $? ; }
     }
 }
+
+
+##
+##  Add upstream refs for pull request branches for a Bitbucket repository.
+##
+function git_add_bitbucket_pull_request_refs
+{
+    git config --add remote.upstream.fetch '+refs/pull-requests/*/from:refs/remotes/upstream/pull-requests/*'
+}
+
 
