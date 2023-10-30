@@ -452,11 +452,12 @@ function git_move_tag ()  # [--all-remotes] [--remote <remote_name>] <tag_name>
 
 
 ##
-##  Add upstream refs for pull request branches for a Bitbucket repository.
+##  Add blessed remote branch refs for pull request branches in a Bitbucket repository.
 ##
 function git_add_bitbucket_pull_request_refs
 {
-    git config --add remote.upstream.fetch '+refs/pull-requests/*/from:refs/remotes/upstream/pull-requests/*'
+    git config --add remote.blessed.fetch '+refs/pull-requests/*/from:refs/remotes/upstream/pull-requests/*'
+    git fetch blessed
 }
 
 
