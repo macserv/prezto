@@ -175,3 +175,19 @@ function create_swift_gitignore ()
     curl -SLw "\n" "https://www.gitignore.io/api/swift,linux,xcode,macos,swiftpm,swiftpackagemanager" > .gitignore
 }
 
+
+##
+##
+##
+function overcaffeinate ()
+{
+    until {
+        zmodload 'zsh/system'
+        display_notification "Started by shell process ${sysparams[pid]}." '☕️ Caffeinated!'
+        caffeinate -disu
+    } {
+        display_notification "Caffeinate was killed with status $?.  Restarting..." '😴 Decaffeinated'
+        sleep 1
+    } &!
+}
+
