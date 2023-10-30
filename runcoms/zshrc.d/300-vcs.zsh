@@ -456,7 +456,7 @@ function git_move_tag ()  # [--all-remotes] [--remote <remote_name>] <tag_name>
 ##
 function git_add_bitbucket_pull_request_refs
 {
-    git config --add remote.blessed.fetch '+refs/pull-requests/*/from:refs/remotes/upstream/pull-requests/*'
+    git config --add remote.blessed.fetch '+refs/pull-requests/*/from:refs/remotes/blessed/pull-requests/*'
     git fetch blessed
 }
 
