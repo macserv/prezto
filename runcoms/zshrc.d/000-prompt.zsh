@@ -55,8 +55,8 @@ typeset -g POWERLEVEL9K_PROMPT_CHAR_{OK,ERROR}_VIINS_CONTENT_EXPANSION='%#'
 #
 
 # Lay out segments in four groups: top/bottom line, left/right edge of terminal
-t_l=( 'dir_writable' 'dir' 'vcs' );     t_r=( 'background_jobs' 'my_caffeinate' 'node_version' 'swift_version' 'time' )
-b_l=( 'root_indicator' 'os_icon' );                                           b_r=( 'command_execution_time' 'status' )
+t_l=( 'dir_writable' 'dir' 'vcs' );     t_r=( 'background_jobs' 'my_caffeinate' 'node_version' 'swift_version' 'go_version' 'time' )
+b_l=( 'root_indicator' 'os_icon' );                                                        b_r=( 'command_execution_time' 'status' )
 
 # Combine segment layout into p10k config parameters
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=( ${t_l} 'newline' ${b_l} )
