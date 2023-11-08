@@ -1,7 +1,7 @@
-#
-# ZPROFILE EXTENSION:
-# HomeBrew (brew)
-#
+##
+##  ZPROFILE EXTENSION:
+##  HomeBrew (brew)
+##
 
 
 typeset -gx HOMEBREW_PREFIX

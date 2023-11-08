@@ -1,11 +1,11 @@
-#
-# Executes commands at login.
-#
-# zshenv ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ ❰zlogin❱ ➠ zlogout
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+##
+##  Executes commands at login.
+##
+##  zshenv ➠ zprofile ➠ zshrc ➠ zpreztorc ➠ ❰zlogin❱ ➠ zlogout
+##
+##  Authors:
+##    Sorin Ionescu <sorin.ionescu@gmail.com>
+##
 
 # Execute code that does not affect the current session in the background.
 {

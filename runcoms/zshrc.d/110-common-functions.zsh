@@ -1,11 +1,11 @@
-#
-# ZSHRC EXTENSION:
-# Functions: Common
-#
+##
+##  ZSHRC EXTENSION:
+##  Functions: Common
+##
 
 
 ################################################################################
-#  SHARED / HELPERS
+##  SHARED / HELPERS
 
 ####
 ##  "Comment" a line of text in a way that is visible in a list of commands.
@@ -15,53 +15,62 @@
 ##  This differs from '#' in that comments following '//' will appear in the
 ##  listing of a function's script as reported by commands like 'which'.
 ##
+##  Caveat: The comment words are arguments to the function named '//'.  Unlike
+##      a normal comment created by using the '#' character, the "commenting"
+##      effect of '//' ends at a control structure (e.g., ';', '&&', parentheses
+##      or braces, etc.).
+##
 ##  EXAMPLE 1
 ##  ---------
-##  % function comment_hash() { # comment, yo! }
+##  % function comment_hash () { # comment, yo! }
 ##  function>
 ##  # The octalthorpe character prevented the closing brace from being
 ##  # interpreted, so zle is now expecting more lines.
 ##
 ##  EXAMPLE 2
 ##  ---------
-##  % function comment_hash() {
+##  % function comment_hash () {
 ##  function>     # comment, yo!
 ##  function> }
 ##  % which comment_hash
 ##  comment_hash () {
 ##
 ##  }
+##  # Normal '#' comments are not stored when a function is created, so they
+##  # can't be seen in the output of 'which'.
 ##
 ##  EXAMPLE 3
 ##  ---------
-##  % function comment_slash() { // comment, yo! }
+##  % function comment_slash () { // comment, yo! }
 ##  % which comment_slash
 ##  comment_slash () {
 ##      // comment, yo!
 ##  }
+##  # The slashed command is included in 'which` output.
 ##
-function //() # [comment_word] ...
+function // ()  # [comment_word ...]
 {
     # Function intentionally empty.
 }
 
 
 ####
-##  Echo to StdErr instead of StdOut. 
+##  Echo to StdErr instead of StdOut.
+##  Arguments will be passed through to 'echo' command.
 ##
-function echo_err() # [-n] words ...
+function echo_err ()  # [echo-arg ...] words ...
 {
     echo $@ 1>&2
 }
 
 
 ####
-##  Echo to StdErr instead of StdOut, but only when $ENABLE_ECHO_DEBUG is
-##  greater than zero.
+##  Echo to StdErr when $ENABLE_ECHO_DEBUG is greater than zero.
+##  Arguments will be passed through to 'echo' command.
 ##
-function echo_err_debug() # [-n] words ...
+function echo_err_debug ()  # [-n] words ...
 {
-    (( ENABLE_ECHO_DEBUG )) && { echo_err $@ }
+    (( ENABLE_ECHO_DEBUG )) && echo_err $@
 }
 
 
@@ -77,29 +86,52 @@ function echo_err_debug() # [-n] words ...
 ##
 ##  ARGUMENTS
 ##  ---------
+##  --help : Print command usage and exit.
+##
+##  --level : Optional.  Indicates the severity of the message to be logged.
+##      Can be any of the following:
+##
+##      | Type     | Sample              |
+##      | -------- | ------------------- |
+##      | ERROR    | "[ERROR] message"   |
+##      | WARNING  | "[WARNING] message" |
+##      | INFO     | "[INFO] message"    |
+##      | DEBUG    | "[DEBUG] message"   |
+##      | <custom> | "[custom] message"  |
+##      | (none)   | "message"           |
+##
+##  --indent : Optional.  The number of indentation levels which should
+##      precede the message.  Default: 0.
+##
+##  --fill : Optional.  The string which will be repeated to fill the
+##      indented space.  Default: spaces will be used as fill.
+##
+##  --spacer : Optional.  A string which will replace the filler immediately
+##      before the message.  Default: none.
+##
 ##  --transparent : Make the caller transparent; that is, ignore the calling
 ##      function, and report its parent instead.  This is useful when you want
 ##      to "transparently" wrap `echo_log` in another logging function without
 ##      it being displayed as the caller.
 ##
-##  $1: <message>  The message to be logged.  To read this from stdin, use '--'.
-##  $2: [log_type]  Optional. Can be any of the following.
+##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##      This function will interpret its last positional argument as the
+##      message; bear this in mind if you include arguments for the 'echo'
+##      command (see the next section).
 ##
-##      Type     | Sample
-##      ----------------------------------
-##      ERROR    | "[ERROR] <message>"
-##      WARNING  | "[WARNING] <message>"
-##      INFO     | "[INFO] <message>"
-##      DEBUG    | "[DEBUG] <message>"
-##      <custom> | "[<custom>] <message>"
-##      (none)   | "<message>"
+##  ADDITIONAL ARGUMENTS PASSED THROUGH TO 'echo'
+##  ---------------------------------------------
+##  Any additional options provided to this function will be passed along to
+##  the 'echo' command (via the 'echo_err' function).  Bear in mind that this
+##  function will interpret its last positional argument as the message, so,
+##  to provide arguments for 'echo' with no message, add an empty
+##  string argument.
 ##
-##  $3: [indent_level]  Optional.  The number of indentation levels which should
-##      precede the message.  Default: 0.
-##  $4: [fill]  Optional.  The string which will be repeated to fill the
-##      indented space.  Default: spaces will be used as fill.
-##  $5: [spacer]  Optional.  A string which will replace the filler immediately
-##      before the message.  Default: none.
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_log' command will return the same status as the command which was
+##  executed immediately beforehand.  This eliminates the need to capture the
+##  prior command's status to return it after logging.
 ##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
@@ -107,14 +139,6 @@ function echo_err_debug() # [-n] words ...
 ##      integer value, it will be used to determine the number of spaces
 ##      leading the message for each level of indentation.
 ##      Default: 4.
-##
-##  SUPPRESSING TRAILING NEWLINE
-##  ----------------------------
-##  The log message will end with a newline ('\n') character, causing a
-##  line-feed and carriage return after printing.  To prevent this default
-##  behavior, a '\c' (escape) character can be added to the end of the specified
-##  message string, which will suppress the addition of the newline, allowing
-##  more characters to be appended to the same line in the shell.
 ##
 ##  LOG MESSAGE TRACE PREFIX
 ##  ------------------------
@@ -135,22 +159,22 @@ function echo_err_debug() # [-n] words ...
 ##
 ##  EXAMPLE
 ##  -------
-##  function test_logs()
+##  function test_logs ()
 ##  {
 ##      echo_log
-##      echo_log '' INFO
-##      echo_log 'Info message.' INFO
-##      echo_log 'Warning message.' WARNING
-##      echo_log 'Error message!' ERROR
-##      echo_log 'Debug message, unindented.' DEBUG
-##      echo_log 'Debug message, indented once, supressing newline... \c' DEBUG 1
+##      echo_log --level 'INFO' ''
+##      echo_log --level 'INFO' 'Info message.'
+##      echo_log --level 'WARNING' 'Warning message.'
+##      echo_log --level 'ERROR' 'Error message!'
+##      echo_log --level 'DEBUG' 'Debug message, unindented.'
+##      echo_log -n --level 'DEBUG' --indent 1 'Debug message, indented once, supressing newline...'
 ##      echo_err 'until now!'
-##      echo_log 'Debug, indented 2 times, with dash fill and final space.' DEBUG 2 '-' ' '
-##      echo_log 'Debug, indented 2 times, with space fill and final arrow.' DEBUG 2 ' ' '-> '
-##      echo_log 'Debug, indented 3 times, with alternating dots and spaces.' DEBUG 3 '. '
-##      echo_log 'Debug, indented 4 times, with dots in groups of three.' DEBUG 4 '... '
-##      function { echo_log 'Anonymous invocation with custom 'HACK' log type.' HACK }
-##      echo "Message from stdin with custom 'PASS' type." | echo_log -- PASS
+##      echo_log --level 'DEBUG' --indent 2 --fill '-' --spacer ' ' 'Debug, indented 2 times, with dash fill and final space.'
+##      echo_log --level 'DEBUG' --indent 2 --fill ' ' --spacer '-> ' 'Debug, indented 2 times, with space fill and final arrow.'
+##      echo_log --level 'DEBUG' --indent 3 --fill '. ' 'Debug, indented 3 times, with alternating dots and spaces.'
+##      echo_log --level 'DEBUG' --indent 4 --fill '... ' 'Debug, indented 4 times, with dots in groups of three.'
+##      function { echo_log --level 'HACK' 'Anonymous invocation with custom 'HACK' log type.' }
+##      echo "Message from stdin with custom 'PASS' type." | echo_log --level 'PASS' --
 ##      echo_err
 ##  }
 ##
@@ -172,35 +196,71 @@ function echo_err_debug() # [-n] words ...
 ##  [logtest.zsh:14(test_logs)] [DEBUG] ... ... ... ... Debug, indented 4 times, with dots in groups of three.
 ##  [logtest.zsh:15((anon))] [HACK] Anonymous invocation with custom HACK log type.
 ##  [logtest.zsh:16(test_logs)] [PASS] Message from stdin with custom 'PASS' type
-##  % echo_log "Direct invocation on command line with custom 'OK' type." OK
+##  % echo_log --level 'OK' "Direct invocation on command line with custom 'OK' type."
 ##  [-zsh:4] [OK] Direct invocation on command line with custom 'OK' type.
 ##
-function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill] [spacer]
+function echo_log ()
 {
-    typeset -i transparent=0
-    [[ "${1}" == "--transparent" ]] && { transparent=1 ; shift ; }
+    ## Capture status of previous command.
+    typeset -i passthrough_status=$?
 
-    typeset message="${1}"
+    ## Create usage output.
+    typeset usage=(
+        "$0 [--help | -h | -?]"
+        "$0 [--level ERROR | WARNING | INFO | DEBUG | <custom>]"
+        '    [--indent <levels>] [--fill <chars>] [--spacer <chars>]'
+        '    [--transparent] [message]'
+    )
+
+    ## Define options array with defaults.
+    typeset -A options=( '--transparent' 0 )
+
+    ## Configure parser and process function arguments.
+    typeset -a parse_config=(
+    #   '-a' 'options' # Specifies a default array to contain recognized options.
+        '-A' 'options' # Same as -a, but using an associative array. Test: (( ${+options[--foo]} ))
+        '-D'           # Remove found options from the positional parameters array ($@).
+        '-E'           # Don't stop at the first string that isn't described by the specs.
+    #   '-F'           # Stop and exit if a param is found which is not in the specs.
+    #   '-K'           # Don't replace existing arrays (allows default values).
+        '-M'           # Allows the 'name' in '=name' to reference another spec.
+        '--'           # Indicates that options end here and spec starts.
+        '-help' 'h=-help' '?=-help'
+        '-level:'
+        '-indent:'
+        '-fill:'
+        '-spacer:'
+        '-transparent'
+    )
+
+    ## Load parser and process function arguments.
+    zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
+
+    ## Display usage if help flag is set.
+    (( ${+options[--help]} )) && { print -l $usage && return 0; }
+
+    typeset message="${@[-1]}"
     [[ "${message}" == '--' ]] && read -r message
 
+    typeset level="${options[--level]}"
     typeset prefix
-    case $2 in
-        ERROR)   prefix="[ERROR]"      ;;
-        WARNING) prefix="[WARNING]"    ;;
-        INFO)    prefix="[INFO]"       ;;
-        DEBUG)   prefix="[DEBUG]"      ;;
-        *)       prefix="${2:+[${2}]}" ;;
+    case "${level}" in
+        ERROR)   prefix="[ERROR]"              ;;
+        WARNING) prefix="[WARNING]"            ;;
+        INFO)    prefix="[INFO]"               ;;
+        DEBUG)   prefix="[DEBUG]"              ;;
+        *)       prefix="${level:+[${level}]}" ;;
     esac
 
-    typeset -i indent_level=$3
+    typeset -i indent_level=$(( ${options[--indent]} ))
     (( indent_level )) &&
     {
         typeset -i indent_spaces=${ECHO_LOG_INDENT_SPACES:-4}
         (( indent_spaces < 0 )) && indent_spaces=0
 
         typeset -i message_length=$(( ${#message} + (${indent_level} * ${indent_spaces}) ))
-        typeset filler="${4:- }"
-        typeset spacer="$5"
+        typeset filler="${options[--fill]}"
+        typeset spacer="${options[--spacer]}"
 
         [[ -n "$spacer" ]] &&
             { message=${(pl:$message_length::$filler::$spacer:)message} ; } ||
@@ -217,7 +277,7 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 
     # If the '--transparent' flag is set, look one index higher in the stack
     # and file trace arrays to functionally ignore the caller.
-    (( transparent )) &&
+    (( ${+options[--transparent]} )) &&
     {
         file_trace_index+=1
         func_stack_index+=1
@@ -225,10 +285,12 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 
     typeset file=${funcfiletrace[$file_trace_index]##*/}
     typeset func=${funcstack[$func_stack_index]}
-
     typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
 
-    echo_err "${output}"
+    # Call `echo_err`, passing extra arguments through (e.g., '-n').
+    echo_err ${@[1,-2]} "${output}"
+
+    return ${passthrough_status}
 }
 
 
@@ -247,30 +309,60 @@ function echo_log() # [--transparent] <message> [log_type] [indent_level] [fill]
 ##
 ##  ARGUMENTS
 ##  ---------
-##  $1: <message>
-##  $2: [indent_level]  Optional.  Default: 0.
-##  $3: [fill]  Optional.  Default: space.
-##  $4: [spacer] Optional.  Default: none.
+##  --help : Print command usage and exit.
+##
+##  --indent : Optional.  The number of indentation levels which should
+##      precede the message.  Default: 0.
+##
+##  --fill : Optional.  The string which will be repeated to fill the
+##      indented space.  Default: spaces will be used as fill.
+##
+##  --spacer : Optional.  A string which will replace the filler immediately
+##      before the message.  Default: none.
+##
+##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##      This function will interpret its last positional argument as the
+##      message; bear this in mind if you include arguments for the 'echo'
+##      command (see the next section).
+##
+##  ADDITIONAL ARGUMENTS PASSED THROUGH TO 'echo'
+##  ---------------------------------------------
+##  Any additional options provided to this function will be passed along to
+##  the 'echo' command (via the 'echo_err' function).  Bear in mind that this
+##  function will interpret its last positional argument as the message, so,
+##  to provide arguments for 'echo' with no message, add an empty
+##  string argument.
+##
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_debug' command will return the same status as the command which
+##  was executed immediately beforehand.  This eliminates the need to capture
+##  the prior command's status to return it after logging.
 ##
 ##  ENVIRONMENT VARIABLES
 ##  ---------------------
 ##  ${ENABLE_ECHO_DEBUG}: This parameter must be set to an integer greater
 ##      than zero for messages to be printed to the console.
 ##
-function echo_debug() # <message> [indent_level] [fill] [spacer]
+function echo_debug ()
 {
-    (( ENABLE_ECHO_DEBUG )) || return
+    typeset -i passthrough_status=$?
+
+    (( ENABLE_ECHO_DEBUG )) || return ${passthrough_status}
 
     typeset message="${1}"
-
     [[ "${message}" == '--' ]] && read -r message
 
-    echo_log --transparent "${message}" DEBUG "$2" "$3" "$4"
+    # TODO strip --level argument (if present) to force DEBUG
+
+    echo_log --level 'DEBUG' --transparent $@
+
+    return ${passthrough_status}
 }
 
 
 ####
-##  Print a consistently-formatted log message useful for tracing a fatal error,
+##  Print a consistently-formatted log message useful for tracing a failure,
 ##  and issue an additional `return` command (with customizable status code)
 ##  in the environment where `fail` was called.
 ##
@@ -290,7 +382,7 @@ function echo_debug() # <message> [indent_level] [fill] [spacer]
 ##      eject_warp_core
 ##      eject_status=$?
 ##      if [ eject_status -neq 0 ] ; then
-##          echo_log "Ejector systems off-line (${eject_status})." ERROR
+##          echo_log --level 'FAIL' "Ejector systems off-line (${eject_status})."
 ##          return $eject_status
 ##      fi
 ##
@@ -305,19 +397,220 @@ function echo_debug() # <message> [indent_level] [fill] [spacer]
 ##  and debugging), prevent this behavior, a subshell can be used to allow
 ##  execution to continue.  For example:
 ##      % fail 'Bar' || echo 'Baz'
-##      [-zsh:1] [ERROR] Bar
+##      [-zsh:1] [FAIL] Bar
 ##      % ( fail 'Bar' ) || echo 'Baz'
-##      [-zsh:2] [ERROR] Bar
+##      [-zsh:2] [FAIL] Bar
 ##      Baz
 ##
-function fail() # [message] [status]
+function fail ()  # [message] [status]
 {
     typeset fail_message="${1:-An error ${2:+(${2}) }occurred.}"
     typeset fail_status=${2:-1}
 
-    trap "echo_log ${(qq)fail_message} ERROR ; return ${fail_status}"  EXIT
+    trap "echo_log --level 'FAIL' ${(qq)fail_message} ; return ${fail_status}" EXIT
 
-    return
+    return 0
+}
+
+
+####
+##  Get the user name of the account which logs into this system most commonly.
+##
+function local_user_name ()
+{
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most common )}"
+}
+
+
+####
+##  Get the user name of the account which is currently logged in to this
+##  system's console
+##
+function console_user_name ()
+{
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most recent --online-only )}"
+}
+
+
+####
+##  Get the UID for the the specified user name.
+##
+function user_id_for_name ()  # <user_name>
+{
+    typeset user_name="${1}"
+    [[ -n "${user_name}" ]] || { echo_log --level 'ERROR' "Missing argument for user name." ; return 1 ; }
+
+    /usr/bin/id -u "${user_name}"
+}
+
+
+####
+##  Get the local home directory for the system's local user.
+##
+function local_user_home ()
+{
+    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+}
+
+
+####
+##  Get the info dictionary plist for a network user.
+##
+function network_user_info ()  # [standard_id] [ad_domain]
+{
+    typeset -l standard_id="${1:-$( local_user_name )}"
+    typeset -l ad_domain="${2}"
+    typeset -a search_domains=( ${DSCL_ACTIVE_DIRECTORY_HOSTS} )
+
+    [[ -n "${ad_domain}" ]] &&
+    {
+        (( ${DSCL_ACTIVE_DIRECTORY_HOSTS[(Ie)$ad_domain]} )) || { echo_log --level 'ERROR' "Specified AD domain '${ad_domain}' is not one of '${(j:', ':)DSCL_ACTIVE_DIRECTORY_HOSTS}'." ; return 10 ; }
+
+        search_domains=( ${ad_domain} )
+    }
+
+    typeset user_info
+    for search_domain ( ${search_domains} )
+    {
+        echo_debug "Fetching info for SID '${standard_id}' in '${search_domain}' domain..."
+        user_info=$( /usr/bin/dscl -plist -q "${DSCL_ACTIVE_DIRECTORY_ROOT}/${search_domain}" -read "/Users/${standard_id}" 2>/dev/null ) && break
+    }
+
+    [[ -n "${user_info}" ]] || { echo_debug "Unable to find user info for SID '${standard_id} in '${(j:', ':)search_domains}'."; return 20 ; }
+
+    echo -E "${user_info}"
+}
+
+
+####
+##  Get the local home directory for the system's local user.
+##
+function network_user_home ()  # [standard_id] [ad_domain]
+{
+    typeset user_info && user_info=$( network_user_info $@ ) || return $?
+
+    echo -E "${user_info}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:SMBHome.0' raw -
+}
+
+
+####
+##  Get the group membership for the specified user.
+##
+function network_user_groups ()  # [--csv] [standard_id] [ad_domain]
+{
+    typeset -i use_csv_output=0
+    [[ "${1}" == "--csv" ]] && { use_csv_output=1 && shift ; }
+
+    typeset user_info && user_info=$( network_user_info $@ ) || return $?
+    typeset groups_attr='dsAttrTypeNative:memberOf'
+    typeset -i group_count && group_count=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}" raw - )
+    typeset -a group_dnames=()
+
+    for group_index ( {0..$(( group_count - 1 ))} )
+    {
+        group_dnames+=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}.${group_index}" raw - )
+    }
+
+    typeset cn_segment
+    typeset -a group_segments
+    typeset -a ou_segments
+    typeset -a dc_segments
+    typeset segment_value
+    typeset -a output_lines=()
+    typeset -a output_pipe_cmd=( '/usr/bin/column' '-t' '-s' ',' )
+
+    for group_dn ( ${(i)group_dnames} )
+    {
+        group_segments=( ${(@s:=:)${(s:,:)group_dn}} )
+        ou_segments=()
+        dc_segments=()
+
+        for segment_index ( $(seq 1 2 $(( ${#group_segments} - 1 ))) )
+        {
+            segment_value="${group_segments[$(( segment_index + 1 ))]}"
+
+            case ${group_segments[segment_index]}
+            {
+                'CN') cn_segment="${segment_value}" ;;
+                'OU') ou_segments+="${segment_value}" ;;
+                'DC') dc_segments+="${segment_value}" ;;
+                *)    echo_log --level 'ERROR' 'Unexpected label found in DN: '${group_dn}'.' return 10 ;;
+            }
+        }
+
+        output_lines+="${cn_segment},${(Oaj:/:)ou_segments},${(Oaj:.:)dc_segments}"
+    }
+
+    (( use_csv_output )) &&
+    {
+        output_pipe_cmd=( 'cat' )
+        echo 'Name (CN),Path (OU),Domain (DC)'
+    }
+
+    echo ${(j:\n:)output_lines} | $output_pipe_cmd[@]
+}
+
+
+####
+##  Run a command as user with the given UID.
+##
+function run_as_user_id ()  # <user_id> [command word ...]
+{
+    typeset -i user_id="${1}" ; shift ;
+    launchctl asuser "${user_id}" sudo --user "#${user_id}" $@
+}
+
+
+####
+##  Run a command as user with the given user name.
+##
+function run_as_user_named ()  # <user_name> [command word ...]
+{
+    typeset user_name="${1}" ; shift ;
+    run_as_user_id $( user_id_for_name "${user_name}" ) $@
+}
+
+
+####
+##  Run a command as the account which logs in most frequently.
+##
+function run_as_local_user ()  # [command word ...]
+{
+    typeset local_user && local_user=$( local_user_name )
+    [[ -n "${local_user}" ]] || { echo_log --level 'ERROR' 'No local user could be identified.' ; return 1 ; }
+    run_as_user_named "${local_user}" $@
+}
+
+
+####
+##  Run a command as the logged-in user.
+##
+function run_as_console_user ()  # [command word ...]
+{
+    typeset console_user && console_user=$( console_user_name )
+    [[ -n "${console_user}" ]] || { echo_log --level 'ERROR' 'No user is currently at the console.' ; return 1 ; }
+    run_as_user_named "${console_user}" $@
+}
+
+
+####
+##  Extract the value of the given keypath from a JSON object string.
+##
+##  NOTE: This uses the `plutil` command, whose JSON-handling capability is
+##  undocumented, and may disappear without notice.
+##
+function value_for_keypath_in_json ()  # <keypath> <json_string>
+{
+    typeset keypath="${1}"
+    typeset json_string="${2}"
+
+    [[ -z "${keypath}" || -z "${json_string}" ]] &&
+    {
+        echo_log --level 'ERROR' "Missing input for either the key to be extracted or the JSON object."
+        return 1
+    }
+
+    echo "${json_string}" | /usr/bin/plutil -extract "${keypath}" raw -
 }
 
 
@@ -344,24 +637,24 @@ function fail() # [message] [status]
 ##               'RED ALERT' \
 ##               'BATTLE STATIONS'
 ##
-function display_alert_dialog() # <message> <title> <button_label>
+function display_alert_dialog ()
 {
-    typeset message="$1"
+	typeset message="${1}"
     typeset title="${2:-An error occurred.}"
     typeset button_label="${3:-OK}"
 
-    echo_debug "Displaying alert dialog to user with title: '${title}' / '${message}' / [${button_label}]"
+    echo_debug "Displaying alert dialog to user:"
+    echo_debug --indent 1 "┌────────────────────────────────────────────────────────────────────────────────"
+    echo_debug --indent 1 "│ ${title}"
+    echo_debug --indent 1 "├────────────────────────────────────────────────────────────────────────────────"
+    echo_debug --indent 1 "│ ${message}"
+    echo_debug --indent 1 "│"
+    echo_debug --indent 1 "│ [${button_label}]"
+    echo_debug --indent 1 "└────────────────────────────────────────────────────────────────────────────────"
 
     /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
-                display alert "$title" as critical \
-                    message "$message" \
-                    buttons { "$button_label" } \
-                    default button "$button_label"
-            end tell
-        end tell
+        display alert "$title" as critical message "$message" buttons { "$button_label" } default button "$button_label"
 
 EOAPPLESCRIPT
 }
@@ -376,19 +669,15 @@ EOAPPLESCRIPT
 ##  $2: [title]  Optional.  The notification's title.  Default: "Notification"
 ##  $3: [subtitle]  Optional.  The notification's subtitle.
 ##
-function display_notification() # <message> <title> <button_label>
+function display_notification ()  # <message> <title> <button_label>
 {
-    [[ -n "${1}" ]] || { fail "A message must be provided for the notification."}
+    [[ -n "${1}" ]] || { echo_log --level 'ERROR' "A message must be provided for the notification." ; return 1 ; }
 
     echo_debug "Displaying notification to user with message '${message}', title '${2}', subtitle '${3}'."
 
-    /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
+    run_as_console_user /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
                 display notification "${1}" with title "${2:-Notification}" subtitle "${3}"
-            end tell
-        end tell
 
 EOAPPLESCRIPT
 }
@@ -413,28 +702,23 @@ EOAPPLESCRIPT
 ##  0: An item was chosen normally.
 ##  10: The "Cancel" button was clicked.
 ##
-function select_from_list_dialog() # [title] [message] [item] ...
+function select_from_list_dialog ()  # [title] [message] [item ...]
 {
-    typeset title="$1"
-    typeset message="$2"
+    typeset    title="$1"
+    typeset    message="$2"
     typeset -a items=( ${@:3} )
-    typeset -a quoted_items=${(j[, ])${(qqq)items[@]}}
+    typeset    quoted_items=${(j[, ])${(qqq)items[@]}}
 
     echo_debug "Displaying alert dialog to user: '${title}' / '${message}' / [ ${quoted_items} ]"
 
     typeset selected_item ; selected_item=$( /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
 
-        tell application "System Events"
-            tell process "SystemUIServer"
-                activate
-                set listOptions to { $quoted_items }
-                choose from list listOptions \
-                    with title "$title" \
-                    with prompt "$message" \
-                    OK button name "OK" \
-                    cancel button name "Cancel"
-            end tell
-        end tell
+        set listOptions to { $quoted_items }
+        choose from list listOptions \
+            with title "$title" \
+            with prompt "$message" \
+            OK button name "OK" \
+            cancel button name "Cancel"
 
 EOAPPLESCRIPT
     )
@@ -460,7 +744,7 @@ EOAPPLESCRIPT
 ##        n: The user is not a member of the given group, or the membership
 ##           check failed, `dseditgroup` code returned.
 ##
-function check_user_for_group_membership() # <user_name> <group_name>
+function check_user_for_group_membership ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -484,7 +768,7 @@ function check_user_for_group_membership() # <user_name> <group_name>
 ##      122: Argument for group name is missing or empty.
 ##        n: The operation to add the user failed; returns `dseditgroup` status.
 ##
-function add_user_to_group() # <user_name> <group_name>
+function add_user_to_group ()  # <user_name> <group_name>
 {
     typeset user_name="${1}"  ; [[ -n "${user_name}"  ]] || return 121
     typeset group_name="${2}" ; [[ -n "${group_name}" ]] || return 122
@@ -492,7 +776,7 @@ function add_user_to_group() # <user_name> <group_name>
     check_user_for_group_membership "${user_name}" "${group_name}" && return 0
 
     echo_debug "Adding '${user_name}' to group '${group_name}'..."
-    /usr/sbin/dseditgroup -o edit -a "${user_name}" -t user "${group_name}" >/dev/null || return $?
+    /usr/sbin/dseditgroup -o edit -a "${user_name}" -t user "${group_name}" >/dev/null
 }
 
 
@@ -506,30 +790,33 @@ function add_user_to_group() # <user_name> <group_name>
 ##      of megabytes.
 ##
 ##  $1: <volume_path>  The mount point or device path.  If no argument is
-##      provided, '${JAMF_GLOBAL_TARGET_DRIVE_MOUNT_POINT}' will be read.
-##      If that is also unset, the root path '/' will be used.
+##      provided, the root path '/' will be used.
 ##
-function free_in_volume() # [--bytes] <volume_path>
+function free_in_volume ()  # [--bytes] <volume_path>
 {
     typeset -i use_bytes=0
     [[ "${1}" == "--bytes" ]] && { use_bytes=1 ; shift ; }
 
     typeset volume_path="${1}"
-    [[ -n "${volume_path}" ]] || volume_path="${JAMF_GLOBAL_TARGET_DRIVE_MOUNT_POINT}"
-    [[ -n "${volume_path}" ]] || volume_path="/"
-
-    typeset volume_info ; volume_info="$( /usr/sbin/diskutil info -plist "${volume_path}" )" ||
+    [[ -z "${volume_path}" ]] && { volume_path='/' } ||  # Use default if unset.  Otherwise...
     {
-        diskutil_status=$? ; echo_log "Unable to get free disk space for '${volume_path}'." ERROR
-        return $diskutil_status
+        [[ -d "${volume_path}" ]] ||  # Verify provided path is a directory.
+        {
+             echo_debug "Specified volume path '${volume_path}' is not a directory."
+             return 1
+        }
     }
 
-    typeset free_bytes_keypath=':APFSContainerFree'
-    typeset free_bytes && free_bytes="$( /usr/libexec/PlistBuddy -c "Print ${free_bytes_keypath}" /dev/stdin <<< "${volume_info}" )" ||
+    typeset volume_info && volume_info="$( /usr/sbin/diskutil info -plist "${volume_path}" )" ||
     {
-        typeset plistbuddy_status=$?
-        echo_log "Unable to parse disk info for '${volume_path}'." ERROR
-        return $plistbuddy_status
+        echo_debug "Unable to get disk info for '${volume_path}'."
+        return $?
+    }
+
+    typeset free_bytes && free_bytes="$( echo "${volume_info}" | /usr/bin/plutil -extract 'APFSContainerFree' raw - )" ||
+    {
+        echo_debug "Unable to parse free disk space for '${volume_path}'."
+        return $?
     }
 
     (( use_bytes )) &&
@@ -539,8 +826,7 @@ function free_in_volume() # [--bytes] <volume_path>
     }
 
     # Limit MB format output to three decimal places.
-    typeset -F3 free_mbytes
-    free_mbytes=$(( ${free_bytes} / (1024.0 ** 2) ))
+    typeset -F 3 free_mbytes && free_mbytes=$(( free_bytes / (1024.0 ** 2) ))
 
     echo "${free_mbytes}"
 }
@@ -553,12 +839,13 @@ function free_in_volume() # [--bytes] <volume_path>
 ##  ---------
 ##  $1: <path_to_remove>  The path to the file or directory to be removed.
 ##
-function remove_existing() # <path_to_remove>
+function remove_existing ()  # <path_to_remove>
 {
-    [[ -f "${1}" ]] && { echo_debug "Removing file '${1}'..."      ; /bin/rm  -f "${1}" ; return $? }
-    [[ -d "${1}" ]] && { echo_debug "Removing directory '${1}'..." ; /bin/rm -rf "${1}" ; return $? }
+    [[ -f "${1}" ]] && { echo_debug "Removing file '${1}'..."      ; /bin/rm  -f "${1}" ; return $? ; }
+    [[ -d "${1}" ]] && { echo_debug "Removing directory '${1}'..." ; /bin/rm -rf "${1}" ; return $? ; }
 
     echo_debug "No file or directory exists at '${1}'... skipped."
+    return 0
 }
 
 
@@ -566,20 +853,30 @@ function remove_existing() # <path_to_remove>
 ##  Print either the most recently logged-in user, or the user who logs in most
 ##  commonly, with options to filter out undesired users.
 ##
-##  OPERATING MODES:
+##  ARGUMENTS
+##  ---------
+##  <recent | common>  Operating Mode
 ##      'recent' : Print the name of the most recently logged-in user, filtered
 ##          by the options below.
 ##      'commmon' : Print the name of the user who logs in most commonly,
 ##          filtered by the options below.
 ##
-##  FILTERING OPTIONS:
-##      -o --online-only : Consider only users who are currently logged in.
-##      -n --include-non-sid : Include users whose names do not match this pattern:
-##          '/[[:alpha:]][[:digit:]]{6}/' (one letter followed by six digits)
-##      -t --include-tty : Include logins that are not bound to a console session;
-##          i.e., non-GUI logins, such as terminal or SSH sessions.
+##  FILTERING OPTIONS (Optional):
+##      [-o | --online-only] : Consider only users who are currently logged in.
+##      [-n | --include-non-sid] : Include users whose names do not appear to be
+##          a standard identifier (a letter followed by siz digits).
+##      [-t | --include-tty] : Include logins that are not bound to a console
+##          session; i.e., non-GUI logins such as terminal or SSH sessions.
 ##
-function user_most() # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
+##  ENVIRONMENT VARIABLES:
+##      $USER_MOST_ONLINE_ONLY : If set, command will behave as if the
+##          `--online-only` flag was specified.
+##      $USER_MOST_INCLUDE_NON_SID : If set, command will behave as if the
+##          `--include-non-sid` flag was specified.
+##      $USER_MOST_INCLUDE_TTY : If set, command will behave as if the
+##          `--include-tty` flag was specified.
+##
+function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
@@ -589,6 +886,11 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
         {n,-include-non-sid}=include_non_sid \
         {t,-include-tty}=include_tty \
     || return 1
+
+    # Check for environment variables to
+    (( ${+USER_MOST_ONLINE_ONLY} ))     && online_only+=( 'ENV' )
+    (( ${+USER_MOST_INCLUDE_NON_SID} )) && include_non_sid+=( 'ENV' )
+    (( ${+USER_MOST_INCLUDE_TTY} ))     && include_tty+=( 'ENV' )
 
     # Configure the list of valid operating modes for this function.
     typeset -A modes=(
@@ -606,7 +908,7 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
         print -rC1 -- \
             "$0 [-h | --help]" \
             "$0 (${(j' | ')modes}) [-n | --include-non-sid] [-t | --include-tty] [-o | --online-only]"
-        return
+        return 0
     fi
 
     # Configure 'awk' filter patterns to be ANDed together later.
@@ -647,7 +949,7 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
 
     # If we're in 'recent' mode, we're done here... echo the output and exit.
     [[ "${mode}" == "${modes[mode_recent]}" ]] &&
-    { 
+    {
         echo "${awk_output}"
         return 0
     }
@@ -678,11 +980,9 @@ function user_most() # (recent | common) [-o | --online_only] [-n | --include-no
 ##        appending the smallest-possible integer to the end which would result
 ##        in a unique file path.
 ##
-function unique_path() # <path>
+function unique_path ()  # <path>
 {
-    (( ${#@} > 1 )) && fail "Only one argument (file path) may be evaluated."
-
-    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || fail 'Missing input path argument.' 10
+    typeset working_path="${1:a}" ; [[ -n "${working_path}" ]] || { echo_log --level 'ERROR' 'Missing input path argument.' ; return 10 ; }
     typeset base_and_stem="${working_path:r}"
     typeset extension_with_dot="${${working_path:e}:+.${working_path:e}}"
     typeset -i index=0
@@ -696,7 +996,7 @@ function unique_path() # <path>
         unset extension_with_dot
     }
 
-    while [[ -e $working_path ]] { working_path="${base_and_stem}-$((++index))${extension_with_dot}" }
+    while [[ -e $working_path ]] { working_path="${base_and_stem}-$((++index))${extension_with_dot}" ; }
 
     echo "${working_path}"
 }
@@ -706,100 +1006,90 @@ function unique_path() # <path>
 ##  Replace the contents of target_file with those of source_file, preserving
 ##  the metadata and modification date of the target_file.
 ##
-function mv_replace() # <source_file> <target_file>
+function mv_replace ()  # <source_file> <target_file>
 {
-    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || fail 'Argument for source file is missing or empty, or file does not exist.' 10
-    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || fail 'Argument for target file is missing or empty, or file does not exist.' 11
+    typeset source_file=${~"${1}"} ; [[ -n "${source_file}" && -f "${source_file}" ]] || { echo_log --level 'INFO' 'Argument for source file is missing or empty, or file does not exist.' ; return 10 ; }
+    typeset target_file=${~"${2}"} ; [[ -n "${target_file}" && -f "${target_file}" ]] || { echo_log --level 'INFO' 'Argument for target file is missing or empty, or file does not exist.' ; return 11 ; }
 
-    typeset target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")"
+    typeset target_date_modified && target_date_modified="$(stat -f "%Sm" -t "%C%y%m%d%H%M.%S" "${target_file}")" ||
 
-    mv    -f       "${source_file}"          "${target_file}" || fail     'Could not replace target file contents with source.' $?
-    touch -c -m -t "${target_date_modified}" "${target_file}" || echo_log 'Could not reset target file modification date to pre-operation date.' WARNING
+    mv    -f       "${source_file}"          "${target_file}" || { echo_log --level 'ERROR' 'Could not replace target file contents with source.' ; return $? ; }
+    touch -c -m -t "${target_date_modified}" "${target_file}" || { echo_log --level 'WARNING' 'Could not reset target file modification date to pre-operation date.' ; }
+
+    return 0
 }
 
 
 ####
+##  Add an extension to files whose extension is incorrect, using the 'file'
+##  command to assess the file's type and valid extensions.
+##
 ##  ARGUMENTS
 ##  ---------
-##  --dry-run : Evaluate specified files, but do not make modifications.
+##  --validate-only : Dry run.  Print matching files without modification.
 ##
-##  <description_pattern> : Each file specified by <input_files> will be
-##      scanned by the 'file --brief' command.  If that command's output
-##      does not matches this pattern, the file will its extension will be checked against the provided
-##      list of <"valid extensions">.
+##  $1: <description_pattern>  Pattern which will be tested against the output
+##      of the 'file --brief' command for each input file.  If the output of
+##      the 'file' command does not match this pattern, it will be skipped.
 ##
-##  <replacement_extension> : The extension which should be appended to
-##      files which, according to the above criteria, do not have a valid
-##      extension.
+##  #2: <replacement_extension>  The desired extension to append to files which
+##      which do not have a proper extension.  This value will be checked
+##      against the list of valid extensions returned by 'file --extension'.
 ##
-##  <input_file ...> : The path to the file to be evaluated.  Multiple paths
-##      and glob patterns can be provided to evaluate multiple files.
+##  $3-$n: <input_file ...>  The path to the file(s) to be evaluated.  Multiple
+##      file paths and glob patterns can be provided.
 ##
 ##  EXAMPLE
 ##  -------
-##  TASK: Add a 'jpg' extension to files (not directories) which:
-##      * are identified by the 'file' command as "JPEG" data, AND
-##      * do not already have one of the following extensions:
-##          * "jpeg", "jpg", "jpe", or "jfif" (case insensitive)
-##  COMMAND:
+##  For every file (not folder) in the current path: if it contains JPEG data
+##  and does not have a proper extension, add the extension 'jpg' to the file.
+##
 ##      % fix_extension 'JPEG*' 'jpg' ^*.*(.)
 ##
-function fix_extension() # [--dry-run] <description_pattern> <replacement_extension> <input_file ...>
+function fix_extension ()  # [--validate-only] <description_pattern> <replacement_extension> <input_file ...>
 {
     typeset -i validate_only=0
 
-    [[ "${1}" = '--dry-run' ]] &&
+    [[ "${1}" = '--validate-only' ]] &&
     {
-        echo_log "Validating only... no modifications will be made." INFO
+        echo_log --level 'INFO' "Validating only... no modifications will be made."
         validate_only=1
         shift
     }
 
-    [[ -n "${1}" ]] || fail "Argument for 'file --brief' match pattern is missing or empty" 10
+    [[ -n "${1}" ]] || { echo_log --level 'ERROR' "Argument for 'file --brief' match pattern is missing or empty" ; return 10 ; }
     typeset file_command_pattern="${1}"
 
-    shift ; [[ -n "${1}" ]] || fail "Argument for replacement extension is missing or empty" 30
+    shift ; [[ -n "${1}" ]] || { echo_log --level 'ERROR' "Argument for replacement extension is missing or empty" ; return 30 ; }
     typeset replacement_extension="${1}"
 
-    shift ; (( ${#@} )) || fail "Input file(s) missing or empty" 40
+    shift ; (( ${#@} )) || { echo_log --level 'ERROR' "Input file(s) missing or empty" ; return 40 ; }
     typeset -a input_files=( ${@} )
 
     for input_file ( ${input_files} )
     {
         input_file=${~"${input_file}"}
-        file_info="$(file --brief -- ${input_file})"
 
-        echo_debug "Checking '{${input_file:t}'..." INFO
         # If the output of `file` doesn't match what we're looking for, skip to the next file.
-        [[ "${file_info}" != ${~file_command_pattern} ]] &&
-        {
-            echo_debug "Skipped.  Output of 'file' does not match the specified pattern." INFO 1
-            echo_debug "Output: '${file_info:0:100}'..." INFO 1
-            continue
-        }
+        [[ "$(file --brief -- ${input_file})" != ${~file_command_pattern} ]] && continue
 
         # Use the `file` command to determine the valid extensions for the file.
         typeset -a valid_extensions=( ${(s:/:)$(file --brief --extension ${input_file})} )
 
-        # If the file's extension matches one of the valid extensions, skip to the next file.
-        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } &&
-        {
-            echo_debug "Skipped.  File extension is already correct." INFO 1
-            echo_debug "Output: '${file_info:0:100}'..." INFO 1
-            continue
-        }
+        # If the file's extension matches one of the specified extensions, skip to the next file.
+        { [[ -n "${input_file:e}" ]] && (( $valid_extensions[(I)(#i)${input_file:e}] )) } && continue
 
-        echo_log "File '${input_file:t}' has incorrect extension; should be one of: '${(j', ')valid_extensions}'." INFO
+        echo_log --level 'INFO' "Input file '${input_file}' extension should be one of: '${(j', ')valid_extensions}'."
 
         (( $valid_extensions[(I)(#i)${replacement_extension}] )) ||
         {
-            echo_log "Specified replacement extension '${}' is not valid for this file type." WARNING 1
+            echo_log --level 'WARNING' "Specified replacement extension '${}' is not valid for this file type."
             continue
         }
 
-        (( validate_only )) && { continue }
+        (( validate_only )) && continue
 
-        echo_log "Changing extension to '${replacement_extension}'." INFO 1
+        echo_log --level 'INFO' --indent 1 --fill ' ' --spacer '-> ' "Changing extension to '${replacement_extension}'."
         mv -- ${input_file} "${input_file:r}.${replacement_extension}"
     }
 }
@@ -808,12 +1098,12 @@ function fix_extension() # [--dry-run] <description_pattern> <replacement_extens
 ####
 ##  Remove macOS-specific Finder metadata files, stored as files prefixed with '._'
 ##
-function remove_finder_metadata_files() # [--recursive] [--dry-run]
+function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 {
     typeset working_path='.'
-    typeset -a remove_cmd=(rm -v -f)
-    typeset -a file_brief_cmd=(file --brief)
-    typeset file_brief_description="AppleDouble encoded Macintosh file"
+    typeset -a remove_cmd=( 'remove_existing' )
+    typeset -a file_brief_cmd=( 'file' '--brief' )
+    typeset file_brief_description='AppleDouble encoded Macintosh file'
 
     [[ "${1}" = '--recursive' ]] && { working_path='**' ; shift ; }
     [[ "${1}" = '--dry-run'    ]] && { remove_cmd='echo' ; }
@@ -822,7 +1112,7 @@ function remove_finder_metadata_files() # [--recursive] [--dry-run]
     {
         [[ "$( "${file_brief_cmd[@]}" "${macos_file}" )" == "${file_brief_description}" ]] ||
         {
-            echo "Not removing '${macos_file}' because '${file_brief_cmd}' does not describe it as '${file_brief_description}'."
+            echo_log --level 'INFO' "Not removing '${macos_file}' because '${file_brief_cmd}' does not describe it as '${file_brief_description}'."
             continue
         }
 
@@ -834,10 +1124,10 @@ function remove_finder_metadata_files() # [--recursive] [--dry-run]
 ####
 ##  Print a recursive tree of files and folders from the given path.
 ##
-function file_tree() # <start_path>
+function file_tree ()  # <start_path>
 {
     typeset start_path=${~"${1}"}
-    [[ -n "${start_path}" && -e "${start_path}" ]] || fail 'Argument for starting path is missing or empty, or nothing exists at the specified path.' 10
+    [[ -n "${start_path}" && -e "${start_path}" ]] || { echo_log --level 'ERROR' 'Argument for starting path is missing or empty, or nothing exists at the specified path.' ; return 10 ; }
 
     find "${start_path}" | sed -e 's/[^-][^\/]*\// |/g' -e 's/|\([^ ]\)/|-\1/'
 }
@@ -860,7 +1150,7 @@ function file_tree() # <start_path>
 ##  Provide a password to the `curl` command:
 ##      % curl --user v076726:$(ask_for_password) ...
 ##
-function ask_for_password()
+function ask_for_password ()
 {
     typeset password_input
     read -s 'password_input?Password:'
@@ -868,24 +1158,509 @@ function ask_for_password()
 }
 
 
-# #
-# #  Download a large file, broken into chunks of a specified size
-# #  (in megabytes, default is 20).
-# #
-# function download_chunked() # <remote_url> <output_file_path> <chunk_size=20>
+####
+##  Create a new directory for temporary files.  The location will be:
+##  * a uniquely named directory
+##      * inside a directory named after the script
+##          * inside a directory named with `$JPMC_ORGANIZATION`
+##              * located either in `$TMPDIR` (if it is set) or `/tmp/`.
+##
+##  For example, if `$TMPDIR` is not set, and this function is called from a
+##  script named `do_something_awesome.zsh`, the new directory's path could be:
+##  > `/tmp/net.jpmchase.gti.mac-engineering/do_something_awesome/0C4D2B82-C99D-4E1E-B71D-AD0577A8F507/`
+##
+function new_tmp_dir ()  # <purpose>
+{
+    typeset base_tmp_dir="${TMPDIR:-/tmp/}"
+    typeset purpose="${1:-${ZSH_ARGZERO:t:r}}" # Use the script name if not set.
+
+    [[ -n "${purpose}" ]] || { echo_log --level 'ERROR' 'Purpose for the temporary directory may not be empty.' ; return 1 ; }
+
+    typeset unique_id="$( /usr/bin/uuidgen )"
+    typeset new_tmp_dir_path="${base_tmp_dir}${JPMC_ORGANIZATION}/${purpose}.${unique_id}"
+
+    echo_debug "Creating empty temporary directory for script-related task at '${new_tmp_dir_path}'..."
+
+    /bin/mkdir -p  "${new_tmp_dir_path}" &&
+        /bin/chmod 700 "${new_tmp_dir_path}" ||
+            { echo_log --level 'ERROR' 'Unable to create or change mode on new temporary directory.' ; return $? ; }
+
+    echo "${new_tmp_dir_path}"
+}
+
+
+####
+##  Generate a "universally" formatted value for use with the global `no_proxy`
+##  parameter for proxy bypass in the shell.  Output format will be governed by
+##  the following guidelines and assumptions:
+##
+##  * Use lowercase form.
+##  * Use comma-separated hostname:port values.
+##  * IP addresses are okay, but hostnames are never resolved.
+##  * Suffixes match without `*` (e.g. foo.com is the wildcard for *.foo.com).
+##  * IP ranges in CIDR format (e.g.: 10/6) are not supported.
+##
+##  Reference:
+##  https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/
+##
+function user_proxy_convert_gui_bypass_to_noproxy ()
+{
+    typeset -a exception_list=()
+
+    (( ${+commands[scutil]} )) && exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    # TODO: Support `gsettings` output, which looks like: ['localhost', '127.0.0.0/8', '::1', '*.local']
+
+    # If the exception list is empty, bail.
+    (( ${#exception_list} )) || return
+
+    # `zsh` Parameter Expansion Explanation
+    # -------------------------------------
+    # Start with the array parameter name (`exception_list`), and work outward.
+    # Operator  #\*.   : Strip the first instance of '.*' from all elements
+    #                    (no_proxy disallows this form of wildcarding).
+    # Operator  :#*/*  : Remove any element containing a slash
+    #                    (`no_proxy` doesn't support CIDR IP ranges).
+    # Flag      j','   : Join array elements into a single word using a comma.
+    echo ${(j',')${exception_list#\*.}:#*/*}
+}
+
+
+####
+##  Set or unset all proxy parameters for the current environment.
+##  With no action, print all proxy parameters.
+##
+##  If no URL is specified with the `set` action, the value of the
+##  `$USER_PROXY_URL` parameter will be evaluated.
+##
+function user_proxy ()  # [set | unset] [user_proxy_url]
+{
+    typeset -a actions=( 'set' 'unset' )
+    typeset action="${1}"
+
+    typeset -a all_param_names=( ${USER_PROXY_ENV_PARAMETERS} ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
+
+    [[ -z "${action}" ]] &&
+    {
+        typeset -i max_name_length=${${(ONn)all_param_names%%*}[1]}
+        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} '${(P)param_name}'" }
+        return
+    }
+
+    (( ${actions[(Ie)$action]} )) || fail "Specified action must be one of: (${(j', ')actions})." 10
+
+    # Always unset all values.  No need to check for that action.
+    echo_debug 'Un-setting all proxy-related environment parameters.'
+    for param_name ( ${all_param_names:u} ${all_param_names:l} ) { unset "${param_name}" }
+
+    [[ "${action}" == "set" ]] || return
+
+    typeset proxy_url="${2}"
+    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
+    [[ -n "${proxy_url}" ]] || fail 'No proxy URL was provided.  $USER_PROXY_URL is also unset or empty.' 20
+
+    echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
+    for param ( ${USER_PROXY_ENV_PARAMETERS:u} ${USER_PROXY_ENV_PARAMETERS:l} )
+    {
+        typeset -gx "${param}"="${proxy_url}"
+    }
+
+    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
+    [[ -n "${noproxy_value}" ]] ||
+    {
+        echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+        return 0
+    }
+
+    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
+    for noproxy_param ( ${USER_PROXY_ENV_PARAMETERS_NOPROXY:u} ${USER_PROXY_ENV_PARAMETERS_NOPROXY:l} )
+    {
+        typeset -gx "${noproxy_param}"="${noproxy_value}"
+    }
+}
+
+
+####
+##  Read the contents for the given AuthorizationDB right, formatted as an
+##  XML property list.
+##
+function authdb_read ()  # <right_name>
+{
+    typeset right_name="${1}"
+    echo_debug "Reading AuthorizationDB right '${right_name}'..."
+
+    eval "$( ( /usr/bin/security authorizationdb read "${right_name}" ) \
+            2> >(read_status=$(cat); typeset -p read_status) \
+            > >(right_contents=$(cat); typeset -p right_contents); result_code=$?; typeset -p result_code )"
+
+    (( result_code > 0 )) && { echo_log --level 'ERROR' "Unable to read right '${right_name}'.  Error: '${read_status}'." ; return result_code ; }
+
+    echo_debug "Contents of right '${right_name}' are as follows:\n${right_contents}"
+    echo_debug "Read Status: '${read_status}'"
+    echo "${right_contents}"
+}
+
+
+####
+##  Update the contents of the given AuthorizationDB right.
+##
+##  The updated content can be specified as either a single rule (provided via
+##  the second argument), or as an XML property list (provided via stdin).
+##
+function authdb_write ()  # <right_name> [rule_id | plist-content-via-stdin]
+{
+    typeset right_name="${1}"
+    typeset rule_id="${2}"
+
+    ###############################################################
+    ## PATH 1 - UPDATE RIGHT TO DELEGATE TO rule_id SPECIFIED IN $2
+    [[ -n "${rule_id}" ]] &&
+    {
+        echo_debug "Updating AuthorizationDB right to invoke rule '${rule_id}'..."
+        /usr/bin/security authorizationdb write "${right_name}" "${rule_id}" ||
+        {
+            echo_log --level 'ERROR' "Unable to update right '${right_name}'; the AuthDB 'write' operation failed."
+            return 1
+        }
+
+        return 0
+    }
+
+    ###############################################
+    ## PATH 2 - UPDATE RIGHT WITH CONTENTS OF STDIN
+    echo_debug "Updating AuthorizationDB right '${right_name}' with Plist contents from stdin..."
+
+    typeset right_contents && right_contents="$( [[ -t 0 ]] || cat - )"  ||
+    {
+        echo_log --level 'ERROR' "Unable to update right '${right_name}'; no Plist content was provided via stdin."
+        return 1
+    }
+
+    echo_debug "Updated contents of right '${right_name}' will be as follows:\n\n${right_contents}\n"
+
+    echo "${right_contents}" | /usr/bin/security authorizationdb write "${right_name}" ||
+    {
+        echo_log --level 'ERROR' "Unable to update right '${right_name}'; the AuthDB 'write' operation failed."
+        return $?
+    }
+}
+
+
+####
+##  Remove an AuthorizationDB right.
+##
+function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
+{
+    typeset system_removal_flag='--bypass-system-right-restriction'
+    typeset -i system_removal_enabled=0
+    [[ "${1}" == "${system_removal_flag}" ]] && { system_removal_enabled=1 ; shift ; }
+
+    typeset right_name="${1}"
+
+    #################################################################
+    ## HAPPY PATH: REMOVE NON-"system.*" RIGHT USING 'security' TOOL.
+
+    [[ "${right_name}" != 'system.'* ]] &&
+    {
+        echo_debug "Removing right '${right_name}' from the AuthorizationDB..."
+
+        /usr/bin/security authorizationdb remove "${right_name}" ||
+        {
+            echo_log --level 'ERROR' "Unable to remove right '${right_name}' from the AuthDB."
+            return $?
+        }
+
+        return 0
+    }
+
+    ##########################################################################
+    ## TREACHEROUS PATH: REMOVE "system.*" RIGHT BY EDITING 'auth.db' DIRECTLY
+
+    (( system_removal_enabled )) ||
+    {
+        echo_log --level 'ERROR' "Rights which begin with 'system.' may not be removed without enabling system right removal."
+        echo_log --level 'ERROR' "You can forcibly remove the right named '${right_name}' by adding the '${system_removal_flag}' flag to this command."
+        echo_log --level 'ERROR' "PLEASE NOTE: Using this flag will sidestep Apple's logic, and edit the AuthorizationDB directly using SQLite commands."
+        echo_log --level 'ERROR' "This is highly undesirable, and should be avoided in standard practice."
+        return 1
+    }
+
+    typeset authdb_file='/private/var/db/auth.db'
+    typeset -a sqlite_cmd=('/usr/bin/sqlite3' '-bail' "${authdb_file}")
+    typeset -i right_id
+
+    echo_log "Bypassing Apple's logic to remove right '${right_name}' from the AuthorizationDB using SQLite commands."
+    echo_log --level 'WARNING' "This is highly undesirable, and should be avoided in standard practice."
+
+    # VERIFY THAT A RULE EXISTS IN THE AUTH DB WITH THE SPECIFIED NAME.
+    # RESTRICT QUERY TO "RIGHT" RULES ONLY (type = 1).  GRAB VALUE.
+    right_id=$( "${sqlite_cmd[@]}" "SELECT id FROM rules WHERE name = '${right_name}' AND type = 1;" )  && (( right_id > 0 )) ||
+    {
+        echo_log --level 'ERROR' "Unable to find right with name '${right_name}' in the Authorization DB."
+        return 1
+    }
+
+    echo_debug "Right named '${right_name}' has ID '${right_id}' in the Authorization DB."
+
+    typeset -a modification_query=(
+        'PRAGMA    foreign_keys = ON;'
+        'PRAGMA    temp_store   = MEMORY;'
+        'PRAGMA    auto_vacuum  = FULL;'
+        'PRAGMA    journal_mode = WAL;'
+        '.filectrl persist_wal    ON'
+        "DELETE FROM rules WHERE id = ${right_id};"
+    )
+
+    echo_debug "Executing database query:\n    ${(j'\n    ')modification_query}\n"
+    echo "${(j'\n')modification_query}" | "${sqlite_cmd[@]}" ||
+    {
+        echo_log --level 'ERROR' "SQLite query failed with status '$?'.  Right '${right_name}' will not be removed."
+        return $?
+    }
+
+    return 0
+}
+
+
+####
+##  Reset the configuration of the the given AuthorizationDB right to its
+##  "factory-default" state, as provided by the SIP-protected reference at
+##  `/System/Library/Security/authorization.plist`.
+##
+function authdb_factory_reset ()  # <right_name>
+{
+    typeset right_name="${1}"
+    typeset factory_config_file='/System/Library/Security/authorization.plist'
+
+    echo_debug "Resetting AuthorizationDB right '${right_name}' to its factory-default configuration from '${factory_config_file}'..."
+
+    typeset factory_contents && factory_contents=$( /usr/libexec/PlistBuddy -x -c "Print :rights:${right_name}" "${factory_config_file}" )  ||
+    {
+        echo_log --level 'ERROR' "Unable to fetch factory state for right '${right_name}'."
+        return $?
+    }
+
+    echo "${factory_contents}" | authdb_write "${right_name}"
+}
+
+
+####
+##  Returns launchd domain target for the local user's GUI session.
+##
+function launchd_local_user_domain_target ()
+{
+    echo "gui/$( user_id_for_name $( local_user_name ) )"
+}
+
+
+####
+##  Boot out a list of launchd service targets.
+##  A service target is the domain target (e.g., 'system' or 'gui/<UID>')
+##  and the service name ('com.foo.bar'), seperated by a slash.
+##
+function launchd_boot_out_service_targets ()  # <service-target [...]>
+{
+    typeset -a service_targets=( $@ )
+    typeset launch_service
+    typeset -i launchctl_status
+
+    for service_target ( ${service_targets} )
+    {
+        echo_debug "Booting out launchd service target '${service_target}'..."
+        /bin/launchctl bootout "${service_target}" ||
+        {
+            # If launchctl exits with status 3 (No such process; i.e., not
+            # bootstrapped), continue normally.  Otherwise, return the status
+            # from launchctl.
+            launchctl_status=$?
+            (( launchctl_status == 3 )) && { echo_log --level 'INFO' "Service target '${service_target}' is not bootstrapped.  Skipping...'" ; continue ; }
+
+            return ${launchctl_status}
+        }
+    }
+
+    return 0
+}
+
+
+####
+##  Boot out a list of system-level launchd service targets with the specified
+##  service names.  The 'system' domain target will be prefixed for you.
+##
+function launchd_boot_out_system_services_named ()  # <service-name-in-system-domain [...]>
+{
+    launchd_boot_out_service_targets ${@/#/system/}
+}
+
+
+####
+##  Boot out a list of launchd service targets associated with the current
+##  user's GUI launchd session.  The 'gui/<UID>' domain target will be
+##  prefixed for you.
+##
+function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
+{
+    launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
+}
+
+
+####
+##  WIP
+##  Remove parenthetically unique duplicates of a file by comparing their
+##  contents and deleting identical files.
+##
+function remove_duplicates ()  # --dry-run
+{
+    typeset original_by_name
+    typeset -a remove_cmd=( 'remove_existing' )
+
+    [[ "${1}" = '--dry-run' ]] && { remove_cmd=( 'echo' 'DRY RUN - Not removing: ' ) ; shift ; }
+
+    typeset stub
+    typeset ext
+    typeset original_by_name
+
+    # Glob: all items ending in '(n)' or '(n).ext' where n is an integer; zero results is fine.
+    for duplicate_candidate ( *\(<1->\)(.*)#(N) )
+    {
+        stub="${duplicate_candidate:r}"
+        ext="${duplicate_candidate:e}"
+
+        [[ -n "${ext}" ]] && ext=".${ext}"
+
+        case "${duplicate_candidate}" in
+            *\(1\)(.*)#) # (1): remove the number and parens entirely
+                original_by_name="${${duplicate_candidate:r}/%\(1\)/}${ext}"
+                ;;
+            *) # (2+): decrement the number
+                echo twoplus
+                ;;
+        esac
+
+        continue
+
+        echo_log -n --level 'INFO' "Found '${duplicate_candidate}'... "
+
+        original_by_name="${${duplicate_candidate:r}/%\(<1->\)/}.${duplicate_candidate:e}"
+        [[ -f "${original_by_name}" ]] ||
+        {
+            echo_err "⏭️  Skipped: no corresponding original filename found."
+            continue
+        }
+
+        echo_err -n "Comparing to '${original_by_name}'... "
+        cmp --silent "${duplicate_candidate}" "${original_by_name}" ||
+        {
+            echo_err "⏭️  Skipped: not equivalent."
+            continue
+        }
+
+        echo_err "🗑️  Removing as duplicate."
+        "${remove_cmd[@]}" "${duplicate_candidate}"
+    }
+}
+
+
+####
+##  Poll the pasteboard's contents, and run a command when it is modified.
+##
+##  TEMPLATE PLACEHOLDER
+##  If command or arguments contain the substring '<PASTE>', that subtring will
+##  be replaced by the pasteboard's contents.
+##
+# function when_pasteboard_changes ()  # [--one-run-only] [--interval <seconds>] command_template [arg_template ...]
 # {
-#     typeset dl_command remote_url output_file_path chunk_input
+#     zmodload zsh/zutil || return 1
+
+#     ## Create usage output.
+#     typeset usage=(
+#         "$0 [--help]"
+#         "$0 [--one-run-only] [--interval <seconds>] command_template [arg_template ...]"
+#     )
+
+#     ## Define parameter defaults.
+#     typeset -a flag_help=( $( (( $# > 0 )) || echo "NO_ARGS" ) )
+#     typeset -a flag_once=( )
+#     typeset    default_interval='5'
+#     typeset -a arg_interval=( ${default_interval} )
+
+#     ## Parse function arguments.
+#     zparseopts -D -F -K -- \
+#         -help=flag_help \
+#         -one-run-only=flag_once \
+#         -interval:=arg_interval \
+#     || return 1
+
+#     ## Display usage if help flag is set, or if no command was provided.
+#     (( ${#flag_help} || (! ${#@}) )) && { print -l $usage && return 0 ; }
+
+#     typeset -F 4 interval=$(( ${arg_interval[-1]} ))
+#     (( interval )) || interval=${default_interval}
+
+#     while ( true ) { echo "$@" ; sleep "${interval}" ; }
+# }
+
+# function when_pasteboard_changes ()  # [--every <seconds>] command_template [arg_template ...]
+# {
+#     ## Create usage output.
+#     typeset usage=(
+#         "$0 [--help]"
+#         "$0 [--every <seconds>] command_template [arg_template ...]"
+#     )
+
+#     zmodload zsh/zutil || return 1
+#     typeset -a flag_help=()
+#     typeset -a arg_every=()
+#     zparseopts -D -F -K -- \
+#         -help=flag_help \
+#         -every:=arg_every \
+#     || return 1
+
+#     ## Display usage if help flag is set, or if no command was provided.
+#     (( ${#flag_help} || (! ${#@}) )) && { print -l $usage && return 0 ; }
+
+#     typeset -U array_every=( ${(ps::)arg_every[-1]} )
+#     (( ${#array_every} == 1 )) && [[ "" ]]
+
+#     # Cast the specified 'every' interval to a float.
+#     typeset -F 4 interval=$(( ${arg_every[-1]} ))
+
+#     # If the interval is less than zero, prepare to execute only once.
+#     typeset -a return_if_interval_lt_zero=()
+#     (( interval < 0 )) && { return_if_interval_lt_zero=( 'return' '0' ) }
+
+#     while ( true )
+#     {
+#         #if the pasteboard value has changed
+#         {
+#             echo "$@"
+#             ${return_if_interval_lt_zero}
+#             sleep "${interval}"
+#         }
+#     }
+# }
+
+
+####
+##  Download a large file, broken into chunks of a specified size in megabytes
+##  (default is 20).
+##
+# function download_chunked ()  # <remote_url> <output_file_path> <chunk_size=20>
+# {
 #     typeset -i chunk_size
+#
+#     typeset dl_command="curl"
+#
+#     typeset remote_url="${1}"       ; [[ -n "${remote_url}" ]]       || fail 'Argument for remote URL is missing or empty.' 10
+#     typeset output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
 
-#     dl_command="curl"
-
-#     remote_url="${1}" ; [[ -n "${remote_url}" ]] || fail 'Argument for remote URL is missing or empty.' 10
-#     output_file_path="${2}" ; [[ -n "${output_file_path}" ]] || fail 'Argument for output path is missing or empty.' 20
 #     # Check output path's last directory exists, or fail
 #     # Check output path's last directory is writable, or fail
-#     chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
+
+#     typeset chunk_input="${3}" ; [[ "${chunk_size}" == <-> ]] || { chunk_input='' ; echo "Specified chunk size is not valid.' INFO }
 #     (( chunk_size = $chunk_input )) ; [[ "${chunk_size}" == <-> && -n "${chunk_size}" ]] || echo 'Using default chunk size of 20 MB.' INFO
 #     # Check that chunk size is a non-zero integer, or log that the default will be used
-
-
+#
+#
 # }
+

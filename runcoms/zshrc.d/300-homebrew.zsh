@@ -1,17 +1,17 @@
-#
-# ZSHRC EXTENSION:
-# Functions: Homebrew
-#
+##
+##  ZSHRC EXTENSION:
+##  Functions: Homebrew
+##
 
 
-#
-#  Generate .png of dependency tree for installed packages
-#
-#  Required Packages:
-#      brew install martido/brew-graph/brew-graph
-#      brew install graphviz
-#
-function brew_dependency_graph() # [package ...]
+##
+##  Generate .png of dependency tree for installed packages
+##
+##  Required Packages:
+##      brew install martido/brew-graph/brew-graph
+##      brew install graphviz
+##
+function brew_dependency_graph ()  # [package ...]
 {
     local dependency_name="${(j'-')@}"
     [[ -z "$dependency_name" ]] && dependency_name="all"
@@ -19,15 +19,15 @@ function brew_dependency_graph() # [package ...]
 }
 
 
-#
-#  Get options for installed package
-#
-#  Required Packages:
-#      brew install jq
-#
-#  $1: Installed package name.
-#
-function brew_installed_options() # <package>
+##
+##  Get options for installed package
+##
+##  Required Packages:
+##      brew install jq
+##
+##  $1: Installed package name.
+##
+function brew_installed_options ()  # <package>
 {
     [[ $# -ge 1 ]]  || fail 'Missing package name argument.' 10
 
@@ -37,25 +37,25 @@ function brew_installed_options() # <package>
 }
 
 
-#
-#  brew_reinstall_and_add_option <package> <options>
-#  [WIP] Reinstall package with additional option(s)
-#  - Parameters
-#      - package: Installed package name
-#      - options: The options to add when re-installing.
-#  - Example
-#      % brew_reinstall_and_add_option ffmpeg --with-libbluray --with-srt
-#
-#  # TODO: We're in zsh now... do this as a function.
-#  alias brew_reinstall_and_add_option 'brew reinstall \!:1 `brew_installed_options \!:1` \!:2*'
-#  set current_options = "`brew_installed_options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
-#
+##
+##  brew_reinstall_and_add_option <package> <options>
+##  [WIP] Reinstall package with additional option(s)
+##  - Parameters
+##      - package: Installed package name
+##      - options: The options to add when re-installing.
+##  - Example
+##      % brew_reinstall_and_add_option ffmpeg --with-libbluray --with-srt
+##
+##  # TODO: We're in zsh now... do this as a function.
+##  alias brew_reinstall_and_add_option 'brew reinstall \!:1 `brew_installed_options \!:1` \!:2*'
+##  set current_options = "`brew_installed_options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
+##
 
 
-#
-#  List all brew leaves with their description appended.
-#
-function brew_leaves_with_info()
+##
+##  List all brew leaves with their description appended.
+##
+function brew_leaves_with_info ()
 {
     for formula ( $(brew leaves) )
     {
@@ -65,10 +65,10 @@ function brew_leaves_with_info()
 }
 
 
-#
-#  WIP
-#
-function update_brew_ssl_certs_from_keychain()
+##
+##  WIP
+##
+function update_brew_ssl_certs_from_keychain ()
 {
     typeset -a keychains=(
         '/System/Library/Keychains/SystemRootCertificates.keychain'
@@ -86,7 +86,7 @@ function update_brew_ssl_certs_from_keychain()
     for keychain ( ${keychains} )
     {
         echo_log
-        echo_log "Loading certificates from keychain '${keychain}'... \c" INFO
+        echo_log -n --level 'INFO' "Loading certificates from keychain '${keychain}'..."
         typeset -a cert_names && cert_names=( ${(f)"$( security find-certificate -a "${keychain}" | grep '"alis"' | cut -d '"' -f 4 )"} )
 
         echo_err "${#cert_names} found."
@@ -94,7 +94,7 @@ function update_brew_ssl_certs_from_keychain()
 
         for cert_name ( ${cert_names} )
         {
-            echo_log "${cert_name}... loading... \c" INFO 1
+            echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
             cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" 2>/dev/null)" || { echo_err 'unable to load certificate contents. 🔴' ; continue }
 
             echo_err -n "exporting... "
@@ -112,13 +112,13 @@ function update_brew_ssl_certs_from_keychain()
     }
 
     echo_log
-    echo_log "Added ${added_count} certificates of ${found_count} found." INFO
-    echo_log "Saving to Homebrew certificate location..." INFO
+    echo_log --level 'INFO' "Added ${added_count} certificates of ${found_count} found."
+    echo_log --level 'INFO' "Saving to Homebrew certificate location..."
 }
 
     #     for cert_name ( ${cert_names} )
     #     {
-    #         echo_log "${cert_name}... loading... \c" INFO 1
+    #         echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
     #         cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" &>/dev/null)" || { echo_err "unable to load certificate contents; status '$?'" ; continue }
 
     #         echo_err -n "exporting... "
