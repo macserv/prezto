@@ -4,8 +4,9 @@
 ##
 
 
-typeset -gx HOMEBREW_PREFIX
+typeset -gx HOMEBREW_NO_INSTALL_FROM_API=1
 
+typeset -gx HOMEBREW_PREFIX
 HOMEBREW_PREFIX="/opt/homebrew"
 [[ "$(uname -m)" == 'x86_64' ]] && { HOMEBREW_PREFIX="/usr/local" }
 
