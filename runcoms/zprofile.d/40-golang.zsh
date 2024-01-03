@@ -8,18 +8,23 @@
 {
     [[ -s "${local_goenv}" ]] &&
     {
-        # Add `goenv` bin folder to path.
+        # Amend ${path} with goenv binary path.
         path=( ${local_goenv:h} ${path} )
 
         # Load goenv into environment.
         eval "$( goenv init - 'zsh' )"
 
+        # Override default paths.
+        typeset -gx GOPATH="${HOME}/.local/share/go"
+        typeset -gx GOCACHE="${HOME}/.cache/go/build"
+        typeset -gx GOMODCACHE="${HOME}/.cache/go/mod"
+        typeset -gx GOENV="${HOME}/.config/go/env"
+
+        # Amend ${path} with golang binary paths.
         [[ -d "${GOROOT}/bin" ]] && path=( "${GOROOT}/bin" ${path} )
         [[ -d "${GOPATH}/bin" ]] && path=( ${path} "${GOPATH}/bin" )
     }
 }
 
 unset local_goenv
-
-# [[ -n "${commands[go]}" ]] && { go env -w GOPATH=$HOME/.cache/go ; }
 

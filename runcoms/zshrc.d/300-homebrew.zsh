@@ -95,16 +95,16 @@ function update_brew_ssl_certs_from_keychain ()
         for cert_name ( ${cert_names} )
         {
             echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
-            cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" 2>/dev/null)" || { echo_err 'unable to load certificate contents. 🔴' ; continue }
+            cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" 2>/dev/null)" || { echo_err 'unable to load certificate contents. 🔴' ; continue ; }
 
             echo_err -n "exporting... "
-            echo "${cert_contents}" >! "${cert_file}" || { echo_err 'unable to write cert contents to temporary file. 🔴' ; continue }
+            echo "${cert_contents}" >! "${cert_file}" || { echo_err 'unable to write cert contents to temporary file. 🔴' ; continue ; }
 
             echo_err -n "verifying... "
-            security verify-cert -c "${cert_file}" -k "${keychain}" &>/dev/null || { echo_err 'certificate is not valid. 🔴' ; continue }
+            security verify-cert -c "${cert_file}" -k "${keychain}" &>/dev/null || { echo_err 'certificate is not valid. 🔴' ; continue ; }
 
             echo_err -n "adding... "
-            echo "${cert_contents}" >> "${all_certs_file}" || { echo_err 'unable to add certificate. 🔴' ; continue }
+            echo "${cert_contents}" >> "${all_certs_file}" || { echo_err 'unable to add certificate. 🔴' ; continue ; }
             (( added_count += 1 ))
 
             echo_err "done."
