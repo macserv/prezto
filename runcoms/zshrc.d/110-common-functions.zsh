@@ -1167,7 +1167,7 @@ function ask_for_password ()
 ##
 ##  For example, if `$TMPDIR` is not set, and this function is called from a
 ##  script named `do_something_awesome.zsh`, the new directory's path could be:
-##  > `/tmp/net.jpmchase.gti.mac-engineering/do_something_awesome/0C4D2B82-C99D-4E1E-B71D-AD0577A8F507/`
+##  > `/tmp/com.organization.it.mac-admin/do_something_awesome/0C4D2B82-C99D-4E1E-B71D-AD0577A8F507/`
 ##
 function new_tmp_dir ()  # <purpose>
 {
