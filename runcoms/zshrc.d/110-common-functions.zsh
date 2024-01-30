@@ -850,6 +850,37 @@ function remove_existing ()  # <path_to_remove>
 
 
 ####
+##  Scans for bundles within a folder, and prints the path to each bundle whose
+##  `CFBundleIdentifier` property matches the given bundle ID.
+##
+##  With only one argument, this function's default beha will search for `.app` bundles in
+##  the `/Applications` folder which match the specified identifier.
+##
+##  ARGUMENTS
+##  ---------
+##  $1: <search_id>  The bundle identifier which this function should match.
+##  $2: <folder>  Optional.  The path to the folder which contains the items
+##      to be scanned.  Default: `/Applications`
+##  $3: <extension>  Optional.  The extension required for a bundle to be
+##      scanned.  Default: `app`
+##
+function find_bundle_with_id ()  # <search_id> [folder] [extension]
+{
+    typeset search_id="${1}"               && [[ -n "${search_id}" ]] || return 10
+    typeset folder="${2:-'/Applications'}" && [[ -d "${folder}" ]]    || return 20
+    typeset extension="${3:-'app'}"
+    typeset bundle_id
+
+    for bundle ( ${folder}/*.${extension} )
+    {
+        bundle_id=$( /usr/bin/plutil -extract 'CFBundleIdentifier' 'raw' "${bundle}/Contents/Info.plist" ) || continue
+        [[ "${bundle_id}" == "${search_id}" ]] || continue
+        echo "${bundle}"
+    }
+}
+
+
+####
 ##  Print either the most recently logged-in user, or the user who logs in most
 ##  commonly, with options to filter out undesired users.
 ##
