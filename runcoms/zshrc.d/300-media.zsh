@@ -213,9 +213,10 @@ function yt_dlpaste ()
     typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
     typeset audio_ext_best='ext=m4a'             # Prefer M4A audio format.
     typeset video_codec_non_av1='vcodec!*=av01'  # Avoid AV1 video codec.
+    typeset video_codec_non_vp9='vcodec!*=vp09'  # Avoid VP9 video codec.
     typeset -i max_filename_length=200           # Maximum length of downloaded file name.
 
-    typeset best_video="bestvideo[${video_ext_best}][${video_codec_non_av1}]"
+    typeset best_video="bestvideo[${video_ext_best}][${video_codec_non_av1}][${video_codec_non_vp9}]"
     typeset best_audio="bestaudio[${audio_ext_best}]"
     typeset best_fallback="best[${video_ext_best}]"
     typeset best_failsafe="best"

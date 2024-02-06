@@ -1,20 +1,23 @@
 ##
 ##  ZPROFILE EXTENSION:
-##  HomeBrew (brew)
+##  Homebrew Package Manager (brew)
+##  https://brew.sh
 ##
 
 
 typeset -gx HOMEBREW_PREFIX
-
-HOMEBREW_PREFIX="/opt/homebrew"
-[[ "$(uname -m)" == 'x86_64' ]] && { HOMEBREW_PREFIX="/usr/local" }
+case "$( uname -m )" in
+    x86_64) HOMEBREW_PREFIX="/usr/local"    ;;
+    arm64)  HOMEBREW_PREFIX="/opt/homebrew" ;;
+    *)      HOMEBREW_PREFIX="/opt/homebrew" ;;
+esac
 
 path=(
     ${HOMEBREW_PREFIX}/{bin,sbin}
-    $path
+    ${path}
 )
 
 fpath=(
-    ${HOMEBREW_PREFIX}/share/zsh/site-functions  # Homebrew (Chase installation location)
-    $fpath
+    ${HOMEBREW_PREFIX}/share/zsh/site-functions
+    ${fpath}
 )
