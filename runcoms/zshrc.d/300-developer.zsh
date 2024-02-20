@@ -18,6 +18,11 @@ typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework'
 ##  jq: Indent 4 spaces by default
 alias jq='jq --indent 4'
 
+##
+##  Nighthawk
+##  (Wow, remember NightHawk?  Never forget.)
+##
+#alias rmnhdb='cd ~/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
 
 
 
@@ -274,7 +279,8 @@ function create_swift_gitignore ()
 
 
 ##
-##
+##  Start `cafeinate` and keep it running, even if an irresponsible background
+##  process kills it.
 ##
 function overcaffeinate ()
 {
@@ -286,5 +292,14 @@ function overcaffeinate ()
         display_notification "Caffeinate was killed with status $?.  Restarting..." '😴 Decaffeinated'
         sleep 1
     } &!
+}
+
+
+##
+##  List running processes, sorted by start time, ascending.
+##
+function ps_sorted_by_start_time
+{
+    ps -axwwo "lstart,pid,user,command" | sort -k5n -k2M -k3n -k4n -k6n
 }
 
