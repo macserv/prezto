@@ -5,7 +5,8 @@
 
 
 ################################################################################
-##  CONFIGURATION: GLOBAL PARAMETERS
+##  CONFIGURATION PARAMETERS
+##
 
 ## Options for h.264 codec in convenience functions below.
 typeset -agx Z_RC_FFMPEG_H264_OPTIONs=(
@@ -40,7 +41,19 @@ typeset -a Z_RC_YTDLPASTE_BEST_AUDIO_OPTIONS=( ${Z_RC_YTDLPASTE_FALLBACK_AUDIO_O
 
 
 ################################################################################
+##  ALIASES
+##
+
+##  ffmpeg: Hide banners for common commands.
+alias ffmpeg='ffmpeg -hide_banner'
+alias ffprobe='ffprobe -hide_banner'
+alias ffplay='ffplay -hide_banner'
+
+
+
+################################################################################
 ##  FUNCTIONS
+##
 
 ##
 ##  Checks the codec used to encode a video file, and returns just the encoder
