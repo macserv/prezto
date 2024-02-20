@@ -5,6 +5,38 @@
 
 
 ################################################################################
+##  CONFIGURATION PARAMETERS
+##
+
+## Options for h.264 codec in convenience functions below.
+typeset -agx Z_RC_FFMPEG_H264_OPTIONs=(
+    -preset                'slower'
+    -pix_fmt               'yuv420p'
+    -vf                    'pad=ceil(iw/2)*2:ceil(ih/2)*2'
+    -max_muxing_queue_size  9999
+)
+
+## `yt_dlpaste`: Maximum length of downloaded file name.
+typeset -igx Z_RC_YTDLPASTE_MAX_FILENAME_LENGTH=200
+
+# `yt_dlpaste`: 'Minimum' set of desired video options:
+#   * Require MP4 container format.
+typeset -a Z_RC_YTDLPASTE_FALLBACK_VIDEO_OPTIONS=( '[ext=mp4]' )
+
+# `yt_dlpaste`: Ideal set of video options:
+#   * <all video fallback options>
+#   * Avoid AV1 video codec.
+#   * Avoid VP9 video codec.
+typeset -a Z_RC_YTDLPASTE_BEST_VIDEO_OPTIONS=( ${Z_RC_YTDLPASTE_FALLBACK_VIDEO_OPTIONS} '[vcodec!*=av01]' '[vcodec!*=vp09]' )
+
+# `yt_dlpaste`: 'Minimum' set of desired audio options:
+#   * <no audio fallback specified>
+typeset -a Z_RC_YTDLPASTE_FALLBACK_AUDIO_OPTIONS=( )
+
+# `yt_dlpaste`: Ideal set of audio options:
+#   * <all audio fallback options>
+#   * Prefer M4A audio format.
+typeset -a Z_RC_YTDLPASTE_BEST_AUDIO_OPTIONS=( ${Z_RC_YTDLPASTE_FALLBACK_AUDIO_OPTIONS} '[ext=m4a]' )
 
 
 
@@ -214,39 +246,65 @@ function ff_selfie ()  # <video_file> <clip_start_time> <clip_end_time>
 ##  Use `yt-dlp` to fetch a URL stored in the pasteboard, and apply some
 ##  sensible default parameters prioritizing mp4 video.
 ##
-##  Passes arguments through to `yt-dlp` command.
+##  ARGUMENTS
+##  ---------
+##  --help : Print command usage and exit.
 ##
-function yt_dlpaste ()
+##  ADDITIONAL ARGUMENTS PASSED THROUGH TO 'echo'
+##  ---------------------------------------------
+##  Any additional options provided to this function will be passed along to
+##  the `yt-dlp` command (e.g., `--cookies-from-browser firefox`).
+##
+function yt_dlpaste ()  # [--wrap]
 {
-    typeset video_ext_best='ext=mp4'             # Prefer MP4 container format.
-    typeset audio_ext_best='ext=m4a'             # Prefer M4A audio format.
-    typeset video_codec_non_av1='vcodec!*=av01'  # Avoid AV1 video codec.
-    typeset video_codec_non_vp9='vcodec!*=vp09'  # Avoid VP9 video codec.
-    typeset -i max_filename_length=200           # Maximum length of downloaded file name.
+    typeset -a best_format=()
+    (( ${#Z_RC_YTDLPASTE_BEST_VIDEO_OPTIONS} )) && best_format+="bestvideo${(j::)Z_RC_YTDLPASTE_BEST_VIDEO_OPTIONS}"
+    (( ${#Z_RC_YTDLPASTE_BEST_AUDIO_OPTIONS} )) && best_format+="bestaudio${(j::)Z_RC_YTDLPASTE_BEST_AUDIO_OPTIONS}"
 
-    typeset best_video="bestvideo[${video_ext_best}][${video_codec_non_av1}][${video_codec_non_vp9}]"
-    typeset best_audio="bestaudio[${audio_ext_best}]"
-    typeset best_fallback="best[${video_ext_best}]"
-    typeset best_failsafe="best"
-    typeset best_format="${best_video}+${best_audio}"
-    typeset format="${best_format}/${best_fallback}/${best_failsafe}"
+    typeset -a fallback_format=( )
+    (( ${#Z_RC_YTDLPASTE_FALLBACK_VIDEO_OPTIONS} )) && fallback_format+="bestvideo${(j::)Z_RC_YTDLPASTE_FALLBACK_VIDEO_OPTIONS}"
+    (( ${#Z_RC_YTDLPASTE_FALLBACK_AUDIO_OPTIONS} )) && fallback_format+="bestaudio${(j::)Z_RC_YTDLPASTE_FALLBACK_AUDIO_OPTIONS}"
 
-    typeset default_output_path='~/Desktop'      # Output path if Safari's download path isn't set.
-    typeset safari_download_path="$(defaults read com.apple.Safari DownloadsPath)"
-    typeset output_dir="${safari_download_path:-${default_output_path}}"
-    typeset output_filename_format="%(title).${max_filename_length}s-%(id)s.%(ext)s"
+    typeset -a failsafe_format=( 'best' )
 
-    typeset output_path="${output_dir}/${output_filename_format}"
+    typeset -a format_priority=( )
+    (( ${#best_format} ))     && format_priority+="${(j:+:)best_format}"
+    (( ${#fallback_format} )) && format_priority+="${(j:+:)fallback_format}"
+    (( ${#failsafe_format} )) && format_priority+="${(j:+:)failsafe_format}"
+
+    typeset format="${(j:/:)format_priority}"
+
+    typeset -i wrap_with_folder=0
+    [[ "${1}" == "--wrap" ]] && { shift ; wrap_with_folder=1 ; }
+
     typeset source_url="$(pbpaste)"
 
-    echo_log --level 'INFO' "Downloading '${source_url}' to '${output_dir}'..."
+    # Set download path to one of the following (in order of availability)
+    #   * $Z_RC_YTDLPASTE_DOWNLOAD_PATH
+    #   * Safari's download path
+    #   * User's Desktop folder.
+    typeset safari_downloads_folder && safari_downloads_folder="$( defaults read 'com.apple.Safari' 'DownloadsPath' )"
+    typeset download_path="${Z_RC_YTDLPASTE_DOWNLOAD_PATH:-${safari_downloads_folder:-"~/Desktop"}}"
+
+    # Assemble the output path, starting with the download path.
+    # Append a containing directory format (if requested with `--wrap`).
+    # Append the filename format.
+    typeset -a output_path_dirs=( "${download_path}" )
+    (( ${wrap_with_folder} )) && output_path_dirs+='%(uploader)s'
+    output_path_dirs+="%(title).${Z_RC_YTDLPASTE_MAX_FILENAME_LENGTH}s-%(id)s.%(ext)s"
+
+    # Join the dirs with the path delimiter.
+    typeset output_path="${(j:/:)output_path_dirs}"
+
+    echo_log --level 'INFO' "Requested Format: '${format}'."
+    echo_log --level 'INFO' "Downloading '${source_url}' to '${output_path:h}'..."
 
     typeset -a ytdlp_command=(
         yt-dlp
-            --format "${format}"        # Use the download format specifier above.
-            --no-mtime                  # Do not change the file modification time.
-            --embed-metadata            # Embed metadata and chapters/infojson if present
-            --xattrs                    # Write metadata to the video file's xattrs
+            --format "${format}"       # Use the download format specifier above.
+            --no-mtime                 # Do not change the file modification time.
+            --embed-metadata           # Embed metadata and chapters/infojson if present
+            --xattrs                   # Write metadata to the video file's xattrs
             --output "${output_path}"
             ${@}
         "${source_url}"
@@ -254,12 +312,13 @@ function yt_dlpaste ()
 
     $ytdlp_command[@] ||
     {
+        # Present a user notification if download fails.
         typeset -i ytdlp_status=$?
         display_notification "The yt-dlp download failed with status ${ytdlp_status}." "Video Download Failed"
-        return
+        return $ytdlp_status
     }
 
-    # Notify on success?
+    return 0
 }
 
 
