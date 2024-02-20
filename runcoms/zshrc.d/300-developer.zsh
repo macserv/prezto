@@ -5,7 +5,7 @@
 
 
 ################################################################################
-##  CONFIGURATION: GLOBAL PARAMETERS
+##  CONFIGURATION PARAMETERS
 
 typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
@@ -93,6 +93,93 @@ function xckill () # [-signal]
 
 
 ##
+##
+##
+function log_create_predicate ()
+{
+    ## Create usage output.
+    typeset -a usage=(
+        "$0 [--help | -h ]"
+        "$0 [--multi-field-search <filter_text>] [[--hide-subsystems <subsystem>]]"
+        '    [--case-insensitive] [custom_predicate]'
+    )
+
+    ## Define parameter defaults.
+    # typeset -a flag_help=( )
+    # typeset -a arg_multi_field_search=( )
+    # typeset -a arg_hide_subsystems=( )
+    # typeset -a flag_case_insensitive=( '--case-insensitive' 0 )
+
+    ## Configure parser and process function arguments.
+    typeset -a parse_config=(
+    #   '-a' 'options' # Specifies a default array to contain recognized options.
+    #   '-A' 'options' # Same as -a, but using an associative array. Test: (( ${+options[--foo]} ))
+        '-D'           # Remove found options from the positional parameters array ($@).
+    #   '-E'           # Don't stop at the first string that isn't described by the specs.
+        '-F'           # Stop and exit if a param is found which is not in the specs.
+    #   '-K'           # Don't replace existing arrays (allows default values).
+        '-M'           # Allows the 'name' in '=name' to reference another spec.
+        '--'           # Indicates that options end here and spec starts.
+        '-help=flag_help' 'h=-help' '?=-help'
+        '-multi-field-search:=arg_multi_field_search'
+        '-hide-subsystems+:=arg_hide_subsystems'
+        '-case-insensitive=flag_case_insensitive'
+    )
+
+    ## Load parser and process function arguments.
+    zmodload 'zsh/zutil'       || { echo_log --level 'ERROR' "Failed to load 'zsh/zutil' with status $?" ; return $? ; }
+    zparseopts ${parse_config} || flag_help+='PARSE_FAIL'
+
+    ## Display usage if help flag is set.
+    (( ${#flag_help} )) && { echo_err "${(j:\n:)usage}" && return 0; }
+
+    typeset modifier=""
+    (( $#flag_case_insensitive )) && modifier='[cd]'
+
+    typeset -a predicates=()
+
+    (( ${#arg_multi_field_search} )) &&
+    {
+        typeset search_text=${arg_multi_field_search[2]}
+        typeset -a contains_fields=(
+            'category'
+            'composedMessage'
+            'process'
+            'processImagePath'
+            'sender'
+            'senderImagePath'
+            'subsystem'
+        )
+        typeset -a is_equal_fields=(
+            'processIdentifier'
+        )
+        typeset -a search_subpredicates=()
+
+        for field ( ${contains_fields} ) search_subpredicates+="(${field} CONTAINS${modifier} \"${search_text}\")"
+        for field ( ${is_equal_fields} ) search_subpredicates+="(${field} == \"${search_text}\")"
+
+        predicates+="${(j' OR ')search_subpredicates}"
+    }
+
+    (( ${#arg_hide_subsystems} )) &&
+    {
+        typeset -a hidden_subsystems=( )
+        typeset -i keep=1
+        for item ( ${arg_hide_subsystems} ) { (( keep ^= 1 )) && hidden_subsystems+="${item}" ; }  # One-liner to gather every other item from one array into another.
+
+        typeset -a subsystem_subpredicates=( )
+        for subsystem ( ${hidden_subsystems} ) subsystem_subpredicates+="(subsystem != \"${subsystem}\")"
+        predicates+="${(j' AND ')subsystem_subpredicates}"
+    }
+
+    typeset extra_predicate="${1}"
+    [[ -n "${extra_predicate}" ]] && predicates+="${extra_predicate}"
+
+    echo "( ${(j' ) AND ( ')predicates} )"
+}
+
+
+##
 ##  Wrapper around `sudo log` which generates a predicate to search all fields
 ##  for a given string.
 ##
@@ -161,7 +248,7 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
         predicate="((${predicate}) AND (${extra_predicate}))"
     }
 
-    sudo log stream --level "${arg_level[-1]}" --style "${arg_style[-1]}" --predicate "${predicate}"
+    sudo log stream --level "${arg_level[-1]}" --style "${arg_style[-1]}" --source --predicate "${predicate}"
 }
 
 
