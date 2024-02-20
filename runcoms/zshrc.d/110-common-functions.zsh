@@ -205,9 +205,9 @@ function echo_log ()
     typeset -i passthrough_status=$?
 
     ## Create usage output.
-    typeset usage=(
+    typeset -a usage=(
         "$0 [--help | -h | -?]"
-        "$0 [--level ERROR | WARNING | INFO | DEBUG | <custom>]"
+        "$0 [--level <ERROR | WARNING | INFO | DEBUG | (custom)>]"
         '    [--indent <levels>] [--fill <chars>] [--spacer <chars>]'
         '    [--transparent] [message]'
     )
@@ -237,7 +237,7 @@ function echo_log ()
     zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
 
     ## Display usage if help flag is set.
-    (( ${+options[--help]} )) && { print -l $usage && return 0; }
+    (( ${+options[--help]} )) && { print -l $usage && return 0 ; }
 
     typeset message="${@[-1]}"
     [[ "${message}" == '--' ]] && read -r message
