@@ -4,9 +4,18 @@
 ##
 
 
+################################################################################
+##  CONFIGURATION PARAMETERS
+##
+
 typeset -gx GIT_COMMIT_JIRA_ISSUE
 typeset -gx GIT_COMMIT_JIRA_ISSUE_CACHE="${HOME}/.cache/git_commit_jira_id.txt"
 
+
+
+################################################################################
+##  FUNCTIONS
+##
 
 ##
 ##  Print the name of the current branch, with no additional decoration.
@@ -470,4 +479,71 @@ function git_diff_dir ()
 }
 
 
+##
+##  Present a nicely-formatted log graph.
+##
+##  ARGUMENTS
+##  ---------
+##  [--all] : If specified, the log output will include all remote (and other) refs found in `/refs` along with `HEAD`.
+##  [--density <value>] : Optional.  Adjust the "density" of the commit
+##      information printed beside the log graph.  Valid values are `compact`,
+##      `regular`, and `expanded`.  Default: `regular`.
+##
+function git_log_graph ()  # [--all] [--density <compact | regular | expanded>]
+{
+    ## Create usage output.
+    typeset usage=(
+        "$0 [--help | -h | -?]"
+        "$0 [--all] [--density <compact | regular | expanded>]"
+    )
+
+    ## Define options array with defaults.
+    typeset -A options=(
+        '--density' 'regular'
+    )
+
+    ## Set parsing options and configure the arguments for this function.
+    typeset -a parse_config=(
+    #   '-a' 'options' # Create a common array for all optionn, instead of requiring each to specify.
+        '-A' 'options' # Same as -a, but using an associative array.
+        '-D'           # Remove found options from ${@}.
+    #   '-E'           # Allow flags/options and positional args to be mixed.
+        '-F'           # Stop and exit if a param is found which is not in the specs.
+        '-K'           # Don't replace existing arrays (allows default values with `-a`).
+        '-M'           # Allows the 'name' in '=name' to reference another spec.
+        '--'           # ------------------- End of parser options; argument spec follows.
+        '-help' 'h=-help' '?=-help'
+        '-all'
+        '-density:'
+    )
+
+    ## Load parser and process function arguments.
+    zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
+
+    ## Display usage if help flag is set.
+    (( ${+options[--help]} )) && { print -l $usage && return 0; }
+
+    typeset -a git_command=(
+        'git'
+        'log'
+        '--graph'
+        '--abbrev-commit'
+        '--decorate'
+    )
+
+    typeset format_option="--format='format:%C(bold blue)%h%C(reset) - "
+
+    case "${options[--density]}" in
+        compact)  format_option+="%C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)'" ;;
+        regular)  format_option+="%C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'" ;;
+        expanded) format_option+="%C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset) %C(bold cyan)(committed: %cD)%C(reset) %C(auto)%d%C(reset)%n''          %C(white)%s%C(reset)%n''          %C(dim white)- %an <%ae> %C(reset) %C(dim white)(committer: %cn <%ce>)%C(reset)'" ;;
+        *) return 1 ;;
+    esac
+
+    git_command+="${format_option}"
+
+    (( ${+options[--all]} )) && git_command+='--all'
+
+    ${(Q)git_command[@]}
+}
 
