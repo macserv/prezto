@@ -461,3 +461,13 @@ function git_add_bitbucket_pull_request_refs
 }
 
 
+##
+##  Open difftool with directory diff
+##
+function git_diff_dir ()
+{
+    git difftool --dir-diff
+}
+
+
+

@@ -12,8 +12,18 @@ typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework'
 
 
 ################################################################################
-##  FUNCTIONS: Xcode / Developer Tools
+##  ALIASES
+##
 
+##  jq: Indent 4 spaces by default
+alias jq='jq --indent 4'
+
+
+
+
+################################################################################
+##  FUNCTIONS: Xcode / Developer Tools
+##
 
 ##
 ##  Trigger `softwareupdate` to download and install the Command-Line Tools for

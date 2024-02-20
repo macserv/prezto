@@ -5,15 +5,23 @@
 
 
 ################################################################################
-##  CONFIGURATION: GLOBAL PARAMETERS
 
-typeset -agx Z_RC_FFMPEG_H264_OPTIONS
 
-Z_RC_FFMPEG_H264_OPTIONS=(-preset slower -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -max_muxing_queue_size 9999)
+
+################################################################################
+##  ALIASES
+##
+
+##  ffmpeg: Hide banners for common commands.
+alias ffmpeg='ffmpeg -hide_banner'
+alias ffprobe='ffprobe -hide_banner'
+alias ffplay='ffplay -hide_banner'
+
 
 
 ################################################################################
 ##  FUNCTIONS
+##
 
 ##
 ##  Checks the codec used to encode a video file, and returns just the encoder
