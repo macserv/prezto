@@ -8,12 +8,18 @@
 # Paths
 
 path=(
-    ~/Local/{bin,sbin}
+    ${HOME}/{Local,.local}/{bin,sbin}
     $path
 )
 
 cdpath=(
-    ~
-    ~/Projects/Development
+    ${HOME}
+    ${HOME}/Projects/Development
     $cdpath
 )
+
+fpath=(
+    ${HOME}/{Local,.local}/share/zsh/site-functions
+    ${fpath}
+)
+
