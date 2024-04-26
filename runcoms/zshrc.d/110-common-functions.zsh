@@ -449,7 +449,7 @@ function user_id_for_name ()  # <user_name>
 ##
 function local_user_home ()
 {
-    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' raw -
+    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' 'raw' -o - -
 }
 
 
@@ -489,7 +489,7 @@ function network_user_home ()  # [standard_id] [ad_domain]
 {
     typeset user_info && user_info=$( network_user_info $@ ) || return $?
 
-    echo -E "${user_info}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:SMBHome.0' raw -
+    echo -E "${user_info}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:SMBHome.0' 'raw' -o - -
 }
 
 
@@ -503,12 +503,12 @@ function network_user_groups ()  # [--csv] [standard_id] [ad_domain]
 
     typeset user_info && user_info=$( network_user_info $@ ) || return $?
     typeset groups_attr='dsAttrTypeNative:memberOf'
-    typeset -i group_count && group_count=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}" raw - )
+    typeset -i group_count && group_count=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}" 'raw' -o - - )
     typeset -a group_dnames=()
 
     for group_index ( {0..$(( group_count - 1 ))} )
     {
-        group_dnames+=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}.${group_index}" raw - )
+        group_dnames+=$( echo -E "${user_info}" | /usr/bin/plutil -extract "${groups_attr}.${group_index}" 'raw' -o - - )
     }
 
     typeset cn_segment
@@ -610,7 +610,7 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
         return 1
     }
 
-    echo "${json_string}" | /usr/bin/plutil -extract "${keypath}" raw -
+    echo "${json_string}" | /usr/bin/plutil -extract "${keypath}" 'raw' -o - -
 }
 
 
@@ -813,7 +813,7 @@ function free_in_volume ()  # [--bytes] <volume_path>
         return $?
     }
 
-    typeset free_bytes && free_bytes="$( echo "${volume_info}" | /usr/bin/plutil -extract 'APFSContainerFree' raw - )" ||
+    typeset free_bytes && free_bytes="$( echo "${volume_info}" | /usr/bin/plutil -extract 'APFSContainerFree' 'raw' -o - - )" ||
     {
         echo_debug "Unable to parse free disk space for '${volume_path}'."
         return $?
