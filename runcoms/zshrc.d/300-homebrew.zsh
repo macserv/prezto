@@ -73,7 +73,7 @@ function update_brew_ssl_certs_from_keychain ()
     typeset -a keychains=(
         '/System/Library/Keychains/SystemRootCertificates.keychain'
         '/Library/Keychains/System.keychain'
-        '~/Library/Keychains/login.keychain-db'
+        "${HOME}/Library/Keychains/login.keychain-db"
     )
 
     typeset -i found_count=0
