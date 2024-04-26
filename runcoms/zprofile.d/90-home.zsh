@@ -17,3 +17,9 @@ cdpath=(
     ${HOME}/Projects/Development
     $cdpath
 )
+
+fpath=(
+    ${HOME}/{Local,.local}/share/zsh/site-functions
+    ${fpath}
+)
+
