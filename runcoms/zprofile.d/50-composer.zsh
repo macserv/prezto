@@ -5,6 +5,6 @@
 
 
 path=(
-    ~/.composer/vendor/bin
+    ${HOME}/.composer/vendor/bin
     $path
 )
