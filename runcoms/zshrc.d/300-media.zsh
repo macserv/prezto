@@ -284,7 +284,7 @@ function yt_dlpaste ()  # [--wrap]
     #   * Safari's download path
     #   * User's Desktop folder.
     typeset safari_downloads_folder && safari_downloads_folder="$( defaults read 'com.apple.Safari' 'DownloadsPath' )"
-    typeset download_path="${Z_RC_YTDLPASTE_DOWNLOAD_PATH:-${safari_downloads_folder:-"~/Desktop"}}"
+    typeset download_path="${Z_RC_YTDLPASTE_DOWNLOAD_PATH:-${safari_downloads_folder:-"${HOME}/Desktop"}}"
 
     # Assemble the output path, starting with the download path.
     # Append a containing directory format (if requested with `--wrap`).
