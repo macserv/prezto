@@ -22,7 +22,7 @@ alias jq='jq --indent 4'
 ##  Nighthawk
 ##  (Wow, remember NightHawk?  Never forget.)
 ##
-#alias rmnhdb='cd ~/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
+#alias rmnhdb='cd ${HOME}/Library/Application\ Support/NightHawk/ ; rm -rf Database/ ; cd -'
 
 
 
