@@ -42,6 +42,7 @@ local zprezto_modules=(
     'spectrum'                  # .freely
     'osx'                       # .before("completion")
     'git'                       # .before("completion")
+    'utility'                   # .before("completion")
     'completion'                # .after(.allModulesWithCompletions)
     'syntax-highlighting'       # .before(["history-substring-search", "autosuggestions", "prompt"])
     'history-substring-search'  # .between("syntax-highlighting", and: "autosuggestions")
