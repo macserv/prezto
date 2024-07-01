@@ -1220,7 +1220,7 @@ function new_tmp_dir ()  # <purpose>
 }
 
 
-####
+##
 ##  Generate a "universally" formatted value for use with the global `no_proxy`
 ##  parameter for proxy bypass in the shell.  Output format will be governed by
 ##  the following guidelines and assumptions:
@@ -1237,8 +1237,9 @@ function new_tmp_dir ()  # <purpose>
 function user_proxy_convert_gui_bypass_to_noproxy ()
 {
     typeset -a exception_list=()
+    typeset scutil_path='/usr/sbin/scutil'
 
-    (( ${+commands[scutil]} )) && exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    [[ -x "${scutil_path}" && -f "${scutil_path}" ]] && exception_list=( $("${scutil_path}" --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
     # TODO: Support `gsettings` output, which looks like: ['localhost', '127.0.0.0/8', '::1', '*.local']
 
     # If the exception list is empty, bail.
@@ -1257,57 +1258,120 @@ function user_proxy_convert_gui_bypass_to_noproxy ()
 
 
 ####
-##  Set or unset all proxy parameters for the current environment.
+##  Set, unset, or list all proxy parameters for the current environment.
 ##  With no action, print all proxy parameters.
 ##
-##  If no URL is specified with the `set` action, the value of the
-##  `$USER_PROXY_URL` parameter will be evaluated.
+##  ENVIRONMENT:
+##  The following environment parameters will be observed by this function.
+##  Observance conditions are documented for each parameter.
 ##
-function user_proxy ()  # [set | unset] [user_proxy_url]
+##  ${USER_PROXY_ENV_PARAMETERS} : An array containing the names of
+##      parameters whose value will be set to [user_proxy_url].  This function
+##      will automatically set the upper- and lower-case variant of each
+##      parameter name (e.g., 'HTTP_PROXY' also sets 'http_proxy').
+##      Default: ( 'HTTP_PROXY' 'HTTPS_PROXY' 'ALL_PROXY' )
+##
+##  ${USER_PROXY_ENV_PARAMETERS_NOPROXY} : An array containing the names of
+##      parameters whose value will be set to [user_proxy_direct_hosts]. This
+##      function will automatically set the upper- and lower-case variant of
+##      each parameter name (e.g., 'NO_PROXY' also sets 'no_proxy').
+##      Default: ( 'NO_PROXY' )
+##
+##  ${USER_PROXY_URL} : If [user_proxy_url] ($2) is unset or empty, this
+##      environment variable will be checked for a URL value.  If set, the URL
+##      will be used as the value when setting the parameter(s) specified by
+##      ${USER_PROXY_ENV_PARAMETERS}.
+##
+##  ${USER_PROXY_DIRECT} : If [user_proxy_direct_hosts] ($3) is unset or empty,
+##      this environment variable will be checked for an array of hosts for
+##      which established connections should bypass the proxy.  If set, this
+##      list will be joined with commas, and used as the value when setting the
+##      parameter(s) specified by ${USER_PROXY_ENV_PARAMETERS_NOPROXY}.
+##
+##  AUTOMATIC PROXY BYPASS GENERATION:
+##  If neither [user_proxy_direct_hosts] ($3) or ${USER_PROXY_DIRECT} are set,
+##  this function will call the user_proxy_convert_gui_bypass_to_noproxy()
+##  function to generate the direct host list from the system-wide
+##  proxy configuration.
+##
+function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_proxy_direct_hosts]
 {
-    typeset -a actions=( 'set' 'unset' )
+    ## Action must be empty, or one of the actions in this array.
+    typeset -a actions=( 'set' 'unset' 'script' 'list' )
     typeset action="${1}"
+    [[ -z "${action}" ]] || (( ${actions[(Ie)$action]} )) || { echo_log --level 'ERROR' "Specified action must be one of: (${(j', ')actions})." ; return 10 ; }
 
-    typeset -a all_param_names=( ${USER_PROXY_ENV_PARAMETERS} ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
+    typeset -a proxy_env_param_names=( ${USER_PROXY_ENV_PARAMETERS} )
+    [[ -n ${proxy_env_param_names} ]] || proxy_env_param_names=( 'HTTP_PROXY' 'HTTPS_PROXY' 'ALL_PROXY' )
 
-    [[ -z "${action}" ]] &&
+    typeset -a proxy_env_param_names_noproxy=( ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
+    [[ -n ${proxy_env_param_names_noproxy} ]] || proxy_env_param_names_noproxy=( 'NO_PROXY' )
+
+    typeset -a all_param_names=( ${proxy_env_param_names} ${proxy_env_param_names_noproxy} )
+
+    ##  ACTION: 'list' (default)  ##############################################
+    ##  Print user-friendly report of current proxy environment configuration.
+    [[ -z "${action}" || "${action}" == 'list' ]] &&
     {
         typeset -i max_name_length=${${(ONn)all_param_names%%*}[1]}
-        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} '${(P)param_name}'" }
-        return
-    }
-
-    (( ${actions[(Ie)$action]} )) || fail "Specified action must be one of: (${(j', ')actions})." 10
-
-    # Always unset all values.  No need to check for that action.
-    echo_debug 'Un-setting all proxy-related environment parameters.'
-    for param_name ( ${all_param_names:u} ${all_param_names:l} ) { unset "${param_name}" }
-
-    [[ "${action}" == "set" ]] || return
-
-    typeset proxy_url="${2}"
-    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
-    [[ -n "${proxy_url}" ]] || fail 'No proxy URL was provided.  $USER_PROXY_URL is also unset or empty.' 20
-
-    echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
-    for param ( ${USER_PROXY_ENV_PARAMETERS:u} ${USER_PROXY_ENV_PARAMETERS:l} )
-    {
-        typeset -gx "${param}"="${proxy_url}"
-    }
-
-    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
-    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
-    [[ -n "${noproxy_value}" ]] ||
-    {
-        echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} ${(P)param_name}" }
         return 0
     }
 
-    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
-    for noproxy_param ( ${USER_PROXY_ENV_PARAMETERS_NOPROXY:u} ${USER_PROXY_ENV_PARAMETERS_NOPROXY:l} )
+    function _unset_user_proxy_params ()
     {
-        typeset -gx "${noproxy_param}"="${noproxy_value}"
+        echo_debug 'Un-setting all proxy-related environment parameters.'
+        for param_name ( ${all_param_names:u} ${all_param_names:l} )
+        {
+            echo_debug "Unsetting parameter: '${param_name}'..."
+            unset "${param_name}"
+        }
     }
+
+    ##  ACTION: 'unset'  #######################################################
+    ##  Un-set all proxy configuration parameters in the current environment.
+    [[ -z "${action}" || "${action}" == 'unset' ]] &&
+    {
+        _unset_user_proxy_params
+        unset -f _unset_user_proxy_params
+        return 0
+    }
+
+    ##  The proxy URL is needed for all remaining actions.  Exit if not set.
+    typeset proxy_url="${2}"
+    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
+    [[ -n "${proxy_url}" ]] || { echo_log --level 'ERROR' "No proxy URL was provided." ; return 20 ; }
+
+    ##  Also, show warning if the bypass hosts are not set.
+    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
+    [[ -n "${noproxy_value}" ]] || echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+
+    ##  ACTION: 'script'  ######################################################
+    ##  Print shell script (zsh) which can be evaluated to enable the proxy.
+    [[ "${action}" == 'script' ]] &&
+    {
+        for param         ( ${proxy_env_param_names:u}         ${proxy_env_param_names:l} )         echo "typeset -gx ${param}='${proxy_url}'"
+        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) echo "typeset -gx ${noproxy_param}='${noproxy_value}'"
+        return 0
+    }
+
+    ##  ACTION: 'set'  #########################################################
+    ##  Set all proxy configuration parameters in the current environment.
+    [[ "${action}" == 'set' ]] &&
+    {
+        _unset_user_proxy_params
+
+        echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
+        for param ( ${proxy_env_param_names:u} ${proxy_env_param_names:l} ) typeset -gx "${param}"="${proxy_url}"
+
+        echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
+        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) typeset -gx "${noproxy_param}"="${noproxy_value}"
+
+        return 0
+    }
+
+    unset -f _unset_user_proxy_params
 }
 
 
