@@ -9,15 +9,15 @@
 ##
 
 ## Options for h.264 codec in convenience functions below.
-typeset -agx Z_RC_FFMPEG_H264_OPTIONs=(
-    -preset                'slower'
-    -pix_fmt               'yuv420p'
-    -vf                    'pad=ceil(iw/2)*2:ceil(ih/2)*2'
-    -max_muxing_queue_size  9999
+typeset -ag Z_RC_FFMPEG_H264_OPTIONs=(
+    '-preset'                'slower'
+    '-pix_fmt'               'yuv420p'
+    '-vf'                    'pad=ceil(iw/2)*2:ceil(ih/2)*2'
+    '-max_muxing_queue_size' '9999'
 )
 
 ## `yt_dlpaste`: Maximum length of downloaded file name.
-typeset -igx Z_RC_YTDLPASTE_MAX_FILENAME_LENGTH=200
+typeset -ig Z_RC_YTDLPASTE_MAX_FILENAME_LENGTH=200
 
 # `yt_dlpaste`: 'Minimum' set of desired video options:
 #   * Require MP4 container format.
