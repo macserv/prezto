@@ -893,35 +893,25 @@ function find_bundle_with_id ()  # <search_id> [folder] [extension]
 ##          filtered by the options below.
 ##
 ##  FILTERING OPTIONS (Optional):
-##      [-o | --online-only] : Consider only users who are currently logged in.
-##      [-n | --include-non-sid] : Include users whose names do not appear to be
-##          a standard identifier (a letter followed by siz digits).
-##      [-t | --include-tty] : Include logins that are not bound to a console
+##      [-o | --online-only]  Consider only users who are currently logged in.
+##      [-n | --include-non-sid]  Include users whose names do not appear to be
+##          a standard identifier (a letter followed by six digits).
+##      [-t | --include-tty]  Include logins that are not bound to a console
 ##          session; i.e., non-GUI logins such as terminal or SSH sessions.
+##      [-p <pattern> | --pattern <pattern>]  Filter out any usernames which do
+##          not match the given ``pattern``.
 ##
-##  ENVIRONMENT VARIABLES:
-##      $USER_MOST_ONLINE_ONLY : If set, command will behave as if the
-##          `--online-only` flag was specified.
-##      $USER_MOST_INCLUDE_NON_SID : If set, command will behave as if the
-##          `--include-non-sid` flag was specified.
-##      $USER_MOST_INCLUDE_TTY : If set, command will behave as if the
-##          `--include-tty` flag was specified.
-##
-function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty]
+function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-non-sid] [-t | --include-tty] [-p <pattern> | --pattern <pattern>]
 {
     # Parse the options given to the function.
     zmodload zsh/zutil || return 10
     zparseopts -D -E -F -- \
-        {h,-help}=help \
-        {o,-online-only}=online_only \
-        {n,-include-non-sid}=include_non_sid \
-        {t,-include-tty}=include_tty \
+        {h,-help}=arg_help \
+        {o,-online-only}=arg_online_only \
+        {n,-include-non-sid}=arg_include_non_sid \
+        {t,-include-tty}=arg_include_tty \
+        {p,-pattern}:=arg_pattern \
     || return 1
-
-    # Check for environment variables to
-    (( ${+USER_MOST_ONLINE_ONLY} ))     && online_only+=( 'ENV' )
-    (( ${+USER_MOST_INCLUDE_NON_SID} )) && include_non_sid+=( 'ENV' )
-    (( ${+USER_MOST_INCLUDE_TTY} ))     && include_tty+=( 'ENV' )
 
     # Configure the list of valid operating modes for this function.
     typeset -A modes=(
@@ -932,10 +922,10 @@ function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-
     # Read the selected operating mode.  If the mode is not set or is not valid,
     # set the 'help' flag so that the usage text will be displayed.
     typeset mode="${1}"
-    (( ${${(@v)modes}[(Ie)$mode]} )) || { help=( '--help' ) }
+    (( ${${(@v)modes}[(Ie)$mode]} )) || { arg_help=( '--help' ) }
 
     # If the 'help' flag is set, display this function's usage text.
-    if (( $#help )); then
+    if (( $#arg_help )); then
         print -rC1 -- \
             "$0 [-h | --help]" \
             "$0 (${(j' | ')modes}) [-n | --include-non-sid] [-t | --include-tty] [-o | --online-only]"
@@ -944,11 +934,12 @@ function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-
 
     # Configure 'awk' filter patterns to be ANDed together later.
     typeset -A filters=(
-        is_not_blank  '(! /^$/)'
-        is_not_status '(! /wtmp begins/)'
-        is_sid        '($1 ~ /[[:alpha:]][[:digit:]]{6}/)'
-        is_console    '($2 == "console")'
-        is_online     '/still logged in/'
+        is_not_blank    '(! /^$/)'
+        is_not_status   '(! /wtmp begins/)'
+        is_sid          '($1 ~ /^[[:alpha:]][[:digit:]]{6}$/)'
+        is_console      '($2 == "console")'
+        is_online       '/still logged in/'
+        matches_pattern "(\$1 ~ /${arg_pattern[2]}/)"
     )
 
     # Configure 'awk' actions which will be combined later.
@@ -967,9 +958,10 @@ function user_most ()  # (recent | common) [-o | --online_only] [-n | --include-
     [[ "${mode}" == "${modes[mode_recent]}" ]] && { awk_actions+=( "${actions[stop_reading]}" ) }
 
     # Add filters based on flags passed to command.
-    (( $#include_non_sid )) || { awk_filters+=( "${filters[is_sid]}" ) }
-    (( $#include_tty ))     || { awk_filters+=( "${filters[is_console]}" ) }
-    (( $#online_only ))     && { awk_filters+=( "${filters[is_online]}" ) }
+    (( $#arg_include_non_sid )) || { awk_filters+=( "${filters[is_sid]}" ) }
+    (( $#arg_include_tty ))     || { awk_filters+=( "${filters[is_console]}" ) }
+    (( $#arg_online_only ))     && { awk_filters+=( "${filters[is_online]}" ) }
+    (( $#arg_pattern ))         && { awk_filters+=( "${filters[matches_pattern]}" ) }
 
     # Construct the 'awk' script, using the (j) zsh parameter expansion flag to
     # join the patterns and actions determined above.
@@ -1302,10 +1294,16 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_p
     [[ -z "${action}" ]] || (( ${actions[(Ie)$action]} )) || { echo_log --level 'ERROR' "Specified action must be one of: (${(j', ')actions})." ; return 10 ; }
 
     typeset -a proxy_env_param_names=( ${USER_PROXY_ENV_PARAMETERS} )
-    [[ -n ${proxy_env_param_names} ]] || proxy_env_param_names=( 'HTTP_PROXY' 'HTTPS_PROXY' 'ALL_PROXY' )
+    (( $#proxy_env_param_names )) || proxy_env_param_names=(
+        'HTTP_PROXY'
+        'HTTPS_PROXY'
+        'ALL_PROXY'
+    )
 
     typeset -a proxy_env_param_names_noproxy=( ${USER_PROXY_ENV_PARAMETERS_NOPROXY} )
-    [[ -n ${proxy_env_param_names_noproxy} ]] || proxy_env_param_names_noproxy=( 'NO_PROXY' )
+    (( $#proxy_env_param_names_noproxy )) || proxy_env_param_names_noproxy=(
+        'NO_PROXY'
+    )
 
     typeset -a all_param_names=( ${proxy_env_param_names} ${proxy_env_param_names_noproxy} )
 
