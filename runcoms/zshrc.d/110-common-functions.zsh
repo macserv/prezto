@@ -70,7 +70,8 @@ function echo_err ()  # [echo-arg ...] words ...
 ##
 function echo_err_debug ()  # [-n] words ...
 {
-    (( ENABLE_ECHO_DEBUG )) && echo_err $@
+    (( ENABLE_ECHO_DEBUG )) || return 0
+    echo_err $@
 }
 
 
@@ -207,7 +208,7 @@ function echo_log ()
     ## Create usage output.
     typeset -a usage=(
         "$0 [--help | -h | -?]"
-        "$0 [--level <ERROR | WARNING | INFO | DEBUG | (custom)>]"
+        "$0 [--level <FAIL | ERROR | WARNING | INFO | DEBUG | (custom)>]"
         '    [--indent <levels>] [--fill <chars>] [--spacer <chars>]'
         '    [--transparent] [message]'
     )
@@ -237,7 +238,7 @@ function echo_log ()
     zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
 
     ## Display usage if help flag is set.
-    (( ${+options[--help]} )) && { print -l $usage && return 0 ; }
+    (( ${+options[--help]} )) && { print -l "${usage}" && return 0 ; }
 
     typeset message="${@[-1]}"
     [[ "${message}" == '--' ]] && read -r message
@@ -245,6 +246,7 @@ function echo_log ()
     typeset level="${options[--level]}"
     typeset prefix
     case "${level}" in
+        FAIL)    prefix="[FAIL]"               ;;
         ERROR)   prefix="[ERROR]"              ;;
         WARNING) prefix="[WARNING]"            ;;
         INFO)    prefix="[INFO]"               ;;
@@ -320,7 +322,7 @@ function echo_log ()
 ##  --spacer : Optional.  A string which will replace the filler immediately
 ##      before the message.  Default: none.
 ##
-##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##  [message] : The message to be logged.  To read this from stdin, use '--'.
 ##      This function will interpret its last positional argument as the
 ##      message; bear this in mind if you include arguments for the 'echo'
 ##      command (see the next section).
@@ -351,7 +353,7 @@ function echo_debug ()
     (( ENABLE_ECHO_DEBUG )) || return ${passthrough_status}
 
     typeset message="${1}"
-    [[ "${message}" == '--' ]] && read -r message
+    [[ "${message}" == '--' ]] && read -r message || { } # Avoid passing non-zero status to `echo_log`
 
     # TODO strip --level argument (if present) to force DEBUG
 
@@ -363,36 +365,33 @@ function echo_debug ()
 
 ####
 ##  Print a consistently-formatted log message useful for tracing a failure,
-##  and issue an additional `return` command (with customizable status code)
-##  in the environment where `fail` was called.
+##  and call `exit` (with customizable status code).
 ##
 ##  ARGUMENTS
 ##  ---------
-##  $1: [message]  Optional.  The message to be displayed.
-##  $2: [status]  Optional.  The status code to be returned by the function.
+##
+##  --help : Print command usage and exit.
+##  [message] : Optional.  The message to be displayed.
+##  [status] : Optional.  The status code to be returned by `exit`.  Default: 1
 ##
 ##  EXAMPLE
 ##  -------
-##  This single line...
+##  This one-liner...
 ##
 ##      eject_warp_core || fail "Ejector systems off-line ($?)." $?
 ##
 ##  ... is equivalent to this...
 ##
 ##      eject_warp_core
-##      eject_status=$?
-##      if [ eject_status -neq 0 ] ; then
-##          echo_log --level 'FAIL' "Ejector systems off-line (${eject_status})."
-##          return $eject_status
-##      fi
+##      typeset -i eject_status=$?
+##      (( eject_status == 0 )) ||
+##      {
+##          echo_log --level 'FAIL' "Ejector systems offline (${eject_status})."
+##          exit ${eject_status}
+##      }
 ##
-##  FUNCTION "EXIT" BEHAVIOR
-##  ------------------------
-##  The extra `return` command issued by the `fail` function is designed to end
-##  execution of a function immediately, and return control to the calling
-##  (parent) environment.  Similarly, if used in a "one-liner", list of
-##  commands, none of the commands after `fail` will be executed.
-##
+##  PREVENTING EXIT (Debug)
+##  -----------------------
 ##  In cases where it would be helpful to supress this behavior (e.g., testing
 ##  and debugging), prevent this behavior, a subshell can be used to allow
 ##  execution to continue.  For example:
@@ -404,12 +403,11 @@ function echo_debug ()
 ##
 function fail ()  # [message] [status]
 {
-    typeset fail_message="${1:-An error ${2:+(${2}) }occurred.}"
-    typeset fail_status=${2:-1}
+    typeset    fail_message="${1:-An error ${2:+(${2}) }occurred.}"
+    typeset -i fail_status=${2:-1} || { echo_log --level 'ERROR' "Invalid status code: '${2}'." }
 
-    trap "echo_log --level 'FAIL' ${(qq)fail_message} ; return ${fail_status}" EXIT
-
-    return 0
+    echo_log --level 'FAIL' "${fail_message}"
+    exit ${fail_status}
 }
 
 
@@ -576,7 +574,7 @@ function run_as_user_named ()  # <user_name> [command word ...]
 ##
 function run_as_local_user ()  # [command word ...]
 {
-    typeset local_user && local_user=$( local_user_name )
+    typeset local_user && local_user=$( local_user_name ) || return 1
     [[ -n "${local_user}" ]] || { echo_log --level 'ERROR' 'No local user could be identified.' ; return 1 ; }
     run_as_user_named "${local_user}" $@
 }
@@ -587,7 +585,7 @@ function run_as_local_user ()  # [command word ...]
 ##
 function run_as_console_user ()  # [command word ...]
 {
-    typeset console_user && console_user=$( console_user_name )
+    typeset console_user && console_user=$( console_user_name ) || return 1
     [[ -n "${console_user}" ]] || { echo_log --level 'ERROR' 'No user is currently at the console.' ; return 1 ; }
     run_as_user_named "${console_user}" $@
 }
@@ -639,7 +637,7 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 ##
 function display_alert_dialog ()
 {
-	typeset message="${1}"
+    typeset message="${1}"
     typeset title="${2:-An error occurred.}"
     typeset button_label="${3:-OK}"
 
@@ -853,7 +851,7 @@ function remove_existing ()  # <path_to_remove>
 ##  Scans for bundles within a folder, and prints the path to each bundle whose
 ##  `CFBundleIdentifier` property matches the given bundle ID.
 ##
-##  With only one argument, this function's default beha will search for `.app` bundles in
+##  With only one argument, this function will search for `.app` bundles in
 ##  the `/Applications` folder which match the specified identifier.
 ##
 ##  ARGUMENTS
@@ -1185,7 +1183,7 @@ function ask_for_password ()
 ##  Create a new directory for temporary files.  The location will be:
 ##  * a uniquely named directory
 ##      * inside a directory named after the script
-##          * inside a directory named with `$JPMC_ORGANIZATION`
+##          * inside a directory named with `$ORGANIZATION_ID`
 ##              * located either in `$TMPDIR` (if it is set) or `/tmp/`.
 ##
 ##  For example, if `$TMPDIR` is not set, and this function is called from a
@@ -1200,7 +1198,7 @@ function new_tmp_dir ()  # <purpose>
     [[ -n "${purpose}" ]] || { echo_log --level 'ERROR' 'Purpose for the temporary directory may not be empty.' ; return 1 ; }
 
     typeset unique_id="$( /usr/bin/uuidgen )"
-    typeset new_tmp_dir_path="${base_tmp_dir}${JPMC_ORGANIZATION}/${purpose}.${unique_id}"
+    typeset new_tmp_dir_path="${base_tmp_dir}${ORGANIZATION_ID}/${purpose}.${unique_id}"
 
     echo_debug "Creating empty temporary directory for script-related task at '${new_tmp_dir_path}'..."
 
@@ -1229,8 +1227,9 @@ function new_tmp_dir ()  # <purpose>
 function user_proxy_convert_gui_bypass_to_noproxy ()
 {
     typeset -a exception_list=()
+    typeset scutil_path='/usr/sbin/scutil'
 
-    (( ${+commands[scutil]} )) && exception_list=( $(scutil --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
+    [[ -x "${scutil_path}" && -f "${scutil_path}" ]] && exception_list=( $("${scutil_path}" --proxy | awk '/ExceptionsList : <array> {/,/}/  {if (/^[[:space:]]+[[:digit:]]+ : /) { $1="" ; $2="" ; print $3 }}') )
     # TODO: Support `gsettings` output, which looks like: ['localhost', '127.0.0.0/8', '::1', '*.local']
 
     # If the exception list is empty, bail.
@@ -1249,16 +1248,48 @@ function user_proxy_convert_gui_bypass_to_noproxy ()
 
 
 ####
-##  Set or unset all proxy parameters for the current environment.
+##  Set, unset, or list all proxy parameters for the current environment.
 ##  With no action, print all proxy parameters.
 ##
-##  If no URL is specified with the `set` action, the value of the
-##  `$USER_PROXY_URL` parameter will be evaluated.
+##  ENVIRONMENT:
+##  The following environment parameters will be observed by this function.
+##  Observance conditions are documented for each parameter.
 ##
-function user_proxy ()  # [set | unset] [user_proxy_url]
+##  ${USER_PROXY_ENV_PARAMETERS} : An array containing the names of
+##      parameters whose value will be set to [user_proxy_url].  This function
+##      will automatically set the upper- and lower-case variant of each
+##      parameter name (e.g., 'HTTP_PROXY' also sets 'http_proxy').
+##      Default: ( 'HTTP_PROXY' 'HTTPS_PROXY' 'ALL_PROXY' )
+##
+##  ${USER_PROXY_ENV_PARAMETERS_NOPROXY} : An array containing the names of
+##      parameters whose value will be set to [user_proxy_direct_hosts]. This
+##      function will automatically set the upper- and lower-case variant of
+##      each parameter name (e.g., 'NO_PROXY' also sets 'no_proxy').
+##      Default: ( 'NO_PROXY' )
+##
+##  ${USER_PROXY_URL} : If [user_proxy_url] ($2) is unset or empty, this
+##      environment variable will be checked for a URL value.  If set, the URL
+##      will be used as the value when setting the parameter(s) specified by
+##      ${USER_PROXY_ENV_PARAMETERS}.
+##
+##  ${USER_PROXY_DIRECT} : If [user_proxy_direct_hosts] ($3) is unset or empty,
+##      this environment variable will be checked for an array of hosts for
+##      which established connections should bypass the proxy.  If set, this
+##      list will be joined with commas, and used as the value when setting the
+##      parameter(s) specified by ${USER_PROXY_ENV_PARAMETERS_NOPROXY}.
+##
+##  AUTOMATIC PROXY BYPASS GENERATION:
+##  If neither [user_proxy_direct_hosts] ($3) or ${USER_PROXY_DIRECT} are set,
+##  this function will call the user_proxy_convert_gui_bypass_to_noproxy()
+##  function to generate the direct host list from the system-wide
+##  proxy configuration.
+##
+function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_proxy_direct_hosts]
 {
-    typeset -a actions=( 'set' 'unset' )
+    ## Action must be empty, or one of the actions in this array.
+    typeset -a actions=( 'set' 'unset' 'script' 'list' )
     typeset action="${1}"
+    [[ -z "${action}" ]] || (( ${actions[(Ie)$action]} )) || { echo_log --level 'ERROR' "Specified action must be one of: (${(j', ')actions})." ; return 10 ; }
 
     typeset -a proxy_env_param_names=( ${USER_PROXY_ENV_PARAMETERS} )
     (( $#proxy_env_param_names )) || proxy_env_param_names=(
@@ -1279,41 +1310,64 @@ function user_proxy ()  # [set | unset] [user_proxy_url]
     [[ -z "${action}" || "${action}" == 'list' ]] &&
     {
         typeset -i max_name_length=${${(ONn)all_param_names%%*}[1]}
-        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} '${(P)param_name}'" }
-        return
-    }
-
-    (( ${actions[(Ie)$action]} )) || fail "Specified action must be one of: (${(j', ')actions})." 10
-
-    # Always unset all values.  No need to check for that action.
-    echo_debug 'Un-setting all proxy-related environment parameters.'
-    for param_name ( ${all_param_names:u} ${all_param_names:l} ) { unset "${param_name}" }
-
-    [[ "${action}" == "set" ]] || return
-
-    typeset proxy_url="${2}"
-    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
-    [[ -n "${proxy_url}" ]] || fail 'No proxy URL was provided.  $USER_PROXY_URL is also unset or empty.' 20
-
-    echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
-    for param ( ${USER_PROXY_ENV_PARAMETERS:u} ${USER_PROXY_ENV_PARAMETERS:l} )
-    {
-        typeset -gx "${param}"="${proxy_url}"
-    }
-
-    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
-    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
-    [[ -n "${noproxy_value}" ]] ||
-    {
-        echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} ${(P)param_name}" }
         return 0
     }
 
-    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
-    for noproxy_param ( ${USER_PROXY_ENV_PARAMETERS_NOPROXY:u} ${USER_PROXY_ENV_PARAMETERS_NOPROXY:l} )
+    function _unset_user_proxy_params ()
     {
-        typeset -gx "${noproxy_param}"="${noproxy_value}"
+    echo_debug 'Un-setting all proxy-related environment parameters.'
+        for param_name ( ${all_param_names:u} ${all_param_names:l} )
+        {
+            echo_debug "Unsetting parameter: '${param_name}'..."
+            unset "${param_name}"
+        }
     }
+
+    ##  ACTION: 'unset'  #######################################################
+    ##  Un-set all proxy configuration parameters in the current environment.
+    [[ -z "${action}" || "${action}" == 'unset' ]] &&
+    {
+        _unset_user_proxy_params
+        unset -f _unset_user_proxy_params
+        return 0
+    }
+
+    ##  The proxy URL is needed for all remaining actions.  Exit if not set.
+    typeset proxy_url="${2}"
+    [[ -n "${proxy_url}" ]] || proxy_url="${USER_PROXY_URL}"
+    [[ -n "${proxy_url}" ]] || { echo_log --level 'ERROR' "No proxy URL was provided." ; return 20 ; }
+
+    ##  Also, show warning if the bypass hosts are not set.
+    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
+    [[ -n "${noproxy_value}" ]] || echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
+
+    ##  ACTION: 'script'  ######################################################
+    ##  Print shell script (zsh) which can be evaluated to enable the proxy.
+    [[ "${action}" == 'script' ]] &&
+    {
+        for param         ( ${proxy_env_param_names:u}         ${proxy_env_param_names:l} )         echo "typeset -gx ${param}='${proxy_url}'"
+        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) echo "typeset -gx ${noproxy_param}='${noproxy_value}'"
+        return 0
+    }
+
+    ##  ACTION: 'set'  #########################################################
+    ##  Set all proxy configuration parameters in the current environment.
+    [[ "${action}" == 'set' ]] &&
+    {
+        _unset_user_proxy_params
+
+        echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
+        for param ( ${proxy_env_param_names:u} ${proxy_env_param_names:l} ) typeset -gx "${param}"="${proxy_url}"
+
+    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
+        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) typeset -gx "${noproxy_param}"="${noproxy_value}"
+
+        return 0
+    }
+
+    unset -f _unset_user_proxy_params
 }
 
 
@@ -1431,7 +1485,7 @@ function authdb_remove ()  # [--bypass-system-right-restriction] <right_name>
 
     # VERIFY THAT A RULE EXISTS IN THE AUTH DB WITH THE SPECIFIED NAME.
     # RESTRICT QUERY TO "RIGHT" RULES ONLY (type = 1).  GRAB VALUE.
-    right_id=$( "${sqlite_cmd[@]}" "SELECT id FROM rules WHERE name = '${right_name}' AND type = 1;" )  && (( right_id > 0 )) ||
+    right_id=$( "${sqlite_cmd[@]}" "SELECT id FROM rules WHERE name = '${right_name}' AND type = 1;" ) && (( right_id > 0 )) ||
     {
         echo_log --level 'ERROR' "Unable to find right with name '${right_name}' in the Authorization DB."
         return 1
@@ -1506,10 +1560,11 @@ function launchd_boot_out_service_targets ()  # <service-target [...]>
         echo_debug "Booting out launchd service target '${service_target}'..."
         /bin/launchctl bootout "${service_target}" ||
         {
+            launchctl_status=$?
+
             # If launchctl exits with status 3 (No such process; i.e., not
             # bootstrapped), continue normally.  Otherwise, return the status
             # from launchctl.
-            launchctl_status=$?
             (( launchctl_status == 3 )) && { echo_log --level 'INFO' "Service target '${service_target}' is not bootstrapped.  Skipping...'" ; continue ; }
 
             return ${launchctl_status}
