@@ -33,32 +33,44 @@ function pip_upgrade_leaves ()
 
 
 ##
-##  WIP
+##  Remove a list of pip packages, along with any packages that are no longer
+##  required by any other installed packages.
 ##
-function pip_uninstall_recursive ()  # <package> [parent] [indent]
+function pip_uninstall_leaves ()  # [--indent <level>] <package ...>
 {
-    typeset package="${1}"
-    typeset parent="${2}"
-    typeset -i indent="${3}"
-    typeset pip_list_before && pip_list_before=$( pip_leaves --format 'freeze' )
+    typeset -i indent=0
+    [[ ${1} == '--indent' ]] && { indent=${2} ; shift 2 }
 
-    typeset dependency_output=", on which '${parent}' depended"
-    echo_log --level 'INFO' --indent ${indent:-0} "Removing package '${package}'${parent:+${dependency_output}}..."
-    pip uninstall --yes --quiet "${package}"
+    typeset pip_leaves_before
+    typeset pip_leaves_after
+    typeset pip_leaves_diff
 
-    # Generate a `diff` of the "leaf" package list, before and after removing the package.
-    typeset pip_leaves_after && pip_leaves_after=$( pip_leaves --format 'freeze' )
-    typeset pip_leaves_diff  && pip_leaves_diff=$( diff <( echo "${pip_list_before}" ) <( echo "${pip_leaves_after}" ) )
-    typeset add_prefix='> '
-
-    # Turn the diff into a list of dependency packages which have now become leaves.
-    typeset -a pip_list_new_leaves=( ${${(M)${(f)pip_leaves_diff}:#${add_prefix}*}#${add_prefix}} )
-    #                                          ^ Split into array on newlines.
-    #                                     ^ Invert filtering.    ^ Filter out items *NOT* starting with '> '.
-    #                                                                             ^ Strip '> ' prefix from all items.
-    for new_leaf ( ${pip_list_new_leaves} )
+    for package ( ${@} )
     {
-        pip_uninstall_recursive "${new_leaf}" "${parent}" $(( indent + 1 ))
+        echo_log --level 'INFO' --indent ${indent} "Removing package '${package}'..."
+
+        # Generate a `diff` of the "leaf" package list, before and after removing the package.
+        pip_leaves_before=$( pip_leaves --format 'freeze' )
+
+        pip uninstall --yes --quiet "${package}"
+
+        pip_leaves_after=$( pip_leaves --format 'freeze' )
+        pip_leaves_diff=$( diff <( echo "${pip_leaves_before}" ) <( echo "${pip_leaves_after}" ) )
+
+        # Turn the diff into a list of dependency packages which have now become leaves.
+        typeset add_prefix='> '
+        typeset -a pip_list_new_leaves=( ${${(M)${(f)pip_leaves_diff}:#${add_prefix}*}#${add_prefix}} )
+        #                                          ^ Split into array on newlines.
+        #                                     ^ Invert filtering.    ^ Filter out items *NOT* starting with '> '.
+        #                                                                             ^ Strip '> ' prefix from all items.
+
+        # If removing the package didn't create any new leaves, we're done.
+        (( $#pip_list_new_leaves )) || continue
+
+        # Call this function recursively for newly orphaned leaves.
+        echo_log --level 'INFO' --indent ${indent} "Leaves created by removing '${package}': ${#pip_list_new_leaves}"
+        echo_log --level 'INFO' --indent ${indent} "% ${0} ${pip_list_new_leaves[@]%==*}"
+        ${0} --indent $(( indent + 1 )) ${pip_list_new_leaves}
     }
 }
 

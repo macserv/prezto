@@ -5,21 +5,34 @@
 
 
 ################################################################################
-# Paths
+##  PATHS
+##
+##  Add user-specific inclusions to the user's path-related environment
+##  variables.  Modify the lowercased array variants for cleanliness.  These
+##  modifications will be automatically mirrored to the scalar (all-caps)
+##  variants of the variables.
 
-path=(
+typeset -agU path=(
     ${HOME}/{Local,.local}/{bin,sbin}
     $path
 )
 
-cdpath=(
+typeset -agU cdpath=(
     ${HOME}
     ${HOME}/Projects/Development
     $cdpath
 )
 
-fpath=(
+typeset -agU fpath=(
     ${HOME}/{Local,.local}/share/zsh/site-functions
     ${fpath}
 )
+
+
+##  Export the scalar (semicolon-separated, non-array) all-caps variants of the
+##  user's path-related environment variables, since arrays can not be exported.
+typeset -gx PATH
+typeset -gx CDPATH
+typeset -gx FPATH
+
 
