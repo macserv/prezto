@@ -1316,7 +1316,7 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_p
 
     function _unset_user_proxy_params ()
     {
-    echo_debug 'Un-setting all proxy-related environment parameters.'
+        echo_debug 'Un-setting all proxy-related environment parameters.'
         for param_name ( ${all_param_names:u} ${all_param_names:l} )
         {
             echo_debug "Unsetting parameter: '${param_name}'..."
@@ -1361,7 +1361,7 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_p
         echo_debug "Setting proxy URL for current environment to '${proxy_url}'."
         for param ( ${proxy_env_param_names:u} ${proxy_env_param_names:l} ) typeset -gx "${param}"="${proxy_url}"
 
-    echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
+        echo_debug "Setting no-proxy bypass for current environment to '${noproxy_value}'."
         for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) typeset -gx "${noproxy_param}"="${noproxy_value}"
 
         return 0
