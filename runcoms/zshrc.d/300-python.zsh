@@ -35,6 +35,8 @@ function pip_upgrade_leaves ()
 ##
 ##  Remove a list of pip packages, along with any packages that are no longer
 ##  required by any other installed packages.
+##  TODO: Genericize this and ``pip_uninstall_leaves`` into a common function
+##      which invokes package-manager-specific helper functions.
 ##
 function pip_uninstall_leaves ()  # [--indent <level>] <package ...>
 {

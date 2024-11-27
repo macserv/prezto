@@ -287,10 +287,12 @@ function echo_log ()
 
     typeset file=${funcfiletrace[$file_trace_index]##*/}
     typeset func=${funcstack[$func_stack_index]}
-    typeset output="[${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
+    typeset output="$(date -Iseconds) [${file:+"$file"}${func:+"($func)"}]${prefix:+ ${prefix}}${message:+ ${message}}"
 
     # Call `echo_err`, passing extra arguments through (e.g., '-n').
+    # If ${ECHO_LOG_TEE_PATH} is set to a path to a writable file, append to it.
     echo_err ${@[1,-2]} "${output}"
+    [[ -v ECHO_LOG_TEE_PATH && -w "${ECHO_LOG_TEE_PATH}" ]] && echo "${output}" >> "${ECHO_LOG_TEE_PATH}"
 
     return ${passthrough_status}
 }
@@ -404,7 +406,7 @@ function echo_debug ()
 function fail ()  # [message] [status]
 {
     typeset    fail_message="${1:-An error ${2:+(${2}) }occurred.}"
-    typeset -i fail_status=${2:-1} || { echo_log --level 'ERROR' "Invalid status code: '${2}'." }
+    typeset -i fail_status=${2:-1} || { echo_log --level 'ERROR' "Invalid status code: '${2}'." ; }
 
     echo_log --level 'FAIL' "${fail_message}"
     exit ${fail_status}
@@ -1123,7 +1125,7 @@ function remove_finder_metadata_files ()  # [--recursive] [--dry-run]
 {
     typeset working_path='.'
     typeset -a remove_cmd=( 'remove_existing' )
-    typeset -a file_brief_cmd=( 'file' '--brief' )
+    typeset -a file_brief_cmd=( '/usr/bin/file' '--brief' )
     typeset file_brief_description='AppleDouble encoded Macintosh file'
 
     [[ "${1}" = '--recursive' ]] && { working_path='**' ; shift ; }
@@ -1210,7 +1212,59 @@ function new_tmp_dir ()  # <purpose>
 }
 
 
+####
+##  Output the list of hardware network ports, optionally limited to
+##  active ports only, either as device identifiers (by default) or
+##  as human-friendly names.
 ##
+function network_ports ()  # [--names] [--active]
+{
+    typeset -a usage=(
+        "$0 [--help | -h]"
+        "$0 [--names | -n] [--active | -a ]"
+    )
+    typeset -a opts=(
+        {'h','-help'}'=arg_help'
+        {'n','-names'}'=arg_names'
+        {'a','-active'}'=arg_active'
+    )
+
+    # Load parser and process function arguments.
+    # If the 'help' flag is set, display this function's usage text.
+    zmodload zsh/zutil && zparseopts -D -E -F -- "${opts[@]}" || { echo_log --level 'ERROR' 'Failed to parse function options.' ; return $? ; }
+    (( ${#arg_help} )) && { print -l "${usage}" ; return 0 ; }
+
+    # Split output into an array on newlines using ``(f)``.
+    typeset -a list_output && list_output=( ${(f)"$( /usr/sbin/networksetup -listallhardwareports )"} ) || { return 1 ; }
+    typeset    name_prefix='Hardware Port: '
+    typeset    device_prefix='Device: '
+
+    # Use ``:#`` to filter lines with prefix, inverting the filter with ``(M)``.
+    # Use ``/find/replace`` with no replace to strip prefix from each line.
+    typeset -a port_names=(   ${${(M)${list_output}:#${name_prefix}*}/${name_prefix}} )
+    typeset -a port_devices=( ${${(M)${list_output}:#${device_prefix}*}/${device_prefix}} )
+
+    # If we're not filtering out inactive ports, print, and finish.
+    (( ${#arg_active} )) ||
+    {
+        (( ${#arg_names} )) && echo "${(j:\n:)port_names}" || echo "${(j:\n:)port_devices}"
+        return 0
+    }
+
+    # Use ``:^`` to "zip" the two arrays together in an associative array.
+    # Query each port's status, and output the port's device or name.
+    typeset -A ports=( ${port_devices:^port_names} )
+    typeset port_status
+    for port ( ${port_devices} )
+    {
+        port_status=$( networksetup -getMedia "${port}" )
+        [[ "${port_status}" == *'Active: none'* ]] && continue
+        (( ${#arg_names} )) && echo "${ports[$port]}" || echo "${port}"
+    }
+}
+
+
+####
 ##  Generate a "universally" formatted value for use with the global `no_proxy`
 ##  parameter for proxy bypass in the shell.  Output format will be governed by
 ##  the following guidelines and assumptions:
@@ -1284,7 +1338,7 @@ function user_proxy_convert_gui_bypass_to_noproxy ()
 ##  function to generate the direct host list from the system-wide
 ##  proxy configuration.
 ##
-function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_proxy_direct_hosts]
+function user_proxy ()  # [set | unset | script | list] [user_proxy_url [user_proxy_direct_hosts]]
 {
     ## Action must be empty, or one of the actions in this array.
     typeset -a actions=( 'set' 'unset' 'script' 'list' )
@@ -1310,7 +1364,7 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url] [user_p
     [[ -z "${action}" || "${action}" == 'list' ]] &&
     {
         typeset -i max_name_length=${${(ONn)all_param_names%%*}[1]}
-        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} ${(P)param_name}" }
+        for param_name ( ${all_param_names} ) { echo "${(r:$max_name_length:)param_name:u} ${(r:$max_name_length:)param_name:l} ${(P)param_name}" ; }
         return 0
     }
 
@@ -1552,7 +1606,6 @@ function launchd_local_user_domain_target ()
 function launchd_boot_out_service_targets ()  # <service-target [...]>
 {
     typeset -a service_targets=( $@ )
-    typeset launch_service
     typeset -i launchctl_status
 
     for service_target ( ${service_targets} )
@@ -1593,6 +1646,98 @@ function launchd_boot_out_system_services_named ()  # <service-name-in-system-do
 function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain [...]>
 {
     launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
+}
+
+####
+##  Search LDAP
+##
+function ldap_query ()
+{
+    typeset -a usage=(
+        "$0 [--help | -h]"
+        "$0 [--username | -u <username>] [--password | -p <password>] <filter> [attrs ...]"
+    )
+    typeset -a opts=(
+        {'h','-help'}'=arg_help'
+        {'H','-host-url'}':=arg_host'
+        {'b','-search-base'}':=arg_base'
+        {'K','-kerberos'}'=arg_kerberos'
+        {'u','-username'}':=arg_username'
+        {'p','-password'}':=arg_password'
+    )
+
+    # Load parser and process function arguments.
+    # If the 'help' flag is set, display this function's usage text.
+    zmodload zsh/zutil && zparseopts -D -E -F -- "${opts[@]}" || { echo_log --level 'ERROR' 'Failed to parse function options.' ; return $? ; }
+
+    # Read the filter argument.  If the filter is empty, or the user has
+    # requested help, display this function's usage text.
+    typeset filter="${1}"
+    [[ -n "${filter}" ]] || { print -l "${usage}" ; return 1 ; }
+    (( ${#arg_help} ))   && { print -l "${usage}" ; return 0 ; }
+
+    # Shift off the filter argument, and read the list of requested attributes
+    # (if any) for the LDAP query.
+    shift && typeset -a attrs=( ${@} )
+
+    # Read the LDAP host and base arguments, checking the environment.
+    typeset host="${arg_host[-1]:-${LDAPSEARCH_URL}}"  && [[ -n "${host}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP host (also not found in &{LDAPSEARCH_HOST}).' ; return 1 ; }
+    typeset base="${arg_base[-1]:-${LDAPSEARCH_BASE}}" && [[ -n "${base}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP base (also not found in &{LDAPSEARCH_BASE}).' ; return 1 ; }
+
+    # If we're not using kerberos, read the LDAP username and password.
+    # If either is empty, try the ``$AD_USERNAME`` and ``$AD_PASSWORD``
+    # environment variables, respectively.  If username is still empty, error.
+    (( ${#arg_kerberos} )) ||
+    {
+        typeset username="${arg_username[-1]:-${AD_USERNAME}}" && [[ -n "${username}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP user name (also not found in ``${AD_USERNAME}``).' ; return 1 ; }
+        typeset password="${arg_password[-1]:-${AD_PASSWORD}}"
+    }
+
+    typeset -a output_args=(
+        '-LLL'                 # Disable printing of LDIF version and comments.
+        '-o' 'ldif-wrap=no'    # Disable wrapping of LDIF data.
+        '-z' '0'               # Disable max result entry count.
+        '-E' 'pr=100/noprompt' # Disable interactive prompt with each page of results.
+                               #     Note: Every 100 results, the ``dn:`` line will still be prefixed with
+                               #     pagination metadata like ``# pagedresults: cookie=<1016_CHAR_HASH>``.
+    )
+    typeset -a kerberos_auth_args=(
+        '-O' 'maxssf=0'        #
+        '-Y' 'GSSAPI'          #
+    )
+    typeset -a username_args=( '-D' "${username}" )
+    typeset -a password_inline_args=( '-w' "${password}" )
+    typeset -a password_ask_args=( '-W' )
+
+    # Default to kerberos.
+    typeset -a auth_args=( ${kerberos_auth_args} )
+
+    (( ${#arg_kerberos} )) ||
+    {
+        auth_args=( ${username_args} )
+        [[ -n "${password}" ]] && auth_args+=( ${password_inline_args} ) || auth_args+=( ${password_ask_args} )
+    }
+
+    typeset -a ldapsearch_command=(
+        '/usr/bin/ldapsearch'
+        "${output_args[@]}"
+        "${auth_args[@]}"
+        '-H' "${host}"
+        '-b' "${base}"
+        "${filter}"
+        "${attrs[@]}"
+    )
+
+    "$ldapsearch_command[@]"
+}
+
+
+####
+##  Test if a Cisco AnyConnect VPN client is connected.
+##
+function vpn_is_connected ()
+{
+    [[ "$( echo 'state' | /opt/cisco/anyconnect/bin/vpn -s | grep -m 1 ">> state:" )" == *'Connected' ]]
 }
 
 

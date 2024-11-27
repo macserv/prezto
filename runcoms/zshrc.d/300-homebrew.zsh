@@ -66,6 +66,49 @@ function brew_leaves_with_info ()
 
 
 ##
+##  Remove a list of brew formulae, along with any formulae that are no longer
+##  required by any other installed formulae.
+##
+function brew_uninstall_leaves ()  # [--indent <level>] <formula ...>
+{
+    typeset -i indent=0
+    [[ ${1} == '--indent' ]] && { indent=${2} ; shift 2 }
+
+    typeset brew_leaves_before
+    typeset brew_leaves_after
+    typeset brew_leaves_diff
+
+    for formula ( ${@} )
+    {
+        echo_log --level 'INFO' --indent ${indent} "Removing formula '${formula}'..."
+
+        # Generate a `diff` of the "leaf" formula list, before and after removing the formula.
+        brew_leaves_before=$( brew leaves )
+
+        brew uninstall --quiet "${formula}"
+
+        brew_leaves_after=$( brew leaves )
+        brew_leaves_diff=$( diff <( echo "${brew_leaves_before}" ) <( echo "${brew_leaves_after}" ) )
+
+        # Turn the diff into a list of dependency formulae which have now become leaves.
+        typeset add_prefix='> '
+        typeset -a brew_list_new_leaves=( ${${(M)${(f)brew_leaves_diff}:#${add_prefix}*}#${add_prefix}} )
+        #                                          ^ Split into array on newlines.
+        #                                     ^ Invert filtering.    ^ Filter out items *NOT* starting with '> '.
+        #                                                                             ^ Strip '> ' prefix from all items.
+
+        # If removing the formula didn't create any new leaves, we're done.
+        (( $#brew_list_new_leaves )) || continue
+
+        # Call this function recursively for newly orphaned leaves.
+        echo_log --level 'INFO' --indent ${indent} "Leaves created by removing '${formula}': ${#brew_list_new_leaves}"
+        echo_log --level 'INFO' --indent ${indent} "% ${0} ${brew_list_new_leaves[@]%==*}"
+        ${0} --indent $(( indent + 1 )) ${brew_list_new_leaves}
+    }
+}
+
+
+##
 ##  WIP
 ##
 function update_brew_ssl_certs_from_keychain ()
