@@ -262,9 +262,20 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
 ##
 function code ()  # [vscode_arg ...] [project_path]
 {
-    typeset code_helper_path='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
-    [[ ! -f "${code_helper_path}" ]] && code_helper_path="${HOME}${code_helper_path}"
-    "${code_helper_path}" $@
+    typeset -a helper_paths=(
+        '/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
+        '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
+    )
+
+    for code_helper ( ${helper_paths} )
+    {
+        [[ -x "${code_helper}" ]] || code_helper="${HOME}${code_helper}"
+        [[ -x "${code_helper}" ]] || continue
+    }
+
+    [[ -x "${code_helper}" ]] || { echo_log --level 'ERROR' 'VSCode does not appear to be installed.' ; return 1 ; }
+
+    "${code_helper}" ${@}
 }
 
 
