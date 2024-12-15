@@ -9,7 +9,7 @@
 ##
 
 ## Options for h.264 codec in convenience functions below.
-typeset -ag Z_RC_FFMPEG_H264_OPTIONs=(
+typeset -ag Z_RC_FFMPEG_H264_OPTIONS=(
     '-preset'                'slower'
     '-pix_fmt'               'yuv420p'
     '-vf'                    'pad=ceil(iw/2)*2:ceil(ih/2)*2'
