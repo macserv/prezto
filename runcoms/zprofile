@@ -87,3 +87,14 @@ for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
 {
     [[ -s "${profile_file}" ]] && { source "${profile_file}" }
 }
+
+
+################################################################################
+##  IGNORE NAIVE AMENDMENTS TO RUNCOMS
+
+return 0
+
+
+################################################################################
+##  NAIVE AMENDMENTS TO RUNCOMS
+
