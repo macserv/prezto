@@ -85,7 +85,7 @@ fi
 
 for profile_file ( ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zprofile.d/*.zsh(Nn) )
 {
-    [[ -s "${profile_file}" ]] && { source "${profile_file}" }
+    [[ -s "${profile_file}" ]] && source "${profile_file}"
 }
 
 
