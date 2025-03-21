@@ -25,7 +25,7 @@ zshrc_extension_dir="${zprezto_dir}/runcoms/zshrc.d"
 
 for zshrc_extension ( ${zshrc_extension_dir}/*.zsh(Nn) )
 {
-    [[ -s "${zshrc_extension}" ]] && { source "${zshrc_extension}" }
+    [[ -s "${zshrc_extension}" ]] && source "${zshrc_extension}"
 }
 
 
