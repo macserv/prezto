@@ -27,3 +27,14 @@ for zshrc_extension ( ${zshrc_extension_dir}/*.zsh(Nn) )
 {
     [[ -s "${zshrc_extension}" ]] && { source "${zshrc_extension}" }
 }
+
+
+################################################################################
+##  IGNORE NAIVE AMENDMENTS TO RUNCOMS
+
+return 0
+
+
+################################################################################
+##  NAIVE AMENDMENTS TO RUNCOMS
+
