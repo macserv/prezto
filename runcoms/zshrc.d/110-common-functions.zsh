@@ -1305,7 +1305,45 @@ function user_proxy_convert_gui_bypass_to_noproxy ()
 ##  Set, unset, or list all proxy parameters for the current environment.
 ##  With no action, print all proxy parameters.
 ##
-##  ENVIRONMENT:
+##  By default, the following proxy environment variables are modified by this
+##  command:
+##      * ``HTTP_PROXY``  / ``http_proxy``
+##      * ``HTTPS_PROXY`` / ``https_proxy``
+##      * ``ALL_PROXY``   / ``all_proxy``
+##      * ``NO_PROXY``    / ``no_proxy``
+##
+##  This list may be overridden using the ``${USER_PROXY_ENV_PARAMETERS}`` and
+##  ``${USER_PROXY_ENV_PARAMETERS_NOPROXY}`` environment variables described
+##  below (see: ``ENVIRONMENT``).
+##
+##  ARGUMENTS
+##  ---------
+##  $1: [set | unset | script | list]  Optional.  The action to be performed.
+##      If omitted, the ``list`` action will be performed.  The following
+##      actions are available:
+##      * 'set' : Set the values of the proxy environment variables listed
+##          above to EITHER the values of the [user_proxy_url] ($2) and/or
+##          [user_proxy_direct_hosts] ($3) arguments if provided, OR to the
+##          values of the environment variables described below
+##          (see: ``ENVIRONMENT``).
+##      * 'unset' : Unset the proxy environment variables listed above.
+##      * 'script' : Print a snippet of ``zsh`` script which, if executed,
+##          will have the same effect as the ``set`` action described above.
+##      * 'list' : Print a user-consumable summary of the current shell
+##          session's proxy environment variables.
+##  $2: [user_proxy_url]  Optional.  A URL which will be used as the value for
+##      EITHER the proxy environment variables listed above (except for
+##      ``NO_PROXY``/``no_proxy``), OR the list of parameters specified by the
+##      ``${USER_PROXY_ENV_PARAMETERS}`` environment variable.
+##  $3: [user_proxy_direct_hosts]  Optional.  A comma-separated list of
+##      hostnames and/or IP addresses to which established connections should
+##      bypass the proxy, which will be used as the value for EITHER the
+##      ``NO_PROXY``/``no_proxy`` environment variables, OR the list of
+##      parameters specified by the ``${USER_PROXY_ENV_PARAMETERS_NOPROXY}``
+##      environment variable.
+##
+##  ENVIRONMENT
+##  -----------
 ##  The following environment parameters will be observed by this function.
 ##  Observance conditions are documented for each parameter.
 ##
@@ -1326,13 +1364,15 @@ function user_proxy_convert_gui_bypass_to_noproxy ()
 ##      will be used as the value when setting the parameter(s) specified by
 ##      ${USER_PROXY_ENV_PARAMETERS}.
 ##
-##  ${USER_PROXY_DIRECT} : If [user_proxy_direct_hosts] ($3) is unset or empty,
-##      this environment variable will be checked for an array of hosts for
-##      which established connections should bypass the proxy.  If set, this
+##  ${USER_PROXY_DIRECT} : If the [user_proxy_direct_hosts] ($3) argument is
+##      unset or empty, this environment variable will be checked for a
+##      comma-separated list of hostnames and/or IP addresses to which
+##      established connections should bypass the proxy.  If set, this
 ##      list will be joined with commas, and used as the value when setting the
 ##      parameter(s) specified by ${USER_PROXY_ENV_PARAMETERS_NOPROXY}.
 ##
-##  AUTOMATIC PROXY BYPASS GENERATION:
+##  AUTOMATIC PROXY BYPASS GENERATION
+##  ---------------------------------
 ##  If neither [user_proxy_direct_hosts] ($3) or ${USER_PROXY_DIRECT} are set,
 ##  this function will call the user_proxy_convert_gui_bypass_to_noproxy()
 ##  function to generate the direct host list from the system-wide
@@ -1393,7 +1433,8 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url [user_pr
     [[ -n "${proxy_url}" ]] || { echo_log --level 'ERROR' "No proxy URL was provided." ; return 20 ; }
 
     ##  Also, show warning if the bypass hosts are not set.
-    typeset noproxy_value="${(j:,:)USER_PROXY_DIRECT}"
+    typeset noproxy_value="${3}"
+    [[ -n "${noproxy_value}" ]] || noproxy_value="${USER_PROXY_DIRECT}"
     [[ -n "${noproxy_value}" ]] || noproxy_value="$( user_proxy_convert_gui_bypass_to_noproxy )"
     [[ -n "${noproxy_value}" ]] || echo_log --level 'WARNING' "The 'NO_PROXY' environment variable could not be set automatically for this shell session."
 
@@ -1401,8 +1442,21 @@ function user_proxy ()  # [set | unset | script | list] [user_proxy_url [user_pr
     ##  Print shell script (zsh) which can be evaluated to enable the proxy.
     [[ "${action}" == 'script' ]] &&
     {
-        for param         ( ${proxy_env_param_names:u}         ${proxy_env_param_names:l} )         echo "typeset -gx ${param}='${proxy_url}'"
-        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} ) echo "typeset -gx ${noproxy_param}='${noproxy_value}'"
+        typeset -i print_full_proxy_url=1
+        typeset -i print_full_noproxy_list=1
+
+        for param ( ${proxy_env_param_names:u} ${proxy_env_param_names:l} )
+        {
+            echo -n "typeset -gx ${param}="
+            (( print_full_proxy_url )) && echo "'${proxy_url}'" || echo '"${HTTP_PROXY}"'
+            print_full_proxy_url=0
+        }
+        for noproxy_param ( ${proxy_env_param_names_noproxy:u} ${proxy_env_param_names_noproxy:l} )
+        {
+            echo -n "typeset -gx ${noproxy_param}="
+            (( print_full_noproxy_list )) && echo "'${noproxy_value}'" || echo '"${NO_PROXY}"'
+            print_full_noproxy_list=0
+        }
         return 0
     }
 
