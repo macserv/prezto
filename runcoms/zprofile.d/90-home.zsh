@@ -12,27 +12,18 @@
 ##  modifications will be automatically mirrored to the scalar (all-caps)
 ##  variants of the variables.
 
-typeset -agU path=(
+path=(
     ${HOME}/{Local,.local}/{bin,sbin}
-    $path
+    ${path}
 )
 
-typeset -agU cdpath=(
+cdpath=(
     ${HOME}
     ${HOME}/Projects/Development
-    $cdpath
+    ${cdpath}
 )
 
-typeset -agU fpath=(
+fpath=(
     ${HOME}/{Local,.local}/share/zsh/site-functions
     ${fpath}
 )
-
-
-##  Export the scalar (semicolon-separated, non-array) all-caps variants of the
-##  user's path-related environment variables, since arrays can not be exported.
-typeset -gx PATH
-typeset -gx CDPATH
-typeset -gx FPATH
-
-
