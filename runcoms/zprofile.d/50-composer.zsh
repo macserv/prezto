@@ -4,7 +4,11 @@
 ##
 
 
+typeset composer_path="${HOME}/.composer/vendor/bin"
+[[ -d "${composer_path}" ]] || return 0
+
+
 path=(
-    ${HOME}/.composer/vendor/bin
-    $path
+    "${composer_path}"
+    ${path}
 )
