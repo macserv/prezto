@@ -68,7 +68,7 @@ function echo_err ()  # [echo-arg ...] words ...
 ##  Echo to StdErr when $ENABLE_ECHO_DEBUG is greater than zero.
 ##  Arguments will be passed through to 'echo' command.
 ##
-function echo_err_debug ()  # [-n] words ...
+function echo_err_debug ()  # [echo-arg ...] words ...
 {
     (( ENABLE_ECHO_DEBUG )) || return 0
     echo_err $@
@@ -1738,6 +1738,24 @@ function ldap_query ()
 function vpn_is_connected ()
 {
     [[ "$( echo 'state' | /opt/cisco/anyconnect/bin/vpn -s | grep -m 1 ">> state:" )" == *'Connected' ]]
+}
+
+
+####
+##  Caffeinate the current shell session.  By default, creates two power
+##  management assertions:
+##      1. Prevent idle system sleep (`caffeinate -i`)
+##      2. Prevent system sleep when on AC power (`caffeinate -s`).
+##  Additional arguments to `caffeinate` can be specified; for example,
+##  `caffeinate_shell_session -d` will prevent display dimming as well.
+##
+function caffeinate_shell_session ()  # [caffeinate_arg ...]
+{
+    # * `-w <pid>` : Causes `caffeinate` to exit when process with `pid` exits.
+    # * `${$}`     : Zsh parameter which contains the PID of the current shell.
+    # * `&!`       : Disowns `caffeinate` so that the script can continue, and
+    #                the current shell can exit cleanly.
+    /usr/bin/caffeinate -w "${$}" -i -s ${@} &!
 }
 
 
