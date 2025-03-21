@@ -9,6 +9,13 @@
 
 typeset -agx Z_RC_XCODE_PROCESS_SEARCH_ITEMS=( 'Xcode' 'CoreSimulator.framework' )
 
+##  The ``code`` function will look for a VSCodium/VSCode helper executable at
+##  these paths, and will also try prefixing them with ``$HOME``.
+typeset -agx Z_RC_VSCODE_HELPER_PATHS=(
+    '/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
+    '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
+)
+
 
 
 ################################################################################
@@ -258,24 +265,26 @@ function log_filter ()  # [--level default | info | debug] [--style default | co
 
 
 ##
-##  Open VSCodium.  Avoids need to install `codium` executable.
+##  Open VSCodium/VSCode using the helper executable, without installing it.
+##  Configure app/helper paths using ``$Z_RC_VSCODE_HELPER_PATHS`` above.
 ##
 function code ()  # [vscode_arg ...] [project_path]
 {
-    typeset -a helper_paths=(
-        '/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
-        '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
-    )
+    # Create an array of the configured helper paths with ``$HOME`` prefixed.
+    # Search both arrays, zipped together.
+    typeset -a home_helper_paths=( ${Z_RC_VSCODE_HELPER_PATHS/#/"${HOME}/"} )
+    typeset -a candidate_paths=( ${Z_RC_VSCODE_HELPER_PATHS:^home_helper_paths} )
 
-    for code_helper ( ${helper_paths} )
+    for candidate_path ( ${candidate_paths} )
     {
-        [[ -x "${code_helper}" ]] || code_helper="${HOME}${code_helper}"
-        [[ -x "${code_helper}" ]] || continue
+        [[ -x "${candidate_path}" ]] || continue
+
+        "${candidate_path}" ${@}
+        return 0
     }
 
-    [[ -x "${code_helper}" ]] || { echo_log --level 'ERROR' 'VSCode does not appear to be installed.' ; return 1 ; }
-
-    "${code_helper}" ${@}
+    echo_log --level 'ERROR' "VSCode helper not found at any of the following locations:\n${(j:\n:)candidate_paths}"
+    return 1
 }
 
 
