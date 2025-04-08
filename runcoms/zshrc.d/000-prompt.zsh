@@ -1,7 +1,8 @@
-#
-# ZSHRC EXTENSION:
-# Prompt (powerlevel10k)
-#
+##
+##  ZSHRC EXTENSION:
+##  Prompt (powerlevel10k)
+##
+
 
 
 ##  TODO: Make this work on Apple Silicon and re-enable.
@@ -109,3 +110,5 @@ typeset -g POWERLEVEL9K_NODE_VERSION_FOREGROUND='silver' # Terminal color 15
 typeset -g POWERLEVEL9K_SWIFT_ICON='\U0000E755 ' # ''
 typeset -g POWERLEVEL9K_SWIFT_VERSION_BACKGROUND='darkorange3' # Terminal color 166
 typeset -g POWERLEVEL9K_SWIFT_VERSION_FOREGROUND='silver' # Terminal color 15
+
+

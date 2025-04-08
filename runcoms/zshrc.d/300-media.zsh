@@ -1,7 +1,8 @@
 ##
 ##  ZSHRC EXTENSION:
-##  Functions: ffmpeg
+##  Functions: ``ffmpeg`` & Other Media Tools
 ##
+
 
 
 ################################################################################

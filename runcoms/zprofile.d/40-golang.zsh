@@ -4,8 +4,12 @@
 ##
 
 
+################################################################################
+##  LOAD GOENV
 ##  Load manually installed or package-manager-installed `goenv` into the
 ##  shell session.
+##
+
 { [[ -s "${local_goenv::=${GOENV_ROOT:-$HOME/.goenv}/bin/goenv}" ]] || (( ${+commands[goenv]} )) } &&
 {
     [[ -s "${local_goenv}" ]] &&

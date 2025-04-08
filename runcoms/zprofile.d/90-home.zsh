@@ -1,7 +1,8 @@
 ##
 ##  ZPROFILE EXTENSION:
-##  Home Directory
+##  Home Directory (Chase)
 ##
+
 
 
 ################################################################################
@@ -27,3 +28,5 @@ fpath=(
     ${HOME}/{Local,.local}/share/zsh/site-functions
     ${fpath}
 )
+
+

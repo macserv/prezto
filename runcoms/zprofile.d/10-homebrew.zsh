@@ -5,8 +5,13 @@
 ##
 
 
-typeset homebrew_prefix
 
+################################################################################
+##  SET HOMEBREW PREFIX
+##  Use processor architecture to determine correct path.
+##
+
+typeset homebrew_prefix
 case "$( uname -m )" in
     x86_64) homebrew_prefix="/usr/local"    ;;
     arm64)  homebrew_prefix="/opt/homebrew" ;;
@@ -15,11 +20,15 @@ esac
 
 [[ -d "${homebrew_prefix}" ]] || return 0
 
-
 typeset -gx HOMEBREW_PREFIX="${homebrew_prefix}"
 
+
+####
+##  AMEND `path` AND `fpath` WITH HOMEBREW PATHS.
+##
+
 path=(
-    "${HOMEBREW_PREFIX}/{bin,sbin}"
+    ${HOMEBREW_PREFIX}/{bin,sbin}
     ${path}
 )
 
@@ -27,3 +36,5 @@ fpath=(
     "${HOMEBREW_PREFIX}/share/zsh/site-functions"
     ${fpath}
 )
+
+
