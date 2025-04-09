@@ -1183,33 +1183,41 @@ function ask_for_password ()
 
 
 ####
-##  Create a new directory for temporary files.  The location will be:
-##  * a uniquely named directory
-##      * inside a directory named after the script
-##          * inside a directory named with `$ORGANIZATION_ID`
-##              * located either in `$TMPDIR` (if it is set) or `/tmp/`.
+##  Create a new directory for temporary files.  The directory is created by
+##  the `mktemp` command, and will a uniquely named directory located in one of
+##  the following locations:
+##  * A user-specific subdirectory of `/var/folders`.
+##  * `/tmp`
 ##
-##  For example, if `$TMPDIR` is not set, and this function is called from a
-##  script named `do_something_awesome.zsh`, the new directory's path could be:
-##  > `/tmp/com.organization.it.mac-admin/do_something_awesome/0C4D2B82-C99D-4E1E-B71D-AD0577A8F507/`
+##  The folder's name consists of the following components, joined by periods:
+##  * The value of `${ORGANIZATION_ID}`, if it is set.
+##  * The name of the currently running script (minus file extension).
+##  * The user's specified purpose (`${1}`) for the directory.
+##  * A timestamp, formatted as `YYYYMMDD.HHMMSS`.
+##
+##  ARGUMENTS
+##  ---------
+##  $1: <purpose>  A string providing additional context for the temporary
+##      files contained within the directory.
 ##
 function new_tmp_dir ()  # <purpose>
 {
-    typeset base_tmp_dir="${TMPDIR:-/tmp/}"
-    typeset purpose="${1:-${ZSH_ARGZERO:t:r}}" # Use the script name if not set.
+    typeset purpose="${1}"
+    typeset script_name="${ZSH_ARGZERO:t:r}"  # Leading path and extension removed.
+    typeset formatted_date=$( /bin/date '+%Y%m%d.%H%M%S' )   # e.g. 20250327.105746
 
-    [[ -n "${purpose}" ]] || { echo_log --level 'ERROR' 'Purpose for the temporary directory may not be empty.' ; return 1 ; }
+    typeset -a components=(
+        "${ORGANIZATION_ID:+"${ORGANIZATION_ID}."}"
+        "${script_name}."
+        "${purpose:+"${purpose}."}"
+        "${formatted_date}"
+    )
+    typeset tmp_prefix="${(j::)components}"
 
-    typeset unique_id="$( /usr/bin/uuidgen )"
-    typeset new_tmp_dir_path="${base_tmp_dir}${ORGANIZATION_ID}/${purpose}.${unique_id}"
+    typeset tmp_dir_path && tmp_dir_path=$( /usr/bin/mktemp --directory -t "${(j::)components}" ) || { echo_log --level 'ERROR' "Unable to create temporary directory with prefix '${}'." ; return $? ; }
+    /bin/chmod 'u=rwx,go=' "${tmp_dir_path}" || echo_log --level 'WARNING' "Unable to change mode on new temporary directory at '${tmp_dir_path}'."
 
-    echo_debug "Creating empty temporary directory for script-related task at '${new_tmp_dir_path}'..."
-
-    /bin/mkdir -p  "${new_tmp_dir_path}" &&
-        /bin/chmod 700 "${new_tmp_dir_path}" ||
-            { echo_log --level 'ERROR' 'Unable to create or change mode on new temporary directory.' ; return $? ; }
-
-    echo "${new_tmp_dir_path}"
+    echo "${tmp_dir_path}"
 }
 
 
@@ -1973,4 +1981,5 @@ function remove_duplicates ()  # --dry-run
 #
 #
 # }
+
 
