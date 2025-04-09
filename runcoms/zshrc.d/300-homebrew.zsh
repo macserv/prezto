@@ -6,7 +6,51 @@
 
 
 ##
-##  Generate .png of dependency tree for installed packages
+##  Uninstall all kegs.
+##
+##  --dry-run:  Skip actual keg removal.
+##
+function brew_uninstall_all_kegs  # [--dry-run]
+{
+    typeset -i dry_run=0 ; [[ "${1}" = '--dry-run' ]] && dry_run=1
+    echo_log --level 'INFO' "Uninstalling all Homebrew kegs..."
+
+    for keg ( $(brew list -1 --formulae) )
+    {
+        echo_log -n --level 'INFO' "Uninstalling keg '${keg}'..."
+        (( dry_run )) && { echo_err ' skipped uninstalling (dry-run mode).' ; continue ; }
+        brew uninstall --quiet --formula --ignore-dependencies "${keg}"
+        echo_err ' uninstalled.'
+    }
+}
+
+
+##
+##  Perform a keg "reset", uninstalling all kegs, and re-installing leaves.
+##
+##  Useful for rebuilding the dependency tree, which can become inconsistent
+##  and/or inaccurate over time.
+##
+##  --dry-run:  Skip actual keg removal, reinstallation, and cleanup actions.
+##
+function brew_reinstall_leaves  # [--dry-run]
+{
+    typeset -i dry_run=0 ; [[ "${1}" = '--dry-run' ]] && dry_run=1
+    typeset -a brew_leaves && brew_leaves=( $( brew leaves ) ) || { echo_log --level 'ERROR' "Unable to get list of installed leaf kegs." ; return $? ; }
+
+    brew_uninstall_all_kegs $@
+
+    echo_log --level 'INFO' "Reinstalling the following \"leaf\" kegs:\n${(@j:\n:)brew_leaves/#/* }"
+    (( dry_run )) && { echo_log --level 'INFO' "Skipped reinstalling and cleanup (dry-run mode)." ; return 0 ; }
+
+    brew install --quiet --formula ${brew_leaves}
+    brew cleanup
+    brew doctor
+}
+
+
+##
+##  Generate .pdf or .dot of the dependency tree for installed packages.
 ##
 ##  Required Packages:
 ##      brew install martido/brew-graph/brew-graph
