@@ -27,7 +27,7 @@ function git_current_branch ()
 
 
 ##
-##  Print the name of each git ref in the current repo, one ref per line.
+##  Print the name of each git ref in the` current repo, one ref per line.
 ##
 function git_all_refnames ()
 {
@@ -90,10 +90,9 @@ function git_stowaways ()
 ##
 function git_repo_url_components ()  # [repo_url]
 {
-    typeset repo_url="${1}" ; [[ -n "${repo_url}" ]] ||
-    {
-        repo_url=$(git remote get-url 'origin') || { echo_log --level 'ERROR' 'Repository URL was not provided, and could not be determined from origin remote.' ; return $? ; }
-    }
+    typeset repo_url="${1}"
+    [[ -n "${repo_url}" ]] || repo_url=$(git remote get-url 'origin')
+    [[ -n "${repo_url}" ]] || { echo_log --level 'ERROR' 'Repository URL was not provided, and could not be determined from origin remote.' ; return $? ; }
 
     # Example URL formats:
     #      https: https://domain.com/foo/bar/Project.git (also covers)
@@ -133,8 +132,8 @@ function git_add_blessed_remote_with_owner ()  # <blessed_owner> [blessed_url]
 
     [[ -z "${blessed_url}" ]] &&
     {
-        typeset origin_url && origin_url=$(git remote get-url origin) && [[ -n "${origin_url}" ]] || { echo_log --level 'ERROR' "Unable to get url for 'origin' remote." ; return 20 ; }
-        typeset components && components=( $(git_repo_url_components "${origin_url}") )           || { echo_log --level 'ERROR' "Could not parse components for '${origin_url}'." ; return 23 ; }
+        typeset origin_url && origin_url=$(git remote get-url origin) && [[ -n "${origin_url}" ]] || { echo_log --level 'ERROR' "Unable to get url for 'origin' remote." ; return $? ; }
+        typeset components && components=( $(git_repo_url_components "${origin_url}") )           || { echo_log --level 'ERROR' "Could not parse components for '${origin_url}'." ; return $? ; }
         typeset prefix=${components[2]}
         typeset repo_and_ext=${components[5]}
 
@@ -153,20 +152,17 @@ function git_add_blessed_remote_with_owner ()  # <blessed_owner> [blessed_url]
 ##  With a single command, clone the specified URL, then `cd` into the
 ##  cloned repo directory.
 ##
-##  <repo_dir> : Optional.  Specifies the name of the repository directory which
-##  will be created by the `git clone` operation.
+##  <repo_dir> : Optional.  Specifies the name of the directory which will be
+##  created by the `git clone` operation.
 ##
 function git_clone_cd ()  # <repo_url> [<repo_dir>]
 {
-    [[ -n "${1}" ]] || { echo_log --level 'ERROR' 'Argument for repository URL is missing or empty.' ; return 10 ; }
+    typeset repo_url="${1}"             && [[ -n "${repo_url}" ]]  || { echo_log --level 'ERROR' 'Argument for repository URL is missing or empty.' ; return 10 ; }
+    typeset repo_name="${repo_url:t:r}" && [[ -n "${repo_name}" ]] || { echo_log --level 'ERROR' 'Could not determine repository name from URL.' ; return 20 ; }
+    typeset repo_dir="${2:-${repo_name}}"
 
-    if [[ -n "${2}" ]] ; then
-        git clone "${1}" ${~"${2}"} || { echo_log --level 'ERROR' "Unable to clone repository at ${1}" ; return $? ; }
-    else
-        git clone "${1}" || { echo_log --level 'ERROR' "Unable to clone repository at ${1}" ; return $? ; }
-    fi
-
-    cd ${${2}:-${1:t:r}}    || { echo_log --level 'WARNING' "Unable to change working directory to ${1:t:r}" ; return 30 ; }
+    git clone "${repo_url}" "${repo_dir}" || { echo_log --level 'ERROR' "Unable to clone repository from '${repo_url}' to directory '${repo_dir}'." ; return $? ; }
+    cd "${repo_dir}" || { echo_log --level 'WARNING' "Unable to change working directory to ${repo_dir}" ; return $? ; }
 }
 
 
@@ -183,8 +179,7 @@ function git_clone_fork_with_parent_owner ()  # <fork_repo_url> <blessed_repo_ow
     [[ -n "${1}" ]] || { echo_log --level 'ERROR' 'Argument for repository URL is missing or empty.' ; return 10 ; }
     [[ -n "${2}" ]] || { echo_log --level 'ERROR' 'Argument for blessed repository owner username is missing or empty.' ; return 20 ; }
 
-    echo
-    { git_clone_cd "${1}" ${~"${3}"} && git_add_blessed_remote_with_owner "${2}" ; } || { echo_log --level 'ERROR' "The repository was cloned, but the 'blessed' remote could not be added." ; return 40 ; }
+    git_clone_cd "${1}" ${~"${3}"} && git_add_blessed_remote_with_owner "${2}" || { echo_log --level 'ERROR' "The repository was cloned, but the 'blessed' remote could not be added." ; return $? ; }
 }
 
 
@@ -203,7 +198,7 @@ function github_clone ()  # <repo_url> [<repo_dir>]
 
     typeset repo_url="${1}" ; [[ -n "${repo_url}" ]] || { echo_log --level 'ERROR' 'Argument for repository URL is missing or empty.' ; return 10 ; }
     typeset repo_dir=${~"${2}"}
-    typeset -a components && components=( $(git_repo_url_components "${repo_url}") ) || { echo_log --level 'ERROR' "Could not parse owner for '${repo_url}'." ; return 20 ; }
+    typeset -a components && components=( $(git_repo_url_components "${repo_url}") ) || { echo_log --level 'ERROR' "Could not parse owner for '${repo_url}'." ; return $? ; }
     typeset repo_owner=${components[4]}
     typeset repo_name=${components[6]}
     typeset github_api='https://api.github.com/graphql'
@@ -213,14 +208,14 @@ function github_clone ()  # <repo_url> [<repo_dir>]
                                                 --request 'POST' "${github_api}"                          \
                                                 --header  "Authorization: Bearer ${GITHUB_ACCESS_TOKEN}"  \
                                                 --header  'Content-Type: application/json; charset=utf-8' \
-                                                --data    "${query_json}" ) && [[ -n "${api_response}" ]] || { echo_log --level 'ERROR' "Unable to fetch repo info from GitHub API." ; return 40 ; }
+                                                --data    "${query_json}" ) && [[ -n "${api_response}" ]] || { echo_log --level 'ERROR' "Unable to fetch repo info from GitHub API." ; return $? ; }
 
     typeset parent_owner=$( jq --raw-output '.data.repository.parent.owner.login' <<< "${api_response}" )
 
     [[ ${parent_owner} == 'null' ]] &&
     {
-        git_clone_cd "${repo_url}" "${repo_dir}"
-        return
+        git_clone_cd "${repo_url}" "${repo_dir}" || { echo_log --level 'ERROR' "Unable to clone repository '${repo_url}' or change directory to '${repo_dir}'." ; return $? ; }
+        return 0
     }
 
     git_clone_fork_with_parent_owner "${repo_url}" "${parent_owner}" "${repo_dir}"
@@ -252,6 +247,7 @@ function git_remote_sync ()  # <upstream_remote> [downstream_remote]
     typeset downstream_remote="${2}"
     typeset starting_branch=$( git_current_branch )
     typeset -a branch_names=( $(git ls-remote --heads "${upstream_remote}" | awk -F 'refs\\/heads\\/' '{print $2}') )
+    typeset unpublished_commits
 
     echo_log
 
@@ -262,13 +258,14 @@ function git_remote_sync ()  # <upstream_remote> [downstream_remote]
         git switch "${branch}" &>/dev/null ||
         {
             echo_err -n "Creating local, tracking '${upstream_remote}'... "
-            git switch --track "${upstream_remote}/${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to create local '${branch}' tracking '${upstream_remote}'." ; return 30 ; }
+            git switch --track "${upstream_remote}/${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to create local '${branch}' tracking '${upstream_remote}'." ; return $? ; }
         }
 
         echo_err -n "switched.  Pulling changes from '${upstream_remote}'... "
 
-        [[ -z "$(git --no-pager log "^${upstream_remote}/${branch}" "${branch}")" ]]   || { echo_err ; echo_log --level 'ERROR' "Local repository has unpushed commits for branch '${branch}'." ; return 40 ; }
-        git pull --tags --force --no-ff --no-edit "${upstream_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${upstream_remote}' into local '${branch}'." ; return 50 ; }
+        unpublished_commits=$( git --no-pager log "^${upstream_remote}/${branch}" "${branch}" ) || { echo_err ; echo_log --level 'ERROR' "Unable to check for unpublished commits on branch '${branch}'." ; return $? ; }
+        [[ -z "${unpublished_commits}" ]] || { echo_err ; echo_log --level 'ERROR' "Local repository has unpushed commits for branch '${branch}'." ; return 40 ; }
+        git pull --tags --force --no-ff --no-edit "${upstream_remote}" "${branch}" &>/dev/null || { echo_err ; echo_log --level 'ERROR' "Unable to pull changes from '${upstream_remote}' into local '${branch}'." ; return $? ; }
 
         # If no downstream remote was specified, move on to the next branch.
         [[ -z "${downstream_remote}" ]] &&
@@ -408,7 +405,7 @@ function git_move_tag ()  # [--all-remotes] [--remote <remote_name>] <tag_name>
 {
     ## Create usage output.
     typeset usage=(
-        "$0 [--help | -h | -?]"
+        "$0 [--help | -h]"
         "$0 [--all-remotes [--remote <remote_name>] ... <tag_name>"
     )
 
@@ -418,15 +415,16 @@ function git_move_tag ()  # [--all-remotes] [--remote <remote_name>] <tag_name>
 
     ## Configure parser and process function arguments.
     typeset -a parse_config=(
-    #   '-a' 'options' # Specifies a default array to contain recognized options.
-    #   '-A' 'options' # Same as -a, but using an associative array. Test: (( ${+options[--foo]} ))
-        '-D'           # Remove found options from the positional parameters array ($@).
-    #   '-E'           # Don't stop at the first string that isn't described by the specs.
-        '-F'           # Stop and exit if a param is found which is not in the specs.
-        '-K'           # Don't replace existing arrays (allows default values).
-    #   '-M'           # Allows the 'name' in '=name' to reference another spec.
-        '--'           # Indicates that options end here and spec starts.
-        '-help=arg_help' 'h=arg_help' '?=arg_help'
+        # ---------- BEGIN PARSING OPTIONS -------------------------------------
+    #   '-a' 'opts'   # Create a shared array to contain parsed options.  Option specs may omit ``=array_name``.
+    #   '-A' 'opts'   # Create a shared associative array to contain parsed options.  Option specs may omit ``=array_name``.
+        '-D'          # Automatically remove any specified options (and values) from ``${@}``.
+    #   '-E'          # Skip over unspecified (positional) args, instead of stopping when one is encountered.
+        '-F'          # Enable basic validation, exiting if an unspecified "option-like" argument is passed.
+        '-K'          # Don't reset named arrays.  Allows arrays to be pre-filled, uniqued, or (!) set oustide the function.
+    #   '-M'          # Allow one option spec to reference another and share its array (``'a:=opt_a_or_b' 'b=a'``).
+        '--'  # ---- BEGIN COMMAND OPTION SPECIFICATIONS -----------------------
+        '-help=arg_help' 'h=arg_help'
         '-all-remotes=arg_all_remotes'
         '-remote+:=arg_remotes'
     )
@@ -493,26 +491,27 @@ function git_log_graph ()  # [--all] [--density <compact | regular | expanded>]
 {
     ## Create usage output.
     typeset usage=(
-        "$0 [--help | -h | -?]"
+        "$0 [--help | -h]"
         "$0 [--all] [--density <compact | regular | expanded>]"
     )
 
     ## Define options array with defaults.
-    typeset -A options=(
+    typeset -A opts=(
         '--density' 'regular'
     )
 
     ## Set parsing options and configure the arguments for this function.
     typeset -a parse_config=(
-    #   '-a' 'options' # Create a common array for all optionn, instead of requiring each to specify.
-        '-A' 'options' # Same as -a, but using an associative array.
-        '-D'           # Remove found options from ${@}.
-    #   '-E'           # Allow flags/options and positional args to be mixed.
-        '-F'           # Stop and exit if a param is found which is not in the specs.
-        '-K'           # Don't replace existing arrays (allows default values with `-a`).
-        '-M'           # Allows the 'name' in '=name' to reference another spec.
-        '--'           # ------------------- End of parser options; argument spec follows.
-        '-help' 'h=-help' '?=-help'
+        # ---------- BEGIN PARSING OPTIONS -------------------------------------
+    #   '-a' 'opts'   # Create a shared array to contain parsed options.  Option specs may omit ``=array_name``.
+        '-A' 'opts'   # Create a shared associative array to contain parsed options.  Option specs may omit ``=array_name``.
+        '-D'          # Automatically remove any specified options (and values) from ``${@}``.
+    #   '-E'          # Skip over unspecified (positional) args, instead of stopping when one is encountered.
+        '-F'          # Enable basic validation, exiting if an unspecified "option-like" argument is passed.
+        '-K'          # Don't reset named arrays.  Allows arrays to be pre-filled, uniqued, or (!) set oustide the function.
+        '-M'          # Allow one option spec to reference another and share its array (``'a:=opt_a_or_b' 'b=a'``).
+        '--'  # ---- BEGIN COMMAND OPTION SPECIFICATIONS -----------------------
+        '-help' 'h=-help'
         '-all'
         '-density:'
     )
@@ -521,7 +520,7 @@ function git_log_graph ()  # [--all] [--density <compact | regular | expanded>]
     zmodload zsh/zutil && zparseopts ${parse_config[@]} || { echo_err 'Failed to load or configure zparseopts command.' ; return $? ; }
 
     ## Display usage if help flag is set.
-    (( ${+options[--help]} )) && { print -l $usage && return 0; }
+    (( ${+opts[--help]} )) && { print -l $usage && return 0; }
 
     typeset -a git_command=(
         'git'
@@ -533,16 +532,17 @@ function git_log_graph ()  # [--all] [--density <compact | regular | expanded>]
 
     typeset format_option="--format='format:%C(bold blue)%h%C(reset) - "
 
-    case "${options[--density]}" in
+    case "${opts[--density]}"
+    {
         compact)  format_option+="%C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)'" ;;
         regular)  format_option+="%C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'" ;;
         expanded) format_option+="%C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset) %C(bold cyan)(committed: %cD)%C(reset) %C(auto)%d%C(reset)%n''          %C(white)%s%C(reset)%n''          %C(dim white)- %an <%ae> %C(reset) %C(dim white)(committer: %cn <%ce>)%C(reset)'" ;;
         *) return 1 ;;
-    esac
+    }
 
     git_command+="${format_option}"
 
-    (( ${+options[--all]} )) && git_command+='--all'
+    (( ${+opts[--all]} )) && git_command+='--all'
 
     ${(Q)git_command[@]}
 }

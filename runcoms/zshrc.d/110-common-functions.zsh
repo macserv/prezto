@@ -58,9 +58,18 @@ function // ()  # [comment_word ...]
 ##  Echo to StdErr instead of StdOut.
 ##  Arguments will be passed through to 'echo' command.
 ##
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_err' command will return the same status as the command which was
+##  executed immediately beforehand.  This eliminates the need to capture the
+##  prior command's status to return it after logging.
+##
 function echo_err ()  # [echo-arg ...] words ...
 {
+    ## Capture status of previous command.
+    typeset -i passthrough_status=$?
     echo $@ 1>&2
+    return ${passthrough_status}
 }
 
 
@@ -68,11 +77,74 @@ function echo_err ()  # [echo-arg ...] words ...
 ##  Echo to StdErr when $ENABLE_ECHO_DEBUG is greater than zero.
 ##  Arguments will be passed through to 'echo' command.
 ##
+##  STATUS PASS-THROUGH
+##  ---------------------
+##  The 'echo_err_debug' command will return the same status as the command
+##  which was executed immediately beforehand.  This eliminates the need to
+##  capture the prior command's status to return it after logging.
+##
 function echo_err_debug ()  # [echo-arg ...] words ...
 {
     (( ENABLE_ECHO_DEBUG )) || return 0
+    typeset -i passthrough_status=$?
     echo_err $@
+    return ${passthrough_status}
 }
+
+##
+##  TODO: provide same-line-appending conveniences for ``echo_log``.
+##
+##  ARGUMENTS: MULTI-STEP LOGGING TO ONE LINE
+##  (None of these may be combined.)
+##  -----------------------------------------
+##  These arguments provide an expressive way to support writing to the same
+##  log line across multiple calls to `echo_log`.
+##
+##  These options may not be combined with each other.  In addition, the
+##  FORMATTING ARGUMENTS above will be ignored when `--one-line-next` or
+##  `--one-line-end` are used.
+##
+##  --one-line-start : Optional.  Start a one-line, multi-step log entry.
+##      The log entry's trace prefix and [message] will be written normally,
+##      but the ending LF will be omitted so that subsequent text can be
+##      written to the same line.
+##
+##  --one-line-next : Continue a one-line log entry.  The trace prefix is
+##      skipped, since it would have been written at the start of the line by a
+##      previous call to `echo_log --one-line-start`.  The [message] will be
+##      written, prefixed with two spaces (use `--no-space` to specify custom
+##      spacing), and the ending LF will be omitted so that subsequent text can
+##      be written to the same line.
+##
+##  --one-line-end : End a one-line log entry, as in a happy-path scenario.
+##      The trace prefix is skipped, since it would have been written at the
+##      start of the line by a previous call to `echo_log --one-line-start`.
+##      The [message] will be written, prefixed with two spaces (use
+##      `--no-space` to specify custom spacing), and, finally, the ending LF
+##      will be written to move the cursor to a new line for subsequent output.
+##
+##  --one-line-cancel: Interrupt a one-line log entry, as in an exception case,
+##      A LF character will first be written to move the cursor to a new line.
+##      Then, the log entry's trace prefix and [message] will be written
+##      normally, and the ending LF will be written to move the cursor to a new
+##      line for subsequent output.
+##
+##  EXAMPLES:
+##
+##  echo_log --one-line-start --level 'INFO'                'Starting...'
+##  echo_log --one-line-next                                'Doing part 1...'
+##  echo_log --one-line-next --no-space                     '/1a...'
+##  [[ ... ]] || echo_log --one-line-cancel --level 'ERROR' 'Failed part 1a!'  # Automatically inserts two spaces.  `--level` and other pre-message options ignored.
+##  echo_log --one-line-next                                'Doing part 2...'
+##  echo_log --one-line-end                                 'Finished!'
+##
+##  PSEUDOCODE:
+##
+##  --one-line-start:  Start a one-line, multi-step log entry.  Write standard log prefix.                    Write message.                                                             Strip LF after message (`-n`).
+##  --one-line-next:   Continue a one-line log entry.           Skip  standard log prefix.                    Write message, prefixed with two spaces (unless `no-space` is specified).  Strip LF after message (`-n`).
+##  --one-line-end:    End a one-line log entry.                Skip  standard log prefix.                    Write message, prefixed with two spaces (unless `no-space` is specified).  Allow LF after message.
+##  --one-line-cancel: Interrupt a one-line log entry.          Write standard log prefix, prefixed with LF.  Write message.                                                             Allow LF after message.
+##
 
 
 ####
@@ -85,10 +157,18 @@ function echo_err_debug ()  # [echo-arg ...] words ...
 ##  interfere with the functionality of functions which print text to 'stdout'
 ##  which is intended for consumption by a calling function.
 ##
-##  ARGUMENTS
-##  ---------
+##  ARGUMENTS: UNIVERSAL
+##  --------------------
 ##  --help : Print command usage and exit.
 ##
+##  --transparent : In the log entry's trace prefix, ignore the calling
+##      function and report its parent in the trace prefix instead.  This
+##      allows `echo_log` to be wrapped with a more specialized logging
+##      handler, and display the wrapper's caller (instead of the wrapper
+##      itself) in the trace prefix.
+##
+##  ARGUMENTS: FORMATTING
+##  ---------------------
 ##  --level : Optional.  Indicates the severity of the message to be logged.
 ##      Can be any of the following:
 ##
@@ -110,12 +190,9 @@ function echo_err_debug ()  # [echo-arg ...] words ...
 ##  --spacer : Optional.  A string which will replace the filler immediately
 ##      before the message.  Default: none.
 ##
-##  --transparent : Make the caller transparent; that is, ignore the calling
-##      function, and report its parent instead.  This is useful when you want
-##      to "transparently" wrap `echo_log` in another logging function without
-##      it being displayed as the caller.
-##
-##  [message]  The message to be logged.  To read this from stdin, use '--'.
+##  ARGUMENTS: MESSAGE TEXT
+##  -----------------------
+##  [message] : The message to be logged.  To read this from stdin, use '--'.
 ##      This function will interpret its last positional argument as the
 ##      message; bear this in mind if you include arguments for the 'echo'
 ##      command (see the next section).
@@ -245,14 +322,15 @@ function echo_log ()
 
     typeset level="${options[--level]}"
     typeset prefix
-    case "${level}" in
+    case "${level}"
+    {
         FAIL)    prefix="[FAIL]"               ;;
         ERROR)   prefix="[ERROR]"              ;;
         WARNING) prefix="[WARNING]"            ;;
         INFO)    prefix="[INFO]"               ;;
         DEBUG)   prefix="[DEBUG]"              ;;
         *)       prefix="${level:+[${level}]}" ;;
-    esac
+    }
 
     typeset -i indent_level=$(( ${options[--indent]} ))
     (( indent_level )) &&
@@ -415,20 +493,22 @@ function fail ()  # [message] [status]
 
 ####
 ##  Get the user name of the account which logs into this system most commonly.
+##  Arguments will be passed through to the `user_most` function.
 ##
-function local_user_name ()
+function local_user_name ()  # [user_most-arg ...]
 {
-    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most common )}"
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most common $@ )}"
 }
 
 
 ####
 ##  Get the user name of the account which is currently logged in to this
-##  system's console
+##  system's console.
+##  Arguments will be passed through to the `user_most` function.
 ##
-function console_user_name ()
+function console_user_name ()  # [user_most-arg ...]
 {
-    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most recent --online-only )}"
+    echo "${JAMF_GLOBAL_LOGGED_IN_OR_SS_USER:-$( user_most recent --online-only $@ )}"
 }
 
 
@@ -449,7 +529,9 @@ function user_id_for_name ()  # <user_name>
 ##
 function local_user_home ()
 {
-    /usr/bin/dscl -plist '.' -read "/Users/$( local_user_name )" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' 'raw' -o - -
+    typeset user_name && user_name=$( local_user_name ) || { echo_log --level 'ERROR' 'Unable to determine local user' ; return 1 ; }
+
+    /usr/bin/dscl -plist '.' -read "/Users/${user_name}" | /usr/bin/plutil -extract 'dsAttrTypeStandard:NFSHomeDirectory.0' 'raw' -o - -
 }
 
 
@@ -557,7 +639,7 @@ function network_user_groups ()  # [--csv] [standard_id] [ad_domain]
 function run_as_user_id ()  # <user_id> [command word ...]
 {
     typeset -i user_id="${1}" ; shift ;
-    launchctl asuser "${user_id}" sudo --user "#${user_id}" $@
+    /bin/launchctl asuser "${user_id}" sudo --user "#${user_id}" $@
 }
 
 
@@ -630,12 +712,12 @@ function value_for_keypath_in_json ()  # <keypath> <json_string>
 ##
 ##  EXAMPLES
 ##  --------
-##  alert_dialog 'Nothing too serious'
-##  alert_dialog 'You do not have the correct permissions to do this.' \
-##               'Could not create user'
-##  alert_dialog 'KLINGONS OFF THE STARBOARD BOW, CAPTAIN' \
-##               'RED ALERT' \
-##               'BATTLE STATIONS'
+##  display_alert_dialog 'Nothing too serious'
+##  display_alert_dialog 'You do not have the correct permissions to do this.' \
+##                       'Could not create user'
+##  display_alert_dialog 'KLINGONS OFF THE STARBOARD BOW, CAPTAIN' \
+##                       'RED ALERT' \
+##                       'BATTLE STATIONS'
 ##
 function display_alert_dialog ()
 {
@@ -658,6 +740,71 @@ function display_alert_dialog ()
 
 EOAPPLESCRIPT
 }
+
+
+####
+##  Present a GUI alert with a variable number of buttons to ask the user for a
+##  decision before proceeding.
+##
+##  OUTPUT
+##  ------
+##  The button which was clicked, e.g.: "buttonReturned:OK"
+##
+##  ARGUMENTS
+##  ---------
+##  $1: [message]  Optional.  The "message" to be shown in the alert.
+##  $2: [title]  Optional.  The alert title.  Default: "An error occurred".
+##  $3-$n: [button_label ...]  Optional.  The button labels.  Default: ``'OK' 'Cancel'``.
+##
+##  EXAMPLES
+##  --------
+##  alert_dialog 'Nothing too serious'
+##  alert_dialog 'You do not have the correct permissions to do this.' \
+##               'Could not create user'
+##  alert_dialog 'KLINGONS OFF THE STARBOARD BOW, CAPTAIN' \
+##               'RED ALERT' \
+##               'BATTLE STATIONS'
+##
+# function display_dialog ()
+# {
+#     typeset -a usage=(
+#         "$0 [--help]"
+#         "$0 [--title <title_text>] [--message <message_text>] [--default-button <default_label>] [--cancel-button <cancel_label>] [--icon <stop | note | caution | file_path>] <button_label> [button_label ...]"
+#     )
+#     typeset -a opts=(
+#         '-help=arg_help'
+#         '-title:=arg_title_text'
+#         '-message:=arg_message_text'
+#         '-default-button:=arg_default_label'
+#         '-cancel-button:=arg_cancel_label'
+#         '-icon:=arg_icon'
+#     )
+
+#     # Load parser and process function arguments.
+#     # If the 'help' flag is set, display this function's usage text.
+#     zmodload zsh/zutil && zparseopts -D -E -F -- "${opts[@]}" || { echo_log --level 'ERROR' 'Failed to parse function options.' ; return $? ; }
+
+#     typeset -a button_labels=( ${@} )
+#     ((  ${#button_labels} )) && { print -l "${usage}" ; return 1 ; }
+#     (( ${#arg_help} ))   && { print -l "${usage}" ; return 0 ; }
+
+#     # The AppleScript `display dialog` command only supports up to three
+#     # buttons.  For certainty, return an error if that limit is exceeded.
+#     ((  $#button_labels > 3 )) && { echo_log --level 'ERROR' "Too many buttons specified for dialog box; only the first three will be presented." ; return 1 ; }
+
+#     echo_debug "Displaying dialog box to user:"
+#     echo_debug --indent 1 "┌────────────────────────────────────────────────────────────────────────────────"
+#     echo_debug --indent 1 "│ ${title}"
+#     echo_debug --indent 1 "├────────────────────────────────────────────────────────────────────────────────"
+#     echo_debug --indent 1 "│ ${message}"
+#     echo_debug --indent 1 "│"
+#     echo_debug --indent 1 "│ [${(j']  [')button_labels}]"
+#     echo_debug --indent 1 "└────────────────────────────────────────────────────────────────────────────────"
+
+#     /usr/bin/osascript 2>/dev/null <<EOAPPLESCRIPT
+#         display dialog "${message}" with title "${title}" as critical message buttons { "$button_labels" } default button "${button_labels[1]}"
+# EOAPPLESCRIPT
+# }
 
 
 ####
@@ -1702,6 +1849,7 @@ function launchd_boot_out_user_services_named ()  # <service-name-in-user-domain
     launchd_boot_out_service_targets ${@/#/$(launchd_local_user_domain_target)/}
 }
 
+
 ####
 ##  Search LDAP
 ##
@@ -1709,14 +1857,14 @@ function ldap_query ()
 {
     typeset -a usage=(
         "$0 [--help | -h]"
-        "$0 [--username | -u <username>] [--password | -p <password>] <filter> [attrs ...]"
+        "$0 [--logon | -u <ad_logon>] [--password | -p <ad_password>] <filter> [attrs ...]"
     )
     typeset -a opts=(
         {'h','-help'}'=arg_help'
         {'H','-host-url'}':=arg_host'
         {'b','-search-base'}':=arg_base'
         {'K','-kerberos'}'=arg_kerberos'
-        {'u','-username'}':=arg_username'
+        {'u','-logon'}':=arg_logon'
         {'p','-password'}':=arg_password'
     )
 
@@ -1735,15 +1883,15 @@ function ldap_query ()
     shift && typeset -a attrs=( ${@} )
 
     # Read the LDAP host and base arguments, checking the environment.
-    typeset host="${arg_host[-1]:-${LDAPSEARCH_URL}}"  && [[ -n "${host}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP host (also not found in &{LDAPSEARCH_HOST}).' ; return 1 ; }
-    typeset base="${arg_base[-1]:-${LDAPSEARCH_BASE}}" && [[ -n "${base}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP base (also not found in &{LDAPSEARCH_BASE}).' ; return 1 ; }
+    typeset host="${arg_host[-1]:-${LDAP_SERVER_URI}}" && [[ -n "${host}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP host (also not found in ${LDAP_SERVER_URI}).' ; return 1 ; }
+    typeset base="${arg_base[-1]:-${LDAP_BASE}}"       && [[ -n "${base}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP base (also not found in ${LDAP_BASE}).'       ; return 1 ; }
 
     # If we're not using kerberos, read the LDAP username and password.
-    # If either is empty, try the ``$AD_USERNAME`` and ``$AD_PASSWORD``
-    # environment variables, respectively.  If username is still empty, error.
+    # If either is empty, check the env for ``$AD_LOGON`` and ``$AD_PASSWORD``.
+    # The username is required, so error out if it's still empty.
     (( ${#arg_kerberos} )) ||
     {
-        typeset username="${arg_username[-1]:-${AD_USERNAME}}" && [[ -n "${username}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP user name (also not found in ``${AD_USERNAME}``).' ; return 1 ; }
+        typeset ad_logon="${arg_logon[-1]:-${AD_LOGON}}" && [[ -n "${ad_logon}" ]] || { echo_log --level 'ERROR' 'Missing argument for LDAP user name (also not found in ``${AD_LOGON}``).' ; return 1 ; }
         typeset password="${arg_password[-1]:-${AD_PASSWORD}}"
     }
 
@@ -1759,11 +1907,13 @@ function ldap_query ()
         '-O' 'maxssf=0'        #
         '-Y' 'GSSAPI'          #
     )
-    typeset -a username_args=( '-D' "${username}" )
+    typeset -a username_args=( '-D' "${ad_logon}" )
     typeset -a password_inline_args=( '-w' "${password}" )
     typeset -a password_ask_args=( '-W' )
 
-    # Default to kerberos.
+    # Set the auth args to kerberos to start.
+    # If we're not using kerberos, use the args for username and password.
+    # If the password is empty, make ``ldapsearch`` ask for it.
     typeset -a auth_args=( ${kerberos_auth_args} )
 
     (( ${#arg_kerberos} )) ||
@@ -1837,14 +1987,13 @@ function remove_duplicates ()  # --dry-run
 
         [[ -n "${ext}" ]] && ext=".${ext}"
 
-        case "${duplicate_candidate}" in
+        case "${duplicate_candidate}"
+        {
             *\(1\)(.*)#) # (1): remove the number and parens entirely
-                original_by_name="${${duplicate_candidate:r}/%\(1\)/}${ext}"
-                ;;
+                original_by_name="${${duplicate_candidate:r}/%\(1\)/}${ext}" ;;
             *) # (2+): decrement the number
-                echo twoplus
-                ;;
-        esac
+                echo twoplus ;;
+        }
 
         continue
 

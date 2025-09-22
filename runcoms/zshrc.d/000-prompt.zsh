@@ -64,9 +64,11 @@ typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=( ${t_l} 'newline' ${b_l} )
 typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=( ${t_r} 'newline' ${b_r} )
 
 # Use custom segment separators
-typeset -g POWERLEVEL9K_LEFT_SEGMENT_END_SEPARATOR=' '        # Single space after prompt.
-typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\U0000E0C6 '  # '' (with added space for double width)
-typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\U0000E0C7 ' # '' (with added space for double width)
+typeset -g POWERLEVEL9K_LEFT_SEGMENT_END_SEPARATOR=' '           # Single space after prompt.
+typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR='\U0000E0B8'      # ''
+typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR='\U0000E0B9'   # ''
+typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\U0000E0BE'     # ''
+typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR='\U0000E0BF'  # ''
 
 
 ###############################################################################
@@ -76,6 +78,7 @@ typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR='\U0000E0C7 ' # '' (with adde
 # P10K Segment Config: 'os_icon'
 typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION="$(echo '\U0000F30C') "  # Ubuntu logo
 typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=237
+typeset -g POWERLEVEL9K_OS_ICON_LEFT_SEGMENT_SEPARATOR='\U0000E0BC'      # ''
 
 # P10K Segment Config: 'dir'
 typeset -g POWERLEVEL9K_DIR_HOME_ICON=''
@@ -84,7 +87,7 @@ typeset -g POWERLEVEL9K_DIR_FOLDER_ICON=''
 typeset -g POWERLEVEL9K_HOME_FOLDER_ABBREVIATION='\U0000F015 ' # ''
 typeset -g POWERLEVEL9K_SHORTEN_STRATEGY="truncate_middle"
 typeset -g POWERLEVEL9K_SHORTEN_DIR_LENGTH=3
-typeset -g POWERLEVEL9K_SHORTEN_DELIMITER="\U00002425" # '␥'
+typeset -g POWERLEVEL9K_SHORTEN_DELIMITER='\U00002425' # '␥'
 
 # P10K Segment Config: 'root_indicator'
 typeset -g POWERLEVEL9K_ROOT_INDICATOR_ROOT_ICON='\U0000F0E7 ' # ''
@@ -99,7 +102,8 @@ typeset -g POWERLEVEL9K_DIR_WRITABLE_BACKGROUND='darkred'
 typeset -g POWERLEVEL9K_STATUS_OK='false'
 
 # P10K Segment Config: 'time'
-typeset -g POWERLEVEL9K_TIME_FORMAT="%D{%d.%m.%y \U0000F073  \U0000E0B3 %H:%M}" # '' ''
+typeset -g POWERLEVEL9K_TIME_ICON_DATE='\U0000F073 '  # ' ' with space for double-width
+typeset -g POWERLEVEL9K_TIME_FORMAT="%D{%d.%m.%y ${POWERLEVEL9K_TIME_ICON_DATE} ${POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR} %H:%M}"  # Create sub-segment for date to left, with ' ' icon
 
 # P10K Segment Config: 'swift_version'
 typeset -g POWERLEVEL9K_SWIFT_ICON='\U0000E755 ' # ''
