@@ -5,6 +5,7 @@
 
 
 
+
 ##
 ##  Uninstall all kegs.
 ##
@@ -50,17 +51,56 @@ function brew_reinstall_leaves  # [--dry-run]
 
 
 ##
-##  Generate .pdf or .dot of the dependency tree for installed packages.
+##  Generate an image of the dependency tree for installed Homebrew kegs.
 ##
 ##  Required Packages:
 ##      brew install martido/brew-graph/brew-graph
 ##      brew install graphviz
 ##
-function brew_dependency_graph ()  # [package ...]
+##  --dot:  Output a ``.dot`` file instead of a ``.pdf`` file.
+##  [package ...] :  List of packages to include in the graph.  Default: 'all'.
+##
+##  TODO: Allow any output format recognized by ``dot`` to be used.  Do this by
+##  interpreting the output path extension, or with an explicit arument.
+##  Default behavior is to output the entire Homebrew dependency tree to
+##  `stdout` in `dot` format.
+##
+##  [--output <file_path>]:  Output to the specified `file_path`, or to
+##      `stdout` if `-` is specified.
+##
+##      AUTOMATIC FORMAT DETERMINATION:  The following rules will be applied to
+##      determine an output format.  The ``--format`` argument (below) can be
+##      used to override this behavior.
+##      | File Path                     | Output Format                                 |
+##      |-------------------------------|-----------------------------------------------|
+##      | `-`                           | Output to `stdout` in `dot` format.           |
+##      | No extension                  | Output to `file_path` in `dot` format.        |
+##      | Extension recognized by `dot` | Output to `file_path` in the matching format. |
+##      | Extension not recognized      | ERROR: Return from function with status `1`.  |
+##
+##  [--format <format>]:  Use the specified output format, which must be one
+##      recognized by ``dot``.
+##
+function brew_dependency_graph ()  # --dot [package ...]
 {
-    local dependency_name="${(j'-')@}"
+    typeset -i convert_to_pdf=1
+    [[ "${1}" == '--dot' ]] && { convert_to_pdf=0 ; shift ; }
+
+    typeset dependency_name="${(j'-')@}"
     [[ -z "$dependency_name" ]] && dependency_name="all"
-    brew graph --installed --highlight-leaves --highlight-outdated $@ | dot -Tpdf -obrew-dependencies-${dependency_name}.pdf
+
+    # Write the ``.dot`` graph file to a temporary location.
+    typeset tmp_dir && tmp_dir=$( new_tmp_dir ) || { echo_log --level 'ERROR' "Unable to create temporary directory." ; return $? ; }
+    typeset file_stub="brew-dependencies-${dependency_name}"
+    typeset dot_tmp_path="${tmp_dir}/${file_stub}.dot"
+
+    brew graph --installed --highlight-leaves --highlight-outdated $@ > "${dot_tmp_path}" || { echo_log --level 'ERROR' "Unable to generate dependency graph." ; return $? ; }
+
+    # If we're good with a ``.dot`` file, just return it.
+    (( convert_to_pdf > 0 )) || { mv "${dot_tmp_path}" '.' ; return 0 ; }
+
+    # Convert the ``.dot`` file to a ``.pdf`` file at the CWD.
+    dot -Tpdf -o"./${file_stub}.pdf" "${dot_tmp_path}" || { echo_log --level 'ERROR' "Unable to convert DOT graph at '${dot_tmp_path}' to PDF." ; return $? ; }
 }
 
 
@@ -83,21 +123,6 @@ function brew_installed_options ()  # <package>
 
 
 ##
-##  brew_reinstall_and_add_option <package> <options>
-##  [WIP] Reinstall package with additional option(s)
-##  - Parameters
-##      - package: Installed package name
-##      - options: The options to add when re-installing.
-##  - Example
-##      % brew_reinstall_and_add_option ffmpeg --with-libbluray --with-srt
-##
-##  # TODO: We're in zsh now... do this as a function.
-##  alias brew_reinstall_and_add_option 'brew reinstall \!:1 `brew_installed_options \!:1` \!:2*'
-##  set current_options = "`brew_installed_options ffmpeg`" && brew uninstall ffmpeg && brew install ffmpeg ${current_options} '--with-libvpx'
-##
-
-
-##
 ##  List all brew leaves with their description appended.
 ##
 function brew_leaves_with_info ()
@@ -113,6 +138,8 @@ function brew_leaves_with_info ()
 ##
 ##  Remove a list of brew formulae, along with any formulae that are no longer
 ##  required by any other installed formulae.
+##  TODO: Genericize this and ``pip_uninstall_leaves`` into a common function
+##      which invokes package-manager-specific helper functions.
 ##
 function brew_uninstall_leaves ()  # [--indent <level>] <formula ...>
 {
@@ -151,74 +178,4 @@ function brew_uninstall_leaves ()  # [--indent <level>] <formula ...>
         ${0} --indent $(( indent + 1 )) ${brew_list_new_leaves}
     }
 }
-
-
-##
-##  WIP
-##
-function update_brew_ssl_certs_from_keychain ()
-{
-    typeset -a keychains=(
-        '/System/Library/Keychains/SystemRootCertificates.keychain'
-        '/Library/Keychains/System.keychain'
-        "${HOME}/Library/Keychains/login.keychain-db"
-    )
-
-    typeset -i found_count=0
-    typeset -i added_count=0
-
-    typeset all_certs_file && all_certs_file="$(mktemp)" || fail 'Unable to create temporary file for certificate output.'       $?
-    typeset cert_file      && cert_file="$(mktemp)"      || fail 'Unable to create temporary file for certificate verification.' $?
-    typeset cert_contents
-
-    for keychain ( ${keychains} )
-    {
-        echo_log
-        echo_log -n --level 'INFO' "Loading certificates from keychain '${keychain}'..."
-        typeset -a cert_names && cert_names=( ${(f)"$( security find-certificate -a "${keychain}" | grep '"alis"' | cut -d '"' -f 4 )"} )
-
-        echo_err "${#cert_names} found."
-        (( found_count += ${#cert_names} ))
-
-        for cert_name ( ${cert_names} )
-        {
-            echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
-            cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" 2>/dev/null)" || { echo_err 'unable to load certificate contents. 🔴' ; continue ; }
-
-            echo_err -n "exporting... "
-            echo "${cert_contents}" >! "${cert_file}" || { echo_err 'unable to write cert contents to temporary file. 🔴' ; continue ; }
-
-            echo_err -n "verifying... "
-            security verify-cert -c "${cert_file}" -k "${keychain}" &>/dev/null || { echo_err 'certificate is not valid. 🔴' ; continue ; }
-
-            echo_err -n "adding... "
-            echo "${cert_contents}" >> "${all_certs_file}" || { echo_err 'unable to add certificate. 🔴' ; continue ; }
-            (( added_count += 1 ))
-
-            echo_err "done."
-        }
-    }
-
-    echo_log
-    echo_log --level 'INFO' "Added ${added_count} certificates of ${found_count} found."
-    echo_log --level 'INFO' "Saving to Homebrew certificate location..."
-}
-
-    #     for cert_name ( ${cert_names} )
-    #     {
-    #         echo_log -n --level 'INFO' --indent 1 "${cert_name}... loading..."
-    #         cert_contents="$(security find-certificate -p -c "${cert_name}" "${keychain}" &>/dev/null)" || { echo_err "unable to load certificate contents; status '$?'" ; continue }
-
-    #         echo_err -n "exporting... "
-    #         echo "${cert_contents}" >! "${cert_file}" || { echo_err 'unable to write cert contents to temporary file.' ; continue }
-
-    #         echo_err -n "verifying... "
-    #         security verify-cert -c "${cert_file}" -k "${keychain}" &>/dev/null || { echo_err "certificate is not valid; status '$?'" ; continue }
-
-    #         echo_err -n "adding... "
-    #         echo "${cert_contents}" >> "${all_certs_file}" || { echo_err 'unable to add certificate.' ; continue }
-
-    #         echo_err "done."
-    #     }
-
 

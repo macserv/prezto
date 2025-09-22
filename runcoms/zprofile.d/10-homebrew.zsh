@@ -12,11 +12,13 @@
 ##
 
 typeset homebrew_prefix
-case "$( uname -m )" in
+
+case "$( uname -m )"
+{
     x86_64) homebrew_prefix="/usr/local"    ;;
     arm64)  homebrew_prefix="/opt/homebrew" ;;
     *)      homebrew_prefix="/opt/homebrew" ;;
-esac
+}
 
 [[ -d "${homebrew_prefix}" ]] || return 0
 
@@ -28,7 +30,7 @@ typeset -gx HOMEBREW_PREFIX="${homebrew_prefix}"
 ##
 
 path=(
-    ${HOMEBREW_PREFIX}/{bin,sbin}
+    "${HOMEBREW_PREFIX}/"{bin,sbin}
     ${path}
 )
 
